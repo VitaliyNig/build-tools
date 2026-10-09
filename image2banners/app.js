@@ -1,4 +1,5 @@
 // Image2Banners: controls, preview, banner recipes, export.
+import "../shared/tooltip.js";
 import { bindLanguageSelect, getLang } from "../shared/i18n.js";
 import { PanZoom } from "../shared/panzoom.js";
 import { loadAssets } from "./assets.js";

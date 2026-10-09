@@ -1,4 +1,5 @@
 // Graffiti: controls, edit canvas, result preview, export.
+import "../shared/tooltip.js";
 import { bindLanguageSelect, getLang } from "../shared/i18n.js";
 import { applyAdjustments, isNeutral, rotate90 } from "./core/imageops.js";
 import { categoryMap, subset, TILE_BYTES, TILE_PX } from "../shared/mc/palette.js";

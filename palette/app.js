@@ -1,4 +1,5 @@
 // Palette: find blocks by colour, build gradients, collect and share a palette.
+import "../shared/tooltip.js";
 import { bindLanguageSelect, getLang } from "../shared/i18n.js";
 import { importJarFile, listPalettes, loadPalette, tileCanvas } from "../shared/mc/palettes.js";
 import {
