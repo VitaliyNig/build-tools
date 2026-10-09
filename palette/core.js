@@ -57,6 +57,29 @@ function collapse(entries, picture) {
 }
 
 /**
+ * A key for a cube's picture that is the same however the picture is turned or
+ * mirrored: a log lying on its side looks like its "wood" block turned.
+ */
+function turnedKey(tile) {
+  const n = TILE_PX, last = n - 1;
+  let best = "";
+  for (let way = 0; way < 8; way++) {
+    const turned = new Uint8Array(tile.length);
+    for (let y = 0; y < n; y++) {
+      for (let x = 0; x < n; x++) {
+        let sx = way & 4 ? last - x : x, sy = y;
+        for (let quarter = way & 3; quarter > 0; quarter--) [sx, sy] = [sy, last - sx];
+        const from = (sy * n + sx) * 3, to = (y * n + x) * 3;
+        turned[to] = tile[from]; turned[to + 1] = tile[from + 1]; turned[to + 2] = tile[from + 2];
+      }
+    }
+    const key = turned.join();
+    if (!way || key < best) best = key;
+  }
+  return best;
+}
+
+/**
  * Flatten a palette into matchable entries:
  * [{kind: "block" | "face" | "deco", index, id, name, rgb, lab, noise, sides,
  *   falling, technical, hidden, also}].
@@ -103,8 +126,8 @@ export function listEntries(palette) {
   }
 
   const cubeBytes = PIXELS * 3, decoBytes = DECO_PX * DECO_PX * 4;
-  collapse([...blocks, ...faces], (entry) => (entry.kind === "face" ? palette.faceTiles : palette.tiles)
-    .subarray(entry.index * cubeBytes, (entry.index + 1) * cubeBytes).join());
+  collapse([...blocks, ...faces], (entry) => turnedKey((entry.kind === "face" ? palette.faceTiles : palette.tiles)
+    .subarray(entry.index * cubeBytes, (entry.index + 1) * cubeBytes)));
   collapse(decorations, (entry) => palette.decoTiles.subarray(entry.index * decoBytes, (entry.index + 1) * decoBytes).join());
 
   return [...blocks, ...faces, ...decorations];
