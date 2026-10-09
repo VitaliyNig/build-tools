@@ -1,11 +1,13 @@
 // Palette storage: versions bundled with the site plus JARs imported in this browser.
 import { importJar } from "./jar.js";
 import { DECO_PX, makePalette, TILE_BYTES, TILE_PX, tilesFromAtlas } from "./palette.js";
+import { decodePng } from "./png.js";
 
 const BUNDLED = new URL("./palettes/", import.meta.url);
 const ATLAS_COLS = 32;
 const DB_NAME = "tools.pixel", STORE = "palettes";
-const RECORD_FORMAT = 4;      // 2: + decorations, 3: + other sides of blocks, 4: 32 px decorations with 3D models
+// 2: + decorations, 3: + other sides of blocks, 4: 32 px decorations with 3D models, 5: exact pixels (no canvas)
+const RECORD_FORMAT = 5;
 
 const loaded = new Map();     // key -> palette
 const session = new Map();    // imported records, also the fallback when IndexedDB is unavailable
@@ -39,8 +41,13 @@ async function importedRecords() {
   return [...session.values()];
 }
 
-async function decodeImage(blob) {
-  const bitmap = await createImageBitmap(blob, { premultiplyAlpha: "none", colorSpaceConversion: "none" });
+/** Exact pixels of a PNG; the canvas is only for the rare files the decoder cannot read. */
+async function decodeImage(bytes) {
+  try {
+    return await decodePng(bytes);
+  } catch { /* interlaced etc. */ }
+  const bitmap = await createImageBitmap(new Blob([bytes], { type: "image/png" }),
+    { premultiplyAlpha: "none", colorSpaceConversion: "none" });
   const canvas = document.createElement("canvas");
   canvas.width = bitmap.width; canvas.height = bitmap.height;
   const context = canvas.getContext("2d", { willReadFrequently: true });
@@ -67,8 +74,8 @@ export async function loadPalette(key) {
       const response = await fetch(new URL(`${encodeURIComponent(name)}.json`, BUNDLED));
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
-      const image = async (suffix) => decodeImage(
-        await (await fetch(new URL(`${encodeURIComponent(name)}${suffix}.png`, BUNDLED))).blob());
+      const image = async (suffix) => decodeImage(new Uint8Array(
+        await (await fetch(new URL(`${encodeURIComponent(name)}${suffix}.png`, BUNDLED))).arrayBuffer()));
       const atlas = await image(""), decorations = data.decorations || [], faces = data.faces || [];
       const decoAtlas = decorations.length ? await image(".deco") : null;
       const faceAtlas = faces.length ? await image(".faces") : null;
@@ -103,8 +110,7 @@ export async function importJarFile(file, onProgress) {
   const sha = await digest(buffer, file);
   let record = session.get(sha);
   if (!record || record.format !== RECORD_FORMAT) {
-    const decodePng = (bytes) => decodeImage(new Blob([bytes], { type: "image/png" }));
-    const result = await importJar(buffer, file.name, decodePng, onProgress);
+    const result = await importJar(buffer, file.name, decodeImage, onProgress);
     record = { ...result, sha, format: RECORD_FORMAT, skipped: result.skipped.length };
     loaded.delete(`jar:${sha}`);
     session.set(sha, record);

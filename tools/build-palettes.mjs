@@ -14,67 +14,10 @@ import { fileURLToPath } from "node:url";
 import zlib from "node:zlib";
 import { importJar } from "../shared/mc/jar.js";
 import { DECO_PX } from "../shared/mc/palette.js";
+import { decodePng } from "../shared/mc/png.js";
 
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "shared", "mc", "palettes");
 const COLS = 32, TILE = 16;
-
-/** PNG -> {data: RGBA, w, h}; all colour types and bit depths, not interlaced. */
-function decodePng(bytes) {
-  const b = Buffer.from(bytes);
-  let w, h, depth, type, palette, alpha;
-  const idat = [];
-  for (let p = 8; p < b.length;) {
-    const length = b.readUInt32BE(p), kind = b.toString("latin1", p + 4, p + 8), d = b.subarray(p + 8, p + 8 + length);
-    if (kind === "IHDR") {
-      w = d.readUInt32BE(0); h = d.readUInt32BE(4); depth = d[8]; type = d[9];
-      if (d[12]) throw new Error("Interlaced PNG");
-    } else if (kind === "PLTE") palette = d;
-    else if (kind === "tRNS") alpha = d;
-    else if (kind === "IDAT") idat.push(d);
-    p += 12 + length;
-  }
-  const channels = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 }[type];
-  const bpp = Math.max(1, channels * depth / 8), stride = Math.ceil(w * channels * depth / 8);
-  const raw = zlib.inflateSync(Buffer.concat(idat)), px = Buffer.alloc(stride * h);
-  for (let y = 0; y < h; y++) {
-    const filter = raw[y * (stride + 1)];
-    for (let x = 0; x < stride; x++) {
-      const a = x >= bpp ? px[y * stride + x - bpp] : 0, up = y ? px[(y - 1) * stride + x] : 0;
-      const c = x >= bpp && y ? px[(y - 1) * stride + x - bpp] : 0;
-      let predicted = 0;
-      if (filter === 1) predicted = a;
-      else if (filter === 2) predicted = up;
-      else if (filter === 3) predicted = (a + up) >> 1;
-      else if (filter === 4) {
-        const q = a + up - c, pa = Math.abs(q - a), pb = Math.abs(q - up), pc = Math.abs(q - c);
-        predicted = pa <= pb && pa <= pc ? a : pb <= pc ? up : c;
-      }
-      px[y * stride + x] = (raw[y * (stride + 1) + 1 + x] + predicted) & 255;
-    }
-  }
-  const sample = (y, i) => (depth === 8 ? px[y * stride + i] : depth === 16 ? px[y * stride + i * 2]
-    : (px[y * stride + ((i * depth) >> 3)] >> (8 - depth - ((i * depth) & 7))) & ((1 << depth) - 1));
-  const data = new Uint8ClampedArray(w * h * 4);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const o = (y * w + x) * 4;
-      if (type === 3) {
-        const i = sample(y, x);
-        data[o] = palette[i * 3]; data[o + 1] = palette[i * 3 + 1]; data[o + 2] = palette[i * 3 + 2];
-        data[o + 3] = alpha && i < alpha.length ? alpha[i] : 255;
-      } else if (type === 0 || type === 4) {
-        const scale = depth < 8 ? 255 / ((1 << depth) - 1) : 1, step = type === 4 ? 2 : 1;
-        data[o] = data[o + 1] = data[o + 2] = sample(y, x * step) * scale;
-        data[o + 3] = type === 4 ? sample(y, x * 2 + 1) : 255;
-      } else {
-        data[o] = sample(y, x * channels); data[o + 1] = sample(y, x * channels + 1);
-        data[o + 2] = sample(y, x * channels + 2);
-        data[o + 3] = channels === 4 ? sample(y, x * 4 + 3) : 255;
-      }
-    }
-  }
-  return { data, w, h };
-}
 
 /** Pixels (channels = 3 or 4 bytes each) -> PNG file bytes. */
 function encodePng(pixels, w, h, channels) {
@@ -127,7 +70,7 @@ const index = fs.existsSync(indexPath) ? JSON.parse(fs.readFileSync(indexPath, "
 for (const jar of jars) {
   const file = fs.readFileSync(jar);
   const buffer = file.buffer.slice(file.byteOffset, file.byteOffset + file.length);
-  const result = await importJar(buffer, path.basename(jar), async (bytes) => decodePng(bytes));
+  const result = await importJar(buffer, path.basename(jar), decodePng);
   const { version } = result;
   fs.writeFileSync(path.join(OUT, `${version}.json`), JSON.stringify({
     version, data_version: result.dataVersion, cols: COLS, blocks: result.blocks, faces: result.faces,
