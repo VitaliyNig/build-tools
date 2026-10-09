@@ -50,4 +50,18 @@ export const TOOLS = [
     icon: ["#1b3f8f", "#2f7fd6", "#2f7fd6", "#1b3f8f", "#2f7fd6", "#3fa34d", "#57c7e3", "#2f7fd6",
       "#2f7fd6", "#57c7e3", "#3fa34d", "#2f7fd6", "#1b3f8f", "#2f7fd6", "#2f7fd6", "#1b3f8f"],
   },
+  {
+    id: "bigsigns",
+    href: "https://superfromnd.gitlab.io/bigsigns/",
+    external: true,
+    title: { en: "Big Sign Letters", ru: "Big Sign Letters" },
+    description: {
+      en: "Text to copy onto a Minecraft sign, line by line, to make one large letter, digit or symbol per sign for decoration. A tool by SuperFromND.",
+      ru: "Текст для копирования на табличку Minecraft построчно: на каждой табличке получается одна большая буква, цифра или символ для декора. Инструмент от SuperFromND.",
+    },
+    tags: ["Minecraft", "Signs", "SuperFromND"],
+    // A letter "A" on a sign.
+    icon: ["#a8825a", "#1d1d21", "#1d1d21", "#a8825a", "#1d1d21", "#a8825a", "#a8825a", "#1d1d21",
+      "#1d1d21", "#1d1d21", "#1d1d21", "#1d1d21", "#1d1d21", "#a8825a", "#a8825a", "#1d1d21"],
+  },
 ];
