@@ -30,13 +30,14 @@
 
       <div class="tabs" role="tablist">
         <button id="tabMatch" role="tab" aria-selected="true" data-i18n="tabMatch"></button>
+        <button id="tabHarmony" role="tab" aria-selected="false" data-i18n="tabHarmony"></button>
         <button id="tabGradient" role="tab" aria-selected="false" data-i18n="tabGradient"></button>
       </div>
 
       <section id="matchPane">
         <div class="bar">
           <input type="color" id="colour" value="#7fb238" aria-label="Colour">
-          <input type="text" id="hex" value="#7fb238" size="8" spellcheck="false" aria-label="HEX">
+          <input type="text" id="hex" class="hex" value="#7fb238" size="8" spellcheck="false" aria-label="HEX">
           <input type="search" id="search">
         </div>
         <div class="results">
@@ -52,23 +53,62 @@
         <p class="hint" data-i18n="matchHint"></p>
       </section>
 
+      <section id="harmonyPane" hidden>
+        <div class="harmony">
+          <div class="wheel-side">
+            <div class="wheel" id="wheel">
+              <canvas id="wheelCanvas" width="260" height="260"></canvas>
+            </div>
+            <label class="slider"><span data-i18n="brightness"></span>
+              <input type="range" id="brightness" min="0" max="100" value="100"></label>
+            <div class="bar">
+              <input type="color" id="harmonyColour" value="#7fb238" aria-label="Colour">
+              <input type="text" id="harmonyHex" class="hex" value="#7fb238" size="8" spellcheck="false" aria-label="HEX">
+            </div>
+            <div><b data-i18n="harmonyRule"></b> <span id="ruleName"></span></div>
+            <div class="rules" id="rules"></div>
+          </div>
+          <div class="scheme-side">
+            <div class="scheme" id="scheme"></div>
+            <div class="bar">
+              <button id="harmonyAdd" data-i18n="harmonyAdd" data-i18n-title="harmonyAddTip"></button>
+              <span class="hint" data-i18n="harmonyHint"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="gradientPane" hidden>
-        <div class="bar">
-          <div id="stops" class="stops"></div>
-          <button id="addStop" data-i18n-title="addStopTip">＋</button>
-          <label><span data-i18n="steps"></span> <input type="number" id="steps" min="2" max="64" value="9"></label>
-          <label class="check"><input type="checkbox" id="unique" checked><span data-i18n="unique"></span></label>
-          <label class="check"><input type="checkbox" id="withDeco"><span data-i18n="withDeco"></span></label>
-        </div>
-        <div class="group">
-          <div class="strip" id="gradientColours"></div>
-          <div class="tiles row" id="gradientResults"></div>
-        </div>
-        <div class="bar">
-          <button id="stopsFromPalette" data-i18n="stopsFromPalette"></button>
-          <button id="addGradient" data-i18n="addGradient"></button>
+        <div class="gradient-bar">
+          <button id="stopLeft" data-i18n-title="stopLeftTip">＋</button>
+          <div class="track">
+            <div class="segments" id="segments"></div>
+            <div class="tags" id="tags"></div>
+          </div>
+          <button id="stopRight" data-i18n-title="stopRightTip">＋</button>
+          <button id="swapStops" data-i18n-title="swapTip">⇄</button>
+          <button id="randomStops" data-i18n-title="randomTip">🎲</button>
         </div>
         <p class="hint" data-i18n="gradientHint"></p>
+        <div class="bar">
+          <label class="check"><input type="checkbox" id="unique" checked><span data-i18n="unique"></span></label>
+          <label class="check"><input type="checkbox" id="oneRow"><span data-i18n="oneRow"></span></label>
+          <label class="check" data-i18n-title="oklabTip"><input type="checkbox" id="oklab" checked><span data-i18n="oklab"></span></label>
+          <label class="check"><input type="checkbox" id="withDeco"><span data-i18n="withDeco"></span></label>
+        </div>
+        <div class="rows" id="gradientRows"></div>
+        <div class="bar">
+          <button id="keepRow" data-i18n="keepRow" data-i18n-title="keepRowTip"></button>
+          <button id="addGradient" data-i18n="addGradient"></button>
+          <button id="stopsFromPalette" data-i18n="stopsFromPalette"></button>
+        </div>
+        <div class="history" id="history" hidden>
+          <header>
+            <h2 data-i18n="history"></h2>
+            <button id="clearHistory" data-i18n="clearHistory"></button>
+          </header>
+          <div class="rows" id="historyRows"></div>
+        </div>
       </section>
     </main>
 

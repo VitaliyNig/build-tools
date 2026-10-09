@@ -91,21 +91,82 @@ function oklabToRgb([L, a, b]) {
   ];
 }
 
-/** `steps` RGB colours running through the stops (RGB triples), ends included. */
-export function gradientColours(stops, steps) {
-  if (stops.length === 1 || steps === 1) return Array.from({ length: steps }, () => stops[0]);
-  const points = stops.map(rgbToOklab);
-  return Array.from({ length: steps }, (_, i) => {
-    const t = i / (steps - 1) * (points.length - 1);
-    const from = Math.min(points.length - 2, Math.floor(t)), k = t - from;
-    return oklabToRgb(points[from].map((v, c) => v + (points[from + 1][c] - v) * k));
-  });
+// ---------- harmonies ----------
+// Scheme colours are HSV ({h: degrees, s: 0..1, v: 0..1}), the model of a colour
+// wheel: hue is the angle, saturation the distance from the centre.
+
+export function rgbToHsv([r, g, b]) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), d = max - Math.min(r, g, b);
+  let h = 0;
+  if (d) {
+    if (max === r) h = ((g - b) / d) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+  }
+  return { h: (h * 60 + 360) % 360, s: max ? d / max : 0, v: max };
 }
 
-/** One entry per gradient step; with `unique`, no entry is used twice. */
-export function gradientEntries(entries, stops, steps, { unique = false, smooth = 0 } = {}) {
+export function hsvToRgb({ h, s, v }) {
+  const f = (n) => {
+    const k = (n + h / 60) % 6;
+    return Math.round(255 * (v - v * s * Math.max(0, Math.min(k, 4 - k, 1))));
+  };
+  return [f(5), f(3), f(1)];
+}
+
+const unit = (x) => Math.min(1, Math.max(0, x));
+
+// Each colour of a rule is [hue offset in degrees, saturation factor, brightness
+// factor] relative to the base colour; `base` is the index of the base itself.
+export const HARMONY_RULES = {
+  analogous: { base: 2, colours: [[-30, 1, 1], [-15, 1, 1], [0, 1, 1], [15, 1, 1], [30, 1, 1]] },
+  shades: { base: 2, colours: [[0, 1, 0.5], [0, 1, 0.75], [0, 1, 1], [0, 0.6, 1], [0, 0.3, 1]] },
+  complementary: { base: 1, colours: [[0, 1, 0.65], [0, 1, 1], [180, 1, 1], [180, 1, 0.65]] },
+  split: { base: 0, colours: [[0, 1, 1], [150, 1, 1], [210, 1, 1]] },
+  triadic: { base: 0, colours: [[0, 1, 1], [120, 1, 1], [240, 1, 1]] },
+  square: { base: 0, colours: [[0, 1, 1], [90, 1, 1], [180, 1, 1], [270, 1, 1]] },
+};
+
+/** The HSV colours of a rule built around `base`. */
+export function schemeColours(rule, base) {
+  return HARMONY_RULES[rule].colours.map(([hue, saturation, brightness]) => ({
+    h: (base.h + hue + 360) % 360, s: unit(base.s * saturation), v: unit(base.v * brightness),
+  }));
+}
+
+/** The base colour that puts colour number `index` of a rule at hue h and saturation s. */
+export function baseFromPoint(rule, index, h, s, base) {
+  const [hue, saturation] = HARMONY_RULES[rule].colours[index];
+  return { h: (h - hue + 360) % 360, s: unit(s / saturation), v: base.v };
+}
+
+/**
+ * The colour of every block of a gradient.
+ *
+ * stops:   RGB triples, at least two.
+ * lengths: blocks in each segment, one per pair of neighbouring stops. A
+ *          segment starts on its first stop; the last one also ends on its stop.
+ * oklab:   blend in OkLab (perceptually even) rather than in plain sRGB.
+ */
+export function gradientColours(stops, lengths, oklab = true) {
+  const points = oklab ? stops.map(rgbToOklab) : stops;
+  const out = [];
+  lengths.forEach((length, segment) => {
+    const last = segment === lengths.length - 1;
+    for (let i = 0; i < length; i++) {
+      const k = last ? (length > 1 ? i / (length - 1) : 0) : i / length;
+      const mixed = points[segment].map((v, c) => v + (points[segment + 1][c] - v) * k);
+      out.push(oklab ? oklabToRgb(mixed) : mixed.map(Math.round));
+    }
+  });
+  return out;
+}
+
+/** One entry per gradient block; with `unique`, no entry is used twice. */
+export function gradientEntries(entries, stops, lengths, { unique = false, smooth = 0, oklab = true } = {}) {
   const used = new Set();
-  return gradientColours(stops, steps).map((rgb) => {
+  return gradientColours(stops, lengths, oklab).map((rgb) => {
     const ranked = rank(entries, labOf(rgb), smooth);
     const entry = (unique && ranked.find((candidate) => !used.has(candidate))) || ranked[0];
     used.add(entry);

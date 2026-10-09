@@ -189,9 +189,17 @@ game version, including ones imported from a client JAR.
 - **By colour** — pick a colour or type a HEX code and get the closest
   **blocks** and, separately, the closest **decorations** (flowers, saplings,
   leaves, corals, glass). Search by name narrows the list.
-- **Gradient** — two to six colours and a number of steps give a row of blocks
-  running between them. Colours are blended in OkLab so the steps look even;
-  **No repeats** uses every block once.
+- **Harmonies** — a colour wheel with draggable points. Pick a rule (analogous,
+  shades, complementary, split complementary, triadic, square) and the points
+  move together as you drag one; **Custom** frees every point. Each colour of
+  the scheme is a column with its HEX code and the closest blocks under it.
+  The wheel is HSV: hue is the angle, saturation the distance from the centre,
+  and a slider sets the brightness.
+- **Gradient** — a colour bar with a tag under each of its two to eight
+  colours and a length, in blocks, for every part between them. The result is
+  the row of blocks closest to the bar. Colours blend in OkLab (evenly spaced
+  steps) or plain sRGB; **No repeats** uses every block once; rows can be kept
+  below to compare settings. The interface follows HueBlocks.
 - **My Palette** — click blocks to collect them. Save palettes in the browser,
   copy the block names, or copy a link that opens the same palette for anyone.
   A click on a collected block searches for similar ones, and **Use my palette

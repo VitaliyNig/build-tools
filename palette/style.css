@@ -15,7 +15,8 @@ h2 { margin: 0; font-size: 15px; }
 .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .bar .spacer { flex: 1; }
 .bar input[type="search"], .bar input[type="text"] { flex: 1; min-width: 120px; }
-.bar #hex { flex: none; width: 96px; font-family: ui-monospace, Consolas, monospace; }
+.bar input.hex { flex: none; min-width: 0; width: 96px; font-family: ui-monospace, Consolas, monospace; }
+.bar .hint { flex: 1 1 220px; min-width: 0; }
 .check { display: inline-flex; align-items: center; gap: 6px; }
 input[type="color"] { width: 44px; height: 34px; padding: 2px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); cursor: pointer; }
 input[type="text"] { font: inherit; color: inherit; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; }
@@ -57,15 +58,85 @@ input[type="text"] { font: inherit; color: inherit; background: var(--surface-2)
 }
 .tile:hover .remove { display: grid; }
 
-.stops { display: flex; flex-wrap: wrap; gap: 6px; }
-.stop { position: relative; }
-.stop button {
-  position: absolute; top: -7px; right: -7px; width: 18px; height: 18px; padding: 0;
-  border-radius: 50%; font-size: 11px; line-height: 1;
+/* Harmonies: colour wheel with draggable points on the left, the scheme on the right. */
+.harmony { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.wheel-side { display: flex; flex-direction: column; gap: 12px; width: 260px; flex: none; }
+.wheel { position: relative; width: 260px; height: 260px; touch-action: none; cursor: crosshair; }
+.wheel canvas { display: block; border-radius: 50%; }
+.wheel .point {
+  position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%;
+  border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55); cursor: grab;
 }
-.strip { display: flex; height: 18px; border-radius: 6px; overflow: hidden; }
-.strip span { flex: 1; }
-#steps { width: 70px; }
+.wheel .point.selected { width: 30px; height: 30px; margin: -15px 0 0 -15px; border-width: 3px; z-index: 1; }
+.slider { display: flex; align-items: center; gap: 10px; }
+.slider input { flex: 1; }
+.rules { display: flex; flex-wrap: wrap; gap: 6px; }
+.rules button { width: 40px; height: 40px; padding: 4px; }
+.rules button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.rules svg { display: block; width: 100%; height: 100%; }
+
+.scheme-side { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.scheme { display: flex; border-radius: 14px; overflow: hidden; background: var(--surface-2); }
+.scheme .column { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; padding-bottom: 12px; --tile: 56px; }
+.scheme .swatch {
+  width: 100%; height: 96px; padding: 8px; border: none; border-radius: 0;
+  display: flex; align-items: flex-end; justify-content: center;
+  font: 12px ui-monospace, Consolas, monospace; cursor: pointer;
+}
+.scheme .column.selected .swatch { box-shadow: inset 0 -4px var(--text); }
+
+/* Gradient: a colour bar split into segments, with a colour tag under every stop. */
+.gradient-bar { display: flex; align-items: flex-start; gap: 6px; }
+.gradient-bar > button { height: 44px; min-width: 40px; padding: 0 8px; }
+.track { flex: 1; min-width: 0; }
+.segments { display: flex; height: 44px; border-radius: 8px; overflow: hidden; }
+.segment { position: relative; display: grid; place-items: center; min-width: 0; container-type: inline-size; }
+.segment + .segment { box-shadow: inset 1px 0 rgba(255, 255, 255, 0.35); }
+/* Length of a part, in blocks: an obvious control rather than a bare number. */
+.stepper {
+  display: flex; align-items: center; gap: 6px; padding: 4px; border-radius: 9px;
+  background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 13px; line-height: 1; white-space: nowrap;
+}
+.stepper input {
+  box-sizing: border-box; width: 2.8em; height: 24px; margin: 0; padding: 0 2px;
+  border: 1px solid rgba(255, 255, 255, 0.45); border-radius: 6px;
+  background: rgba(255, 255, 255, 0.12); color: inherit; font: inherit; font-weight: 600;
+  text-align: center; appearance: textfield; -moz-appearance: textfield;
+}
+.stepper input::-webkit-inner-spin-button { display: none; }
+.stepper .word { padding-right: 6px; }
+/* In a narrow part only the stepper itself fits. */
+@container (max-width: 110px) { .stepper .word { display: none; } }
+.tags { position: relative; height: 34px; margin-top: 4px; }
+.tag {
+  position: absolute; top: 0; width: 26px; height: 26px; margin-left: -13px; padding: 0;
+  border: 2px solid var(--surface); border-radius: 6px; box-shadow: 0 0 0 1px var(--border); cursor: pointer;
+}
+.tag.selected { box-shadow: 0 0 0 2px var(--text); z-index: 1; }
+.tag input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: none; padding: 0; }
+.tag .remove {
+  position: absolute; top: -9px; right: -9px; width: 16px; height: 16px; display: none; place-items: center;
+  border-radius: 50%; background: var(--danger); color: #fff; font-size: 11px; line-height: 1; z-index: 2;
+}
+.tag:hover .remove { display: grid; }
+
+.rows { display: flex; flex-direction: column; gap: 10px; --tile: 64px; }
+.gradient-row { display: flex; align-items: flex-start; gap: 8px; }
+.gradient-row .body { flex: 1; min-width: 0; padding: 12px; background: var(--surface-2); border-radius: 14px; }
+/* Saved results live in their own block, set apart from the live one and drawn smaller. */
+.history { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; padding-top: 14px; border-top: 1px solid var(--border); }
+.history[hidden] { display: none; }
+.history header { display: flex; align-items: center; gap: 10px; }
+.history header h2 { flex: 1; }
+.history .rows { --tile: 40px; }
+.history .gradient-row .body { background: var(--surface); border: 1px solid var(--border); }
+.gradient-row .strip { display: flex; height: 10px; margin-bottom: 6px; border-radius: 4px; overflow: hidden; }
+.gradient-row .strip span { flex: 1; }
+.gradient-row .blocks { display: flex; flex-wrap: wrap; }
+.rows.one-row .gradient-row .blocks { flex-wrap: nowrap; overflow-x: auto; }
+.rows.one-row .gradient-row .tile { flex: none; }
+.gradient-row .side { display: flex; flex-direction: column; gap: 4px; }
+.gradient-row .side button { width: 30px; height: 30px; padding: 0; }
 
 #mineNames, #savedList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
 #mineNames { max-height: 180px; overflow-y: auto; color: var(--muted); }
