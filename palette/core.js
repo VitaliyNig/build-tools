@@ -1,6 +1,6 @@
 // Colour matching and gradients over a block palette. No DOM access.
 import { rgbToLab } from "../shared/mc/color.js";
-import { TILE_PX } from "../shared/mc/palette.js";
+import { DECO_PX, TILE_PX } from "../shared/mc/palette.js";
 
 // Blocks that fall when unsupported, and blocks that are not ordinary building material.
 const FALLING = /(^|_)(sand|gravel|concrete_powder|anvil)$|^suspicious_|^dragon_egg$/;
@@ -9,10 +9,10 @@ const TECHNICAL = /command_block|structure_block|jigsaw|bedrock|barrier|spawner|
 const PIXELS = TILE_PX * TILE_PX;
 
 /** Standard deviation of a tile's brightness: 0 for a flat colour, ~40+ for busy textures. */
-function noiseOf(tiles, index, channels) {
+function noiseOf(tiles, index, channels, pixels = PIXELS) {
   let sum = 0, squares = 0, count = 0;
-  for (let p = 0; p < PIXELS; p++) {
-    const s = (index * PIXELS + p) * channels;
+  for (let p = 0; p < pixels; p++) {
+    const s = (index * pixels + p) * channels;
     if (channels === 4 && tiles[s + 3] < 128) continue;
     const luma = 0.299 * tiles[s] + 0.587 * tiles[s + 1] + 0.114 * tiles[s + 2];
     sum += luma; squares += luma * luma; count++;
@@ -29,7 +29,11 @@ export function shortId(id) {
 
 /**
  * Flatten a palette into matchable entries:
- * [{kind: "block" | "deco", index, id, name, rgb, lab, noise, falling, technical}].
+ * [{kind: "block" | "face" | "deco", index, id, name, rgb, lab, noise, sides,
+ *   falling, technical, hidden}].
+ * "block" is a full cube seen from its north side; "face" is another side of a
+ * cube that looks different. `sides` is the set of sides ("top", "bottom",
+ * "side") on which the entry's picture is what you see.
  */
 export function listEntries(palette) {
   const make = (kind, source, lab, tiles, channels) => source.map((item, index) => {
@@ -37,14 +41,43 @@ export function listEntries(palette) {
     return {
       kind, index, id: shortId(item.id), name: item.name, rgb: item.rgb,
       lab: [lab[index * 3], lab[index * 3 + 1], lab[index * 3 + 2]],
-      noise: noiseOf(tiles, index, channels),
+      noise: noiseOf(tiles, index, channels, channels === 4 ? DECO_PX * DECO_PX : PIXELS),
       falling: FALLING.test(name), technical: TECHNICAL.test(name),
     };
   });
-  return [
-    ...make("block", palette.blocks, palette.lab, palette.tiles, 3),
-    ...make("deco", palette.decorations, palette.decoLab, palette.decoTiles, 4),
-  ];
+  // A double slab is listed as a block because it fills the whole cube, but it
+  // is drawn exactly like the block it is made from, so it would show up as a
+  // second "Oak Planks" tile labelled "Oak Slab". Keep only the double slabs
+  // that look like nothing else (smooth stone), and say what they are.
+  const texture = (index) => palette.tiles.subarray(index * PIXELS * 3, (index + 1) * PIXELS * 3).join();
+  const isSlab = (entry) => /slab/.test(entry.id);
+  const blocks = make("block", palette.blocks, palette.lab, palette.tiles, 3);
+  const fullBlocks = new Set(blocks.filter((entry) => !isSlab(entry)).map((entry) => texture(entry.index)));
+  for (const entry of blocks) {
+    if (!isSlab(entry)) continue;
+    // Hidden entries stay known, so palettes saved earlier still resolve them.
+    entry.hidden = fullBlocks.has(texture(entry.index));
+    if (!/double/i.test(entry.name)) entry.name = `${entry.name} (double)`;
+  }
+  // A block's own picture is its side. It is also its top or bottom unless that
+  // side has a picture of its own: stone looks the same from above, a log does not.
+  for (const entry of blocks) entry.sides = new Set(palette.blocks[entry.index].sides || ["side", "top", "bottom"]);
+
+  // Other sides are entries of their own, named after their block: "Oak Log Top".
+  const numbering = new Map();
+  const faces = palette.faces.map((face, index) => {
+    const block = blocks[face.block], key = `${block.id}#${face.face}`;
+    const count = (numbering.get(key) || 0) + 1;
+    numbering.set(key, count);
+    return {
+      kind: "face", index, id: count > 1 ? `${key}${count}` : key,
+      name: `${block.name} ${face.face[0].toUpperCase()}${face.face.slice(1)}`,
+      rgb: face.rgb, lab: [palette.faceLab[index * 3], palette.faceLab[index * 3 + 1], palette.faceLab[index * 3 + 2]],
+      noise: noiseOf(palette.faceTiles, index, 3), sides: new Set(face.sides || [face.face]),
+      falling: block.falling, technical: block.technical, hidden: block.hidden,
+    };
+  });
+  return [...blocks, ...faces, ...make("deco", palette.decorations, palette.decoLab, palette.decoTiles, 4)];
 }
 
 export function labOf(rgb) {
@@ -121,11 +154,16 @@ const unit = (x) => Math.min(1, Math.max(0, x));
 // factor] relative to the base colour; `base` is the index of the base itself.
 export const HARMONY_RULES = {
   analogous: { base: 2, colours: [[-30, 1, 1], [-15, 1, 1], [0, 1, 1], [15, 1, 1], [30, 1, 1]] },
-  shades: { base: 2, colours: [[0, 1, 0.5], [0, 1, 0.75], [0, 1, 1], [0, 0.6, 1], [0, 0.3, 1]] },
-  complementary: { base: 1, colours: [[0, 1, 0.65], [0, 1, 1], [180, 1, 1], [180, 1, 0.65]] },
-  split: { base: 0, colours: [[0, 1, 1], [150, 1, 1], [210, 1, 1]] },
-  triadic: { base: 0, colours: [[0, 1, 1], [120, 1, 1], [240, 1, 1]] },
+  complementary: { base: 2, colours: [[0, 1, 0.7], [0, 0.6, 1], [0, 1, 1], [180, 1, 1], [180, 1, 0.7]] },
+  split: { base: 2, colours: [[150, 1, 1], [150, 1, 0.7], [0, 1, 1], [210, 1, 0.7], [210, 1, 1]] },
+  triadic: { base: 2, colours: [[120, 1, 1], [120, 1, 0.7], [0, 1, 1], [240, 1, 0.7], [240, 1, 1]] },
   square: { base: 0, colours: [[0, 1, 1], [90, 1, 1], [180, 1, 1], [270, 1, 1]] },
+  // A warm-and-cool mix: the base, a neighbour, and two colours near its opposite.
+  compound: { base: 2, colours: [[30, 1, 1], [30, 0.6, 0.8], [0, 1, 1], [150, 0.6, 0.8], [165, 1, 1]] },
+  // One hue and saturation, from dark to the base brightness.
+  shades: { base: 4, colours: [[0, 1, 0.35], [0, 1, 0.55], [0, 1, 0.75], [0, 1, 0.9], [0, 1, 1]] },
+  // One hue with both saturation and brightness varied.
+  monochromatic: { base: 2, colours: [[0, 1, 0.55], [0, 0.55, 1], [0, 1, 1], [0, 0.55, 0.75], [0, 0.3, 1]] },
 };
 
 /** The HSV colours of a rule built around `base`. */

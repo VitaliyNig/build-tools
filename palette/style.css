@@ -26,9 +26,35 @@ input[type="text"] { font: inherit; color: inherit; background: var(--surface-2)
 .tabs button { border-radius: 6px 6px 0 0; border-bottom: none; background: transparent; }
 .tabs button[aria-selected="true"] { background: var(--surface); font-weight: 600; box-shadow: inset 0 -2px var(--accent); }
 
-.results { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+/* By colour: an inline colour picker, then the matching blocks and decorations. */
+.match { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.picker { display: flex; flex-direction: column; gap: 10px; width: 300px; flex: none; padding-top: 28px; }
+.picker-area { display: flex; gap: 12px; height: 260px; }
+.shade, .hue { position: relative; touch-action: none; cursor: crosshair; border-radius: 4px; }
+/* Saturation runs left to right, brightness bottom to top, over the current hue. */
+.shade { flex: 1; background: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, var(--hue, #f00)); }
+.hue { width: 28px; background: linear-gradient(to bottom, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); }
+.shade .knob {
+  position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%;
+  border: 2px solid #fff; box-shadow: 0 0 0 1px #000; pointer-events: none;
+}
+.hue .knob {
+  position: absolute; left: -4px; right: -4px; height: 10px; margin-top: -5px; border-radius: 4px;
+  border: 2px solid #fff; box-shadow: 0 0 0 1px #000; pointer-events: none;
+}
+.picker-row { display: flex; gap: 6px; }
+.picker-row .hex { flex: 1; min-width: 0; font-family: ui-monospace, Consolas, monospace; }
+.picker-row button { width: 36px; padding: 0; display: grid; place-items: center; }
+.picker-row button[hidden] { display: none; }
+#search { width: 100%; }
+.picker .slider input[type="number"] { flex: none; width: 58px; padding: 4px 6px; text-align: right; font-variant-numeric: tabular-nums; }
 .group { display: flex; flex-direction: column; gap: 10px; }
-.group.wide { flex: 1 1 420px; min-width: 0; }
+/* The two panels share the remaining width equally, show four rows and scroll. */
+.match .group { flex: 1 1 0; min-width: 220px; }
+.match .tiles {
+  --tile: 72px; height: 350px; overflow-y: auto; align-content: start;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
 
 /* Block and decoration tiles. */
 .tiles {
@@ -36,7 +62,7 @@ input[type="text"] { font: inherit; color: inherit; background: var(--surface-2)
   display: grid; grid-template-columns: repeat(auto-fill, var(--tile)); gap: 10px;
   padding: 16px; background: var(--surface-2); border-radius: 14px; min-height: 96px;
 }
-#decoResults { grid-template-columns: repeat(2, var(--tile)); }
+
 .tiles.row { display: flex; flex-wrap: wrap; gap: 0; --tile: 48px; padding: 12px; }
 .tiles.mine { --tile: 48px; padding: 10px; gap: 6px; min-height: 68px; }
 .tiles:empty::after { content: attr(data-empty); color: var(--muted); font-size: 12px; grid-column: 1 / -1; align-self: center; }

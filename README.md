@@ -133,10 +133,11 @@ To bundle a version with the site instead, run the builder on its client JAR
 node tools/build-palettes.mjs path/to/1.21.4.jar
 ```
 
-It writes `<version>.json` (blocks and decorations with their average colours),
-`<version>.png` (block tiles) and `<version>.deco.png` (decoration tiles, with
-transparency) into `shared/mc/palettes/` and adds the version to `index.json`.
-Atlases hold 16×16 tiles, 32 per row, in list order.
+It writes `<version>.json` (blocks, their other sides and decorations, with
+average colours), `<version>.png` (block tiles, north side),
+`<version>.faces.png` (the other sides that look different) and
+`<version>.deco.png` (decoration tiles, 32×32, with transparency) into `shared/mc/palettes/` and adds the version to `index.json`.
+Atlases hold 32 tiles per row, in list order; block tiles are 16×16.
 
 ### Browser support
 Needs a current browser: module workers, `DecompressionStream`/`CompressionStream`
@@ -165,6 +166,7 @@ shared/mc/                shared with Palette
   palette.js              palette arrays, subsets, atlas cutting
   color.js                sRGB -> CIE-Lab
   zip.js, jar.js          client JAR reader and palette importer
+  render.js               isometric picture of a block model, for decorations
   legacy.js               pre-1.13 numeric block ids
 ```
 
@@ -187,11 +189,13 @@ implementation on top of the palettes Pixel already uses, so it works with any
 game version, including ones imported from a client JAR.
 
 - **By colour** — pick a colour or type a HEX code and get the closest
-  **blocks** and, separately, the closest **decorations** (flowers, saplings,
-  leaves, corals, glass). Search by name narrows the list.
+  **blocks** and, separately, the closest **decorations**: plants, leaves and
+  glass, and blocks with a shape of their own (anvils, hoppers, cauldrons,
+  stairs, slabs, trapdoors), drawn as small 3D pictures. Search by name narrows the list.
 - **Harmonies** — a colour wheel with draggable points. Pick a rule (analogous,
-  shades, complementary, split complementary, triadic, square) and the points
-  move together as you drag one; **Custom** frees every point. Each colour of
+  complementary, split complementary, triad, square, compound, shades,
+  monochromatic) and the points move together as you drag one; **Custom**
+  frees every point. Each colour of
   the scheme is a column with its HEX code and the closest blocks under it.
   The wheel is HSV: hue is the angle, saturation the distance from the centre,
   and a slider sets the brightness.
@@ -204,14 +208,23 @@ game version, including ones imported from a client JAR.
   copy the block names, or copy a link that opens the same palette for anyone.
   A click on a collected block searches for similar ones, and **Use my palette
   as colours** turns the collection into gradient stops.
+- **Block sides** — many blocks look different from the top, the side and the
+  bottom. Those other sides are listed as tiles of their own ("Oak Log Top",
+  "Crafting Table Bottom"), and the **Side** filter narrows everything to the
+  side you will see: sides for a wall, top for a floor. Blocks that look the
+  same all round stay in every setting.
 - **Filters** — hide falling blocks (sand, gravel, concrete powder), hide
   technical blocks (command blocks, bedrock, spawners), and prefer plain
   textures over busy ones of the same average colour.
 
-Blocks are full opaque cubes. Decorations are sprite-shaped plants and
-see-through or biome-tinted cubes; biome tints use the plains colours. Stairs,
-slabs, fences and other partial shapes are not listed. There is no shared
-gallery: that needs a server, and this site has none.
+Blocks are full opaque cubes; double slabs that look exactly like the block
+they are made from are not listed twice. Decorations are everything else that
+has a model: plants and see-through or biome-tinted cubes are drawn flat (biome
+tints use the plains colours), other shapes are rendered from their model the
+way the inventory shows them. Not listed: blocks the game assembles from parts
+depending on their neighbours (fences, walls, glass panes), blocks drawn by code
+rather than a model (chests, beds, signs, banners), doors, buttons and levers.
+There is no shared gallery: that needs a server, and this site has none.
 
 ```
 palette/

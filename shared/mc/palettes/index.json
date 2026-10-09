@@ -5,19 +5,22 @@
       "version": "26.3",
       "data_version": 5023,
       "blocks": 484,
-      "decorations": 134
+      "faces": 139,
+      "decorations": 520
     },
     {
       "version": "1.21.4",
       "data_version": 4189,
       "blocks": 429,
-      "decorations": 124
+      "faces": 137,
+      "decorations": 401
     },
     {
       "version": "1.12.2",
       "data_version": 1343,
       "blocks": 208,
-      "decorations": 60
+      "faces": 49,
+      "decorations": 155
     }
   ]
 }

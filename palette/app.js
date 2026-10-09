@@ -7,7 +7,7 @@ import {
 } from "./core.js";
 import { STRINGS } from "./strings.js";
 
-const BLOCK_RESULTS = 24, DECO_RESULTS = 12, SEARCH_RESULTS = 60;
+const MIN_BLOCK_RESULTS = 12, MIN_DECO_RESULTS = 6;  // shown even when nothing is close in colour
 const HARMONY_RESULTS = 4;  // blocks offered for each colour of a scheme
 const WHEEL = 260;          // colour wheel diameter in CSS pixels
 const CUSTOM = "custom";    // the rule in which every point moves on its own
@@ -23,6 +23,8 @@ const state = {
   entries: [],            // every block and decoration of the palette
   byId: new Map(),
   colour: [127, 178, 56],
+  // The By colour picker. It keeps its own hue, which a grey or black cannot carry.
+  picker: { h: 85, s: 0.69, v: 0.7 },
   // Colour wheel: `base` drives a rule; in the custom rule `custom` holds the points.
   harmony: { rule: "analogous", base: { h: 85, s: 0.69, v: 0.7 }, custom: [], selected: 2 },
   // Gradient: colours, the number of blocks between each pair, and the tag being edited.
@@ -91,7 +93,11 @@ function tile(entry, onClick) {
 
 function pool() {
   const noFalling = $("noFalling").checked, noTechnical = $("noTechnical").checked;
-  return state.entries.filter((entry) => !(noFalling && entry.falling) && !(noTechnical && entry.technical));
+  // Decorations have no sides, so the side filter leaves them alone.
+  const side = $("side").value;
+  return state.entries.filter((entry) => !entry.hidden
+    && !(noFalling && entry.falling) && !(noTechnical && entry.technical)
+    && (side === "all" || entry.kind === "deco" || entry.sides.has(side)));
 }
 
 const smooth = () => ($("smooth").checked ? 1 : 0);
@@ -109,19 +115,93 @@ function setColour(rgb) {
 /** The base colour changed: update the inputs and everything derived from it. */
 function colourChanged() {
   state.colour = hsvToRgb(harmonyPoints()[state.harmony.selected]);
-  for (const id of ["colour", "hex", "harmonyColour", "harmonyHex"]) $(id).value = toHex(state.colour);
+  for (const id of ["hex", "harmonyColour", "harmonyHex"]) $(id).value = toHex(state.colour);
+  renderPicker();
   renderMatch();
   renderHarmonies();
 }
+
+/** Show state.colour in the picker, moving its knobs only if the colour came from elsewhere. */
+function renderPicker() {
+  const picker = state.picker;
+  // A difference of one step is only rounding from the picker's own colour.
+  if (hsvToRgb(picker).some((v, c) => Math.abs(v - state.colour[c]) > 1)) {
+    const hsv = rgbToHsv(state.colour);
+    if (!hsv.s || !hsv.v) hsv.h = picker.h;
+    Object.assign(picker, hsv);
+  }
+  $("shade").style.setProperty("--hue", toHex(hsvToRgb({ h: picker.h, s: 1, v: 1 })));
+  $("shadeKnob").style.left = `${picker.s * 100}%`;
+  $("shadeKnob").style.top = `${(1 - picker.v) * 100}%`;
+  $("shadeKnob").style.background = toHex(state.colour);
+  $("hueKnob").style.top = `${picker.h / 360 * 100}%`;
+}
+
+/** Drag inside an element: calls move(x, y) with the pointer position as 0..1 fractions. */
+function dragArea(element, move) {
+  const report = (e) => {
+    const box = element.getBoundingClientRect();
+    move(Math.min(1, Math.max(0, (e.clientX - box.left) / box.width)),
+      Math.min(1, Math.max(0, (e.clientY - box.top) / box.height)));
+  };
+  let active = false;
+  element.addEventListener("pointerdown", (e) => { active = true; element.setPointerCapture(e.pointerId); report(e); });
+  element.addEventListener("pointermove", (e) => { if (active) report(e); });
+  const release = () => { active = false; };
+  element.addEventListener("pointerup", release);
+  element.addEventListener("pointercancel", release);
+}
+
+function wirePicker() {
+  const apply = (change) => {
+    Object.assign(state.picker, change);
+    setColour(hsvToRgb(state.picker));
+  };
+  dragArea($("shade"), (x, y) => apply({ s: x, v: 1 - y }));
+  // The bottom of the hue bar is red again; stop just short so the knob stays there.
+  dragArea($("hue"), (x, y) => apply({ h: Math.min(359.9, y * 360) }));
+  $("randomColour").addEventListener("click", () => setColour([0, 0, 0].map(() => Math.floor(Math.random() * 256))));
+  if ("EyeDropper" in window) {
+    $("eyedropper").hidden = false;
+    $("eyedropper").addEventListener("click", async () => {
+      try {
+        setColour(fromHex((await new window.EyeDropper().open()).sRGBHex) || state.colour);
+      } catch { /* cancelled */ }
+    });
+  }
+}
+
+// The two panels list everything, closest first, and scroll. Their tiles are
+// made once per palette and only reordered, so dragging in the picker stays fast.
+const matchTiles = new Map();
+let matchOrder = "";
 
 function renderMatch() {
   if (!state.palette) return;
   const query = $("search").value.trim().toLowerCase(), lab = labOf(state.colour);
   const found = pool().filter((entry) => !query || `${entry.name} ${entry.id}`.toLowerCase().includes(query));
-  const list = (kind, limit) => rank(found.filter((entry) => entry.kind === kind), lab, smooth())
-    .slice(0, query ? SEARCH_RESULTS : limit).map((entry) => tile(entry, toggleMine));
-  $("blockResults").replaceChildren(...list("block", BLOCK_RESULTS));
-  $("decoResults").replaceChildren(...list("deco", DECO_RESULTS));
+  // Without a search only colours close enough to the chosen one are listed,
+  // but never fewer than a couple of rows, so a rare colour still gets answers.
+  const spread = $("spread").valueAsNumber;
+  // Leave the number alone while it is being typed.
+  if (document.activeElement !== $("spreadValue")) $("spreadValue").value = spread;
+  const near = (entry) => Math.hypot(entry.lab[0] - lab[0], entry.lab[1] - lab[1], entry.lab[2] - lab[2]) <= spread;
+  const closest = (ranked, least) => (query ? ranked : ranked.slice(0, Math.max(least, ranked.filter(near).length)));
+  const list = (deco) => closest(rank(found.filter((entry) => (entry.kind === "deco") === deco), lab, smooth()), deco ? MIN_DECO_RESULTS : MIN_BLOCK_RESULTS).map((entry) => {
+    if (!matchTiles.has(entry.id)) matchTiles.set(entry.id, tile(entry, toggleMine));
+    const node = matchTiles.get(entry.id);
+    node.classList.toggle("chosen", state.mine.includes(entry.id));
+    return node;
+  });
+  const blocks = list(false), decorations = list(true);
+  $("blockResults").replaceChildren(...blocks);
+  $("decoResults").replaceChildren(...decorations);
+  // A new colour or search starts from the best matches again.
+  const order = `${toHex(state.colour)}|${query}|${spread}`;
+  if (order !== matchOrder) {
+    matchOrder = order;
+    $("blockResults").scrollTop = $("decoResults").scrollTop = 0;
+  }
 }
 
 // ---------- harmonies ----------
@@ -186,7 +266,7 @@ function ruleIcon(rule) {
 }
 
 function renderRules() {
-  $("rules").replaceChildren(...[...Object.keys(HARMONY_RULES), CUSTOM].map((rule) => {
+  $("rules").replaceChildren(...[CUSTOM, ...Object.keys(HARMONY_RULES)].map((rule) => {
     const button = Object.assign(document.createElement("button"), { type: "button", title: t(`harmony_${rule}`) });
     button.innerHTML = ruleIcon(rule);
     button.setAttribute("aria-pressed", rule === state.harmony.rule);
@@ -215,7 +295,7 @@ function renderHarmonies() {
     wheel.append(dot);
   });
 
-  const blocks = pool().filter((entry) => entry.kind === "block");
+  const blocks = pool().filter((entry) => entry.kind !== "deco");
   $("scheme").replaceChildren(...points.map((point, i) => {
     const rgb = hsvToRgb(point), hex = toHex(rgb);
     const column = Object.assign(document.createElement("div"), { className: "column" });
@@ -266,7 +346,7 @@ function wireWheel() {
     colourChanged();
   });
   $("harmonyAdd").addEventListener("click", () => {
-    const blocks = pool().filter((entry) => entry.kind === "block");
+    const blocks = pool().filter((entry) => entry.kind !== "deco");
     for (const point of harmonyPoints()) {
       const [best] = rank(blocks, labOf(hsvToRgb(point)), smooth());
       if (best && !state.mine.includes(best.id)) state.mine.push(best.id);
@@ -277,7 +357,7 @@ function wireWheel() {
 
 // ---------- gradient ----------
 function gradient() {
-  const usable = pool().filter((entry) => $("withDeco").checked || entry.kind === "block");
+  const usable = pool().filter((entry) => $("withDeco").checked || entry.kind !== "deco");
   return gradientEntries(usable, state.stops, state.lengths,
     { unique: $("unique").checked, smooth: smooth(), oklab: $("oklab").checked });
 }
@@ -532,6 +612,7 @@ async function selectPalette(key) {
     return false;
   }
   state.entries = listEntries(state.palette);
+  matchTiles.clear();
   state.byId = new Map(state.entries.map((entry) => [entry.id, entry]));
   $("paletteVersion").value = key;
   setStatus("statusReady", state.palette.version, state.palette.blocks.length, state.palette.decorations.length);
@@ -564,6 +645,7 @@ function showTab(name) {
 }
 
 function renderAll() {
+  renderPicker();
   renderMatch();
   renderHarmonies();
   renderGradient();
@@ -579,12 +661,26 @@ function wire() {
   wireWheel();
   $("tabGradient").addEventListener("click", () => showTab("gradient"));
 
-  $("colour").addEventListener("input", () => setColour(fromHex($("colour").value)));
+  wirePicker();
   $("hex").addEventListener("change", () => setColour(fromHex($("hex").value) || state.colour));
   $("harmonyColour").addEventListener("input", () => setColour(fromHex($("harmonyColour").value)));
   $("harmonyHex").addEventListener("change", () => setColour(fromHex($("harmonyHex").value) || state.colour));
   $("search").addEventListener("input", renderMatch);
-  for (const id of ["noFalling", "noTechnical", "smooth"]) {
+  $("spread").addEventListener("input", renderMatch);
+  // The number next to the slider can be typed; out-of-range values are pulled back in.
+  const typed = $("spreadValue");
+  const applyTyped = (final) => {
+    const value = Math.round(typed.valueAsNumber);
+    if (Number.isNaN(value)) { if (final) typed.value = $("spread").value; return; }
+    const clamped = Math.min(Number($("spread").max), Math.max(Number($("spread").min), value));
+    if (final) typed.value = clamped;
+    if (!final && clamped !== value) return;
+    $("spread").value = clamped;
+    renderMatch();
+  };
+  typed.addEventListener("input", () => applyTyped(false));
+  typed.addEventListener("change", () => applyTyped(true));
+  for (const id of ["noFalling", "noTechnical", "smooth", "side"]) {
     $(id).addEventListener("change", () => { renderMatch(); renderHarmonies(); renderGradient(); });
   }
 

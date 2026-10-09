@@ -5,13 +5,15 @@
 // For each JAR this writes, into shared/mc/palettes/:
 //   <version>.json      block and decoration lists (id, name, category, average rgb)
 //   <version>.png       atlas of block tiles, 16x16, 32 per row, in list order
-//   <version>.deco.png  atlas of decoration tiles (with transparency), same layout
+//   <version>.faces.png atlas of the other sides of blocks, same layout
+//   <version>.deco.png  atlas of decoration tiles (32x32, with transparency), 32 per row
 // and adds the version to index.json. It uses the same importer as the site.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import zlib from "node:zlib";
 import { importJar } from "../shared/mc/jar.js";
+import { DECO_PX } from "../shared/mc/palette.js";
 
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "shared", "mc", "palettes");
 const COLS = 32, TILE = 16;
@@ -93,16 +95,16 @@ function encodePng(pixels, w, h, channels) {
     chunk("IDAT", zlib.deflateSync(raw, { level: 9 })), chunk("IEND", Buffer.alloc(0))]);
 }
 
-function atlas(tiles, count, channels) {
-  const rows = Math.max(1, Math.ceil(count / COLS)), w = COLS * TILE, out = new Uint8Array(w * rows * TILE * channels);
+function atlas(tiles, count, channels, px = TILE) {
+  const rows = Math.max(1, Math.ceil(count / COLS)), w = COLS * px, out = new Uint8Array(w * rows * px * channels);
   for (let i = 0; i < count; i++) {
-    const ox = (i % COLS) * TILE, oy = Math.floor(i / COLS) * TILE;
-    for (let y = 0; y < TILE; y++) {
-      const from = (i * TILE + y) * TILE * channels;
-      out.set(tiles.subarray(from, from + TILE * channels), ((oy + y) * w + ox) * channels);
+    const ox = (i % COLS) * px, oy = Math.floor(i / COLS) * px;
+    for (let y = 0; y < px; y++) {
+      const from = (i * px + y) * px * channels;
+      out.set(tiles.subarray(from, from + px * channels), ((oy + y) * w + ox) * channels);
     }
   }
-  return encodePng(out, w, rows * TILE, channels);
+  return encodePng(out, w, rows * px, channels);
 }
 
 const versionKey = (name) => name.split(".").map((part) => (/^\d+$/.test(part) ? Number(part) : -1));
@@ -128,15 +130,18 @@ for (const jar of jars) {
   const result = await importJar(buffer, path.basename(jar), async (bytes) => decodePng(bytes));
   const { version } = result;
   fs.writeFileSync(path.join(OUT, `${version}.json`), JSON.stringify({
-    version, data_version: result.dataVersion, cols: COLS, blocks: result.blocks, decorations: result.decorations,
+    version, data_version: result.dataVersion, cols: COLS, blocks: result.blocks, faces: result.faces,
+    decorations: result.decorations,
   }));
   fs.writeFileSync(path.join(OUT, `${version}.png`), atlas(result.tiles, result.blocks.length, 3));
-  fs.writeFileSync(path.join(OUT, `${version}.deco.png`), atlas(result.decoTiles, result.decorations.length, 4));
+  fs.writeFileSync(path.join(OUT, `${version}.faces.png`), atlas(result.faceTiles, result.faces.length, 3));
+  fs.writeFileSync(path.join(OUT, `${version}.deco.png`), atlas(result.decoTiles, result.decorations.length, 4, DECO_PX));
   index.palettes = index.palettes.filter((entry) => entry.version !== version);
   index.palettes.push({
-    version, data_version: result.dataVersion, blocks: result.blocks.length, decorations: result.decorations.length,
+    version, data_version: result.dataVersion, blocks: result.blocks.length, faces: result.faces.length,
+    decorations: result.decorations.length,
   });
-  console.log(`${version}: ${result.blocks.length} blocks, ${result.decorations.length} decorations, ${result.skipped.length} skipped`);
+  console.log(`${version}: ${result.blocks.length} blocks, ${result.faces.length} other faces, ${result.decorations.length} decorations, ${result.skipped.length} skipped`);
 }
 index.palettes.sort(newerFirst);
 index.default ||= index.palettes[0].version;

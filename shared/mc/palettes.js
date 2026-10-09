@@ -1,11 +1,11 @@
 // Palette storage: versions bundled with the site plus JARs imported in this browser.
 import { importJar } from "./jar.js";
-import { makePalette, TILE_BYTES, TILE_PX, tilesFromAtlas } from "./palette.js";
+import { DECO_PX, makePalette, TILE_BYTES, TILE_PX, tilesFromAtlas } from "./palette.js";
 
 const BUNDLED = new URL("./palettes/", import.meta.url);
 const ATLAS_COLS = 32;
 const DB_NAME = "tools.pixel", STORE = "palettes";
-const RECORD_FORMAT = 2;      // 2: imported palettes also carry decorations
+const RECORD_FORMAT = 4;      // 2: + decorations, 3: + other sides of blocks, 4: 32 px decorations with 3D models
 
 const loaded = new Map();     // key -> palette
 const session = new Map();    // imported records, also the fallback when IndexedDB is unavailable
@@ -69,13 +69,16 @@ export async function loadPalette(key) {
       const data = await response.json();
       const image = async (suffix) => decodeImage(
         await (await fetch(new URL(`${encodeURIComponent(name)}${suffix}.png`, BUNDLED))).blob());
-      const atlas = await image(""), decorations = data.decorations || [];
+      const atlas = await image(""), decorations = data.decorations || [], faces = data.faces || [];
       const decoAtlas = decorations.length ? await image(".deco") : null;
+      const faceAtlas = faces.length ? await image(".faces") : null;
       palette = makePalette({
         key, version: data.version, dataVersion: data.data_version, blocks: data.blocks,
         tiles: tilesFromAtlas(atlas.data, atlas.w, data.blocks.length, data.cols),
+        faces,
+        faceTiles: faceAtlas ? tilesFromAtlas(faceAtlas.data, faceAtlas.w, faces.length, data.cols) : undefined,
         decorations,
-        decoTiles: decoAtlas ? tilesFromAtlas(decoAtlas.data, decoAtlas.w, decorations.length, data.cols, 4) : undefined,
+        decoTiles: decoAtlas ? tilesFromAtlas(decoAtlas.data, decoAtlas.w, decorations.length, data.cols, 4, DECO_PX) : undefined,
       });
     } else {
       const record = session.get(name);
@@ -146,16 +149,18 @@ export function tileIcon(index) {
 }
 
 /**
- * A 16x16 canvas showing one block (kind "block") or decoration (kind "deco").
+ * A small canvas showing one block (kind "block"), one of the other sides of a
+ * block (kind "face") or a decoration (kind "deco").
  * Scale it with CSS and `image-rendering: pixelated`.
  */
 export function tileCanvas(palette, kind, index) {
+  const deco = kind === "deco", px = deco ? DECO_PX : TILE_PX, step = deco ? 4 : 3;
   const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = TILE_PX;
-  const image = new ImageData(TILE_PX, TILE_PX), deco = kind === "deco";
-  const source = deco ? palette.decoTiles : palette.tiles, step = deco ? 4 : 3;
-  for (let p = 0; p < TILE_PX * TILE_PX; p++) {
-    const s = index * TILE_PX * TILE_PX * step + p * step;
+  canvas.width = canvas.height = px;
+  const image = new ImageData(px, px);
+  const source = deco ? palette.decoTiles : kind === "face" ? palette.faceTiles : palette.tiles;
+  for (let p = 0; p < px * px; p++) {
+    const s = (index * px * px + p) * step;
     image.data[p * 4] = source[s]; image.data[p * 4 + 1] = source[s + 1];
     image.data[p * 4 + 2] = source[s + 2]; image.data[p * 4 + 3] = deco ? source[s + 3] : 255;
   }

@@ -23,6 +23,13 @@
         <button id="addJar" data-i18n="addJar"></button>
         <input type="file" id="jarFile" accept=".jar" hidden>
         <span class="spacer"></span>
+        <label data-i18n-title="sideTip"><span data-i18n="side"></span>
+          <select id="side">
+            <option value="all" data-i18n="sideAll"></option>
+            <option value="side" data-i18n="sideSide"></option>
+            <option value="top" data-i18n="sideTop"></option>
+            <option value="bottom" data-i18n="sideBottom"></option>
+          </select></label>
         <label class="check" data-i18n-title="noFallingTip"><input type="checkbox" id="noFalling"><span data-i18n="noFalling"></span></label>
         <label class="check" data-i18n-title="noTechnicalTip"><input type="checkbox" id="noTechnical" checked><span data-i18n="noTechnical"></span></label>
         <label class="check" data-i18n-title="smoothTip"><input type="checkbox" id="smooth"><span data-i18n="smooth"></span></label>
@@ -35,12 +42,23 @@
       </div>
 
       <section id="matchPane">
-        <div class="bar">
-          <input type="color" id="colour" value="#7fb238" aria-label="Colour">
-          <input type="text" id="hex" class="hex" value="#7fb238" size="8" spellcheck="false" aria-label="HEX">
-          <input type="search" id="search">
-        </div>
-        <div class="results">
+        <div class="match">
+          <div class="picker">
+            <div class="picker-area">
+              <div class="shade" id="shade"><span class="knob" id="shadeKnob"></span></div>
+              <div class="hue" id="hue"><span class="knob" id="hueKnob"></span></div>
+            </div>
+            <div class="picker-row">
+              <input type="text" id="hex" class="hex" value="#7fb238" spellcheck="false" aria-label="HEX">
+              <button id="randomColour" data-i18n-title="randomColourTip">🎲</button>
+              <button id="eyedropper" data-i18n-title="eyedropperTip" hidden>
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M20.7 5.6l-2.3-2.3a1 1 0 0 0-1.4 0l-3.1 3.1-1.9-1.9-1.4 1.4 1.4 1.4L3 16.3V21h4.7l9-9 1.4 1.4 1.4-1.4-1.9-1.9 3.1-3.1a1 1 0 0 0 0-1.4zM6.9 19H5v-1.9l8.4-8.4 1.9 1.9L6.9 19z"/></svg>
+              </button>
+            </div>
+            <label class="slider" data-i18n-title="spreadTip"><span data-i18n="spread"></span>
+              <input type="range" id="spread" min="5" max="80" value="22">
+              <input type="number" id="spreadValue" min="5" max="80" value="22" aria-label="Colour range"></label>
+          </div>
           <div class="group wide">
             <h2 data-i18n="matchingBlocks"></h2>
             <div class="tiles" id="blockResults"></div>
@@ -50,6 +68,7 @@
             <div class="tiles" id="decoResults"></div>
           </div>
         </div>
+        <input type="search" id="search">
         <p class="hint" data-i18n="matchHint"></p>
       </section>
 
