@@ -1,0 +1,74 @@
+/* Theme and controls shared by the hub and every tool. */
+:root {
+  color-scheme: light dark;
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-2: #eceef2;
+  --border: #d5d9e0;
+  --text: #1b1f27;
+  --muted: #667085;
+  --accent: #3f8f3a;
+  --accent-text: #ffffff;
+  --danger: #c0392b;
+  --canvas: #6b7078;
+  --radius: 8px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161a;
+    --surface: #1d2026;
+    --surface-2: #272b33;
+    --border: #353a44;
+    --text: #e6e8ec;
+    --muted: #98a1b0;
+    --accent: #5aa953;
+    --accent-text: #0d1a0c;
+    --danger: #e5695b;
+    --canvas: #2b2e34;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 var(--font);
+}
+a { color: inherit; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.topbar h1 { margin: 0; font-size: 16px; font-weight: 600; }
+.topbar .spacer { flex: 1; }
+.topbar .back { color: var(--muted); text-decoration: none; }
+.topbar .back:hover { color: var(--text); }
+
+button, select, input[type="number"], input[type="search"] {
+  font: inherit;
+  color: inherit;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+button { cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--muted); }
+button:disabled { opacity: 0.5; cursor: default; }
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+input[type="range"] { accent-color: var(--accent); }
+input[type="checkbox"] { accent-color: var(--accent); }

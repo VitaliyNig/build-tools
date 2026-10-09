@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Build Tools</title>
+  <link rel="stylesheet" href="shared/base.css">
+  <style>
+    main { max-width: 960px; margin: 0 auto; padding: 32px 16px 48px; }
+    .tagline { margin: 0 0 24px; color: var(--muted); font-size: 15px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .card {
+      display: flex; flex-direction: column; gap: 10px;
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      text-decoration: none;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .card header { display: flex; align-items: center; gap: 12px; }
+    .card h2 { margin: 0; font-size: 17px; }
+    .card p { margin: 0; color: var(--muted); }
+    .icon { display: grid; grid-template-columns: repeat(4, 9px); border-radius: 4px; overflow: hidden; }
+    .icon i { width: 9px; height: 9px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+    .tags span { padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1 id="title"></h1>
+    <span class="spacer"></span>
+    <select id="lang" aria-label="Language / Язык"></select>
+  </div>
+  <main>
+    <p class="tagline" id="tagline"></p>
+    <div class="grid" id="grid"></div>
+  </main>
+  <script type="module">
+    import { bindLanguageSelect, getLang } from "./shared/i18n.js";
+    import { SITE, TOOLS } from "./shared/tools.js";
+
+    function render(lang) {
+      document.title = SITE.title[lang];
+      document.getElementById("title").textContent = SITE.title[lang];
+      document.getElementById("tagline").textContent = SITE.tagline[lang];
+      const grid = document.getElementById("grid");
+      grid.replaceChildren(...TOOLS.map((tool) => {
+        const card = document.createElement("a");
+        card.className = "card";
+        card.href = tool.href;
+        if (tool.external) { card.target = "_blank"; card.rel = "noopener"; }
+        const header = document.createElement("header");
+        const icon = document.createElement("span");
+        icon.className = "icon";
+        for (const colour of tool.icon) icon.appendChild(document.createElement("i")).style.background = colour;
+        const title = document.createElement("h2");
+        title.textContent = tool.title[lang] + (tool.external ? " ↗" : "");
+        header.append(icon, title);
+        const text = document.createElement("p");
+        text.textContent = tool.description[lang];
+        const tags = document.createElement("div");
+        tags.className = "tags";
+        for (const tag of tool.tags) tags.appendChild(document.createElement("span")).textContent = tag;
+        card.append(header, text, tags);
+        return card;
+      }));
+    }
+
+    bindLanguageSelect(document.getElementById("lang"), render);
+    render(getLang());
+  </script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+# Minecraft client JARs are large and not redistributable.
+*.jar
+# Local editor/agent settings.
+.claude/

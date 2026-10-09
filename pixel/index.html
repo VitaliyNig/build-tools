@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pixel</title>
+  <link rel="stylesheet" href="../shared/base.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="../" data-i18n="back"></a>
+    <h1>Pixel</h1>
+    <span class="subtitle" data-i18n="subtitle"></span>
+    <span class="spacer"></span>
+    <select id="lang" aria-label="Language / Язык"></select>
+  </div>
+
+  <div class="app">
+    <section class="stage">
+      <div class="tabs" role="tablist">
+        <button id="tabEdit" role="tab" aria-selected="true" data-i18n="tabEdit"></button>
+        <button id="tabResult" role="tab" aria-selected="false" data-i18n="tabResult"></button>
+      </div>
+
+      <div class="pane" id="editPane">
+        <div class="viewport" id="editView">
+          <div class="content"><canvas id="editCanvas" width="1" height="1"></canvas></div>
+          <svg id="quad" hidden>
+            <polygon></polygon>
+            <circle r="7" data-no-pan></circle><circle r="7" data-no-pan></circle>
+            <circle r="7" data-no-pan></circle><circle r="7" data-no-pan></circle>
+          </svg>
+          <div class="empty" id="dropHint" data-i18n="dropHint"></div>
+        </div>
+      </div>
+
+      <div class="pane" id="resultPane" hidden>
+        <div class="result-main">
+          <div class="viewport" id="resultView">
+            <div class="content"><canvas id="resultCanvas" width="1" height="1"></canvas></div>
+            <div class="empty" id="resultHint" data-i18n="resultHint"></div>
+            <div class="tooltip" id="tooltip" hidden></div>
+          </div>
+          <div class="zoombar">
+            <button id="zoomIn" aria-label="Zoom in">＋</button>
+            <button id="zoomOut" aria-label="Zoom out">－</button>
+            <button id="zoomFit" data-i18n="fit"></button>
+            <button id="zoomOne">1:1</button>
+            <span class="hint" data-i18n="zoomHint"></span>
+          </div>
+        </div>
+        <aside class="materials" id="materials">
+          <p id="summary"></p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th></th><th data-i18n="colBlock"></th><th class="num" data-i18n="colCount"></th></tr></thead>
+              <tbody id="materialRows"></tbody>
+            </table>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <aside class="controls">
+      <button id="load" data-i18n="load"></button>
+      <input type="file" id="imageFile" accept="image/*" hidden>
+
+      <fieldset>
+        <legend data-i18n="canvas"></legend>
+        <label class="row"><span data-i18n="width"></span><input type="number" id="width" min="1" max="1024" value="128"></label>
+        <label class="row"><span data-i18n="height"></span><input type="number" id="height" min="1" max="1024" value="128"></label>
+      </fieldset>
+
+      <fieldset>
+        <legend data-i18n="perspective"></legend>
+        <label class="check"><input type="checkbox" id="perspectiveOn"><span data-i18n="perspectiveOn"></span></label>
+        <button id="resetCorners" data-i18n="resetCorners"></button>
+        <p class="hint" data-i18n="perspectiveHint"></p>
+      </fieldset>
+
+      <fieldset>
+        <legend data-i18n="adjust"></legend>
+        <div class="sliders" id="adjustSliders"></div>
+        <div class="buttons">
+          <button id="rotateLeft">⟲ 90°</button>
+          <button id="rotateRight">90° ⟳</button>
+          <button id="resetAdjust" data-i18n="reset"></button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend data-i18n="palette"></legend>
+        <div class="buttons">
+          <select id="paletteVersion" aria-label="Minecraft version"></select>
+          <button id="addJar" data-i18n="addJar"></button>
+          <input type="file" id="jarFile" accept=".jar" hidden>
+        </div>
+        <div class="sliders">
+          <label for="dither"><span data-i18n="dither"></span> <span class="help" data-i18n-title="ditherTip">?</span></label>
+          <input type="range" id="dither" min="0" max="100" value="0" data-i18n-title="ditherTip">
+          <output id="ditherValue">0 %</output>
+          <label for="texture"><span data-i18n="texture"></span> <span class="help" data-i18n-title="textureTip">?</span></label>
+          <input type="range" id="texture" min="0" max="100" value="0" data-i18n-title="textureTip">
+          <output id="textureValue">0 %</output>
+        </div>
+        <button id="chooseBlocks" data-i18n="chooseBlocks"></button>
+        <p class="hint" id="blocksLabel"></p>
+      </fieldset>
+
+      <button id="generate" class="primary" data-i18n="generate" disabled></button>
+
+      <fieldset>
+        <legend data-i18n="export"></legend>
+        <div class="row" data-i18n-title="exportTip"><span data-i18n="mcVersion"></span><b id="exportVersion">—</b></div>
+        <button id="exportSchem" disabled></button>
+        <button id="exportPng" data-i18n="exportPng" disabled></button>
+      </fieldset>
+    </aside>
+  </div>
+
+  <div class="status" id="status" role="status"></div>
+
+  <dialog id="picker">
+    <form method="dialog">
+      <h2 data-i18n="pickerTitle"></h2>
+      <input type="search" id="pickerSearch">
+      <div class="picker-list" id="pickerList"></div>
+      <div class="buttons">
+        <button type="button" id="pickerAll" data-i18n="all"></button>
+        <button type="button" id="pickerNone" data-i18n="none"></button>
+        <span class="spacer"></span>
+        <button type="button" id="pickerOk" class="primary">OK</button>
+        <button type="button" id="pickerCancel" data-i18n="cancel"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

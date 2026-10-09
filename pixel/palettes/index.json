@@ -1,0 +1,20 @@
+{
+  "default": "1.21.4",
+  "palettes": [
+    {
+      "version": "26.3",
+      "data_version": 5023,
+      "blocks": 484
+    },
+    {
+      "version": "1.21.4",
+      "data_version": 4189,
+      "blocks": 429
+    },
+    {
+      "version": "1.12.2",
+      "data_version": 1343,
+      "blocks": 208
+    }
+  ]
+}

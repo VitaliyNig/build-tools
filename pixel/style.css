@@ -1,0 +1,115 @@
+body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+.topbar .subtitle { color: var(--muted); }
+
+.app { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 340px; }
+.stage { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 10px; gap: 8px; }
+.controls {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 10px; overflow-y: auto;
+  background: var(--surface); border-left: 1px solid var(--border);
+}
+
+.tabs { display: flex; gap: 4px; }
+.tabs button { border-radius: 6px 6px 0 0; background: transparent; }
+.tabs button[aria-selected="true"] { background: var(--surface); border-bottom-color: var(--accent); font-weight: 600; }
+
+.pane { flex: 1; min-height: 0; display: flex; gap: 10px; }
+.pane[hidden] { display: none; }
+.result-main { flex: 3; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+
+.viewport {
+  position: relative; flex: 1; min-height: 0; overflow: hidden;
+  background: var(--canvas); border: 1px solid var(--border); border-radius: var(--radius);
+  cursor: grab; touch-action: none; user-select: none;
+}
+.viewport:active { cursor: grabbing; }
+.viewport.drop { outline: 2px dashed var(--accent); outline-offset: -6px; }
+.viewport .content { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.viewport canvas { display: block; }
+.viewport canvas.crisp { image-rendering: pixelated; }
+.viewport .empty {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  padding: 24px; text-align: center; color: #d7dae0; pointer-events: none;
+}
+.viewport .empty[hidden] { display: none; }
+
+#quad { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+#quad[hidden] { display: none; }
+#quad polygon { fill: none; stroke: rgba(255, 90, 90, 0.86); stroke-width: 2; stroke-dasharray: 6 4; }
+#quad circle { fill: rgb(255, 90, 90); stroke: #141414; stroke-width: 1; cursor: move; pointer-events: auto; }
+
+.tooltip {
+  position: absolute; z-index: 2; padding: 3px 8px; border-radius: 4px;
+  background: rgba(0, 0, 0, 0.82); color: #fff; font-size: 12px; white-space: nowrap; pointer-events: none;
+}
+
+.zoombar { display: flex; align-items: center; gap: 6px; }
+.hint { margin: 0; color: var(--muted); font-size: 12px; }
+
+.materials { flex: 2; min-width: 240px; max-width: 360px; display: flex; flex-direction: column; gap: 8px; }
+.materials #summary { margin: 0; }
+.table-wrap { flex: 1; min-height: 0; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 4px 8px; text-align: left; border-bottom: 1px solid var(--border); }
+th { position: sticky; top: 0; background: var(--surface-2); font-weight: 600; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+td:first-child, th:first-child { width: 30px; padding-right: 0; }
+
+/* A block's 16x16 texture, cut from the palette atlas set on an ancestor. */
+.tile {
+  display: inline-block; width: 20px; height: 20px; vertical-align: middle; flex: none;
+  background-image: var(--atlas); background-size: var(--atlas-size);
+  image-rendering: pixelated;
+}
+
+fieldset { margin: 0; padding: 8px 10px 10px; border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+legend { padding: 0 4px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.row input[type="number"] { width: 96px; }
+.check { display: flex; align-items: center; gap: 8px; }
+.buttons { display: flex; gap: 6px; }
+.buttons > * { flex: 1; min-width: 0; }
+.buttons > .spacer { flex: 2; }
+.sliders { display: grid; grid-template-columns: auto minmax(0, 1fr) 46px; align-items: center; gap: 6px 8px; }
+.sliders output { text-align: right; font-variant-numeric: tabular-nums; }
+.sliders input[type="range"] { width: 100%; }
+.help {
+  display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--surface-2); color: var(--muted); font-size: 11px; cursor: help;
+}
+#generate { padding: 9px; }
+
+.status {
+  padding: 5px 16px; min-height: 30px;
+  background: var(--surface); border-top: 1px solid var(--border); color: var(--muted);
+}
+.status.error { color: var(--danger); }
+
+dialog {
+  width: min(420px, calc(100vw - 24px)); padding: 0;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius);
+}
+dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
+dialog form { display: flex; flex-direction: column; gap: 10px; padding: 14px; max-height: min(640px, calc(100vh - 48px)); }
+dialog h2 { margin: 0; font-size: 16px; }
+.picker-list { flex: 1; min-height: 160px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 4px; }
+.picker-list .category > header { display: flex; align-items: center; gap: 6px; padding: 2px 4px; }
+.picker-list .category > header button { flex: 1; text-align: left; background: none; border: none; padding: 4px; font-weight: 600; }
+.picker-list .category > header button::before { content: "▸ "; color: var(--muted); }
+.picker-list .category.open > header button::before { content: "▾ "; }
+.picker-list .blocks { display: none; flex-direction: column; padding-left: 22px; }
+.picker-list .category.open .blocks { display: flex; }
+.picker-list .blocks label { display: flex; align-items: center; gap: 8px; padding: 2px 4px; border-radius: 4px; }
+.picker-list .blocks label:hover { background: var(--surface-2); }
+.picker-list [hidden] { display: none !important; }
+
+@media (max-width: 860px) {
+  body { height: auto; overflow: auto; }
+  .app { grid-template-columns: 1fr; }
+  .stage { height: 64vh; }
+  .controls { border-left: none; border-top: 1px solid var(--border); overflow: visible; }
+  .pane#resultPane { flex-direction: column; }
+  .materials { max-width: none; max-height: 34%; }
+  .topbar .subtitle { display: none; }
+}
