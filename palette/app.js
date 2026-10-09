@@ -84,7 +84,11 @@ function tile(entry, onClick) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "tile";
-  button.title = entry.name;
+  // One tile can stand for several blocks that look exactly alike.
+  button.title = [entry.name, ...(entry.also || [])].join("\n");
+  if (entry.also && entry.also.length) {
+    button.append(Object.assign(document.createElement("span"), { className: "more", textContent: `+${entry.also.length}` }));
+  }
   button.classList.toggle("chosen", state.mine.includes(entry.id));
   button.append(tileCanvas(state.palette, entry.kind, entry.index));
   button.addEventListener("click", () => onClick(entry));
@@ -179,7 +183,9 @@ let matchOrder = "";
 function renderMatch() {
   if (!state.palette) return;
   const query = $("search").value.trim().toLowerCase(), lab = labOf(state.colour);
-  const found = pool().filter((entry) => !query || `${entry.name} ${entry.id}`.toLowerCase().includes(query));
+  // A search also finds a tile by the look-alike blocks it stands for.
+  const found = pool().filter((entry) => !query
+    || [entry.name, entry.id, ...(entry.also || [])].join(" ").toLowerCase().includes(query));
   // Without a search only colours close enough to the chosen one are listed,
   // but never fewer than a couple of rows, so a rare colour still gets answers.
   const spread = $("spread").valueAsNumber;

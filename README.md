@@ -6,7 +6,7 @@ folder. There is no build step and no backend: plain HTML, CSS and ES modules.
 
 | Tool | Folder | What it does |
 |------|--------|--------------|
-| **Pixel** | `pixel/` | Minecraft pixel-art generator |
+| **Graffiti** | `graffiti/` | Minecraft pixel-art generator: an image as a vertical wall of blocks |
 | **Palette** | `palette/` | Blocks and decorations by colour, block gradients, shareable palettes |
 | **Image2Banners** | `image2banners/` | Image to Minecraft banner art; web port of the app by MARSTeamMC |
 | **GeoToSchematic** | external link | KML/GeoJSON outlines to schematics, by reyysun ([site](https://reyysun.github.io/geo-to-schematic/)) |
@@ -16,9 +16,9 @@ folder. There is no build step and no backend: plain HTML, CSS and ES modules.
 index.html     hub page, built from shared/tools.js
 shared/        theme (base.css), tool layout (tool.css), language switch (i18n.js),
                zoom/pan view (panzoom.js), tool registry (tools.js)
-shared/mc/     Minecraft block palettes used by Pixel and Palette: bundled
+shared/mc/     Minecraft block palettes used by Graffiti and Palette: bundled
                versions, the client-JAR importer and colour maths
-pixel/         the Pixel tool
+graffiti/      the Graffiti tool (formerly Pixel; `pixel/` only redirects to it)
 palette/       the Palette tool
 image2banners/ the Image2Banners tool
 tools/         build-palettes.mjs, a Node script that rebuilds the bundled palettes
@@ -29,7 +29,7 @@ tools/         build-palettes.mjs, a Node script that rebuilds the bundled palet
 1. Push the repository to GitHub as `build-tools`.
 2. **Settings → Pages → Build and deployment**: source *Deploy from a branch*,
    branch `main`, folder `/ (root)`.
-3. The hub is served at `https://<user>.github.io/build-tools/`, Pixel at `.../pixel/`.
+3. The hub is served at `https://<user>.github.io/build-tools/`, Graffiti at `.../graffiti/`.
 
 All links are relative, so the site works under any repository name.
 
@@ -52,7 +52,7 @@ Then open `http://localhost:8765/`.
 A tool hosted on another site needs only the entry: give its full URL as `href`
 and set `external: true`, and the card opens it in a new tab.
 
-## Pixel
+## Graffiti
 Turn a photo or image into a Minecraft **wall** of real blocks: set the canvas
 size in blocks, edit the image (including 4-point perspective correction to
 straighten an angled photo), map it to actual blocks, then preview and export a
@@ -94,8 +94,8 @@ follows the version of the palette the result was generated with:
 
 | Minecraft | File | Format | Loads in |
 |-----------|------|--------|----------|
-| 1.13 and newer | `pixelart.schem` | Sponge Schematic v2 | WorldEdit 7+, FAWE, Litematica, Axiom |
-| 1.12 and older | `pixelart.schematic` | MCEdit (numeric block ids) | WorldEdit 6, Schematica |
+| 1.13 and newer | `graffiti.schem` | Sponge Schematic v2 | WorldEdit 7+, FAWE, Litematica, Axiom |
+| 1.12 and older | `graffiti.schematic` | MCEdit (numeric block ids) | WorldEdit 6, Schematica |
 
 Sponge v2 is used rather than v3 because every reader of v3 also reads v2.
 Versions before 1.13 cannot load `.schem`, and their blockstate names are model
@@ -103,7 +103,7 @@ variants rather than block ids, so `shared/mc/legacy.js` maps them to id:data
 pairs.
 
 In-game with WorldEdit: put the file in WorldEdit's `schematics` folder, then
-`//schem load pixelart` (`//schematic load pixelart` on 1.12) and `//paste`.
+`//schem load graffiti` (`//schematic load graffiti` on 1.12) and `//paste`.
 Use a palette of the same version as the world: blocks the game does not know
 are replaced with air.
 
@@ -124,7 +124,7 @@ so it is stored per browser and per device, and is lost when site data is cleare
   skipped, because they could not be exported.
 - Versions before 1.8 have no blockstate files and cannot be imported.
 
-Imported versions are shared between Pixel and Palette.
+Imported versions are shared between Graffiti and Palette.
 
 To bundle a version with the site instead, run the builder on its client JAR
 (Node 22+, no dependencies); it uses the same importer as the site:
@@ -146,7 +146,7 @@ and tested in Chromium only.
 
 ### Layout
 ```
-pixel/
+graffiti/
   index.html              page (layout from ../shared/tool.css)
   app.js                  UI: controls, edit canvas, result view, export
   worker.js               generation off the UI thread
@@ -185,7 +185,7 @@ shared/mc/                shared with Palette
 Finds Minecraft blocks by colour. It combines what
 [blockcolors.app](https://blockcolors.app/), [HueBlocks](https://1280px.github.io/hueblocks/)
 and [Block Palettes](https://www.blockpalettes.com/) each do, as an original
-implementation on top of the palettes Pixel already uses, so it works with any
+implementation on top of the palettes Graffiti already uses, so it works with any
 game version, including ones imported from a client JAR.
 
 - **By colour** — pick a colour or type a HEX code and get the closest
@@ -217,8 +217,10 @@ game version, including ones imported from a client JAR.
   technical blocks (command blocks, bedrock, spawners), and prefer plain
   textures over busy ones of the same average colour.
 
-Blocks are full opaque cubes; double slabs that look exactly like the block
-they are made from are not listed twice. Decorations are everything else that
+Blocks are full opaque cubes. Blocks drawn with exactly the same picture
+(copper and waxed copper, a log and its wood block, a double slab and the block
+it is made from) share one tile, marked with how many others it stands for;
+its tooltip names them all and a search finds it by any of the names. Decorations are everything else that
 has a model: plants and see-through or biome-tinted cubes are drawn flat (biome
 tints use the plains colours), other shapes are rendered from their model the
 way the inventory shows them. Not listed: blocks the game assembles from parts

@@ -77,6 +77,10 @@ input[type="text"] { font: inherit; color: inherit; background: var(--surface-2)
   content: "✓"; position: absolute; right: 2px; bottom: 2px; padding: 0 4px; border-radius: 6px;
   background: var(--accent); color: var(--accent-text); font-size: 11px; line-height: 16px;
 }
+.tile .more {
+  position: absolute; left: 2px; top: 2px; padding: 0 4px; border-radius: 6px;
+  background: rgba(0, 0, 0, 0.65); color: #fff; font-size: 10px; line-height: 15px; pointer-events: none;
+}
 .tile.missing { background: repeating-linear-gradient(45deg, var(--border) 0 6px, transparent 6px 12px); }
 .tile .remove {
   position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; display: none; place-items: center;

@@ -1,4 +1,4 @@
-// Pixel: controls, edit canvas, result preview, export.
+// Graffiti: controls, edit canvas, result preview, export.
 import { bindLanguageSelect, getLang } from "../shared/i18n.js";
 import { applyAdjustments, isNeutral, rotate90 } from "./core/imageops.js";
 import { categoryMap, subset, TILE_BYTES, TILE_PX } from "../shared/mc/palette.js";
@@ -59,7 +59,7 @@ function renderStatus() {
 function retranslate() {
   for (const el of document.querySelectorAll("[data-i18n]")) el.textContent = t(el.dataset.i18n);
   for (const el of document.querySelectorAll("[data-i18n-title]")) el.title = t(el.dataset.i18nTitle);
-  document.title = `Pixel — ${t("subtitle")}`;
+  document.title = `Graffiti — ${t("subtitle")}`;
   $("pickerSearch").placeholder = t("pickerSearch");
   renderStatus();
   refreshBlocksLabel();
@@ -511,7 +511,7 @@ async function exportSchem() {
   try {
     const { bytes, paletteSize, extension } = buildSchematic(r.idx, r.w, r.h, r.palette);
     const gzip = new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip"));
-    download(await new Response(gzip).blob(), `pixelart.${extension}`);
+    download(await new Response(gzip).blob(), `graffiti.${extension}`);
     setStatus("statusSchem", r.w, r.h, paletteSize);
   } catch (error) {
     setStatus("errExport", error.message);
@@ -531,7 +531,7 @@ function exportPng() {
     }
     canvas.toBlob((blob) => {
       if (!blob) { setStatus("errExport", "PNG"); return; }
-      download(blob, "pixelart.png");
+      download(blob, "graffiti.png");
       setStatus("statusPng");
     }, "image/png");
   } catch (error) {

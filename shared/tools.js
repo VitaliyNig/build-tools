@@ -1,5 +1,5 @@
 // Registry of tools shown on the hub page. To add a tool: create a folder next
-// to `pixel/` with its own index.html and append an entry here. A tool hosted on
+// to `graffiti/` with its own index.html and append an entry here. A tool hosted on
 // another site only needs an entry with its full URL and `external: true`.
 
 export const SITE = {
@@ -12,9 +12,9 @@ export const SITE = {
 
 export const TOOLS = [
   {
-    id: "pixel",
-    href: "pixel/",
-    title: { en: "Pixel", ru: "Pixel" },
+    id: "graffiti",
+    href: "graffiti/",
+    title: { en: "Graffiti", ru: "Graffiti" },
     description: {
       en: "Turn an image into a Minecraft wall of real blocks: perspective correction, block palettes per game version, preview and .schem export.",
       ru: "Превращает изображение в стену из настоящих блоков Minecraft: коррекция перспективы, палитры блоков по версиям игры, предпросмотр и экспорт .schem.",

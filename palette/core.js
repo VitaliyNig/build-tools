@@ -28,12 +28,42 @@ export function shortId(id) {
 }
 
 /**
+ * Merge entries that are drawn with exactly the same picture (copper and waxed
+ * copper, a log and its "wood" block, a double slab and the block it is made
+ * from) into one: the best-known of them stays, lists the others in `also`,
+ * and the rest are marked hidden.
+ */
+function collapse(entries, picture) {
+  const groups = new Map();
+  for (const entry of entries) {
+    const key = picture(entry);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(entry);
+  }
+  // Which of several look-alikes represents them: ordinary building blocks first.
+  const rank = (entry) => (entry.technical ? 16 : 0) + (entry.falling ? 8 : 0)
+    + (/waxed|slab|infested/.test(entry.id) ? 4 : 0) + (entry.kind === "face" ? 2 : 0);
+  for (const group of groups.values()) {
+    if (group.length < 2) continue;
+    group.sort((a, b) => rank(a) - rank(b) || a.name.length - b.name.length || (a.name < b.name ? -1 : 1));
+    const [kept, ...others] = group;
+    kept.also = [...new Set(others.map((entry) => entry.name))].filter((name) => name !== kept.name);
+    for (const other of others) {
+      // Hidden entries stay known, so palettes saved earlier still resolve them.
+      other.hidden = true;
+      if (kept.sides) for (const side of other.sides || []) kept.sides.add(side);
+    }
+  }
+}
+
+/**
  * Flatten a palette into matchable entries:
  * [{kind: "block" | "face" | "deco", index, id, name, rgb, lab, noise, sides,
- *   falling, technical, hidden}].
+ *   falling, technical, hidden, also}].
  * "block" is a full cube seen from its north side; "face" is another side of a
  * cube that looks different. `sides` is the set of sides ("top", "bottom",
- * "side") on which the entry's picture is what you see.
+ * "side") on which the entry's picture is what you see. `also` names the other
+ * blocks that look exactly the same and are shown as this one tile.
  */
 export function listEntries(palette) {
   const make = (kind, source, lab, tiles, channels) => source.map((item, index) => {
@@ -45,20 +75,7 @@ export function listEntries(palette) {
       falling: FALLING.test(name), technical: TECHNICAL.test(name),
     };
   });
-  // A double slab is listed as a block because it fills the whole cube, but it
-  // is drawn exactly like the block it is made from, so it would show up as a
-  // second "Oak Planks" tile labelled "Oak Slab". Keep only the double slabs
-  // that look like nothing else (smooth stone), and say what they are.
-  const texture = (index) => palette.tiles.subarray(index * PIXELS * 3, (index + 1) * PIXELS * 3).join();
-  const isSlab = (entry) => /slab/.test(entry.id);
   const blocks = make("block", palette.blocks, palette.lab, palette.tiles, 3);
-  const fullBlocks = new Set(blocks.filter((entry) => !isSlab(entry)).map((entry) => texture(entry.index)));
-  for (const entry of blocks) {
-    if (!isSlab(entry)) continue;
-    // Hidden entries stay known, so palettes saved earlier still resolve them.
-    entry.hidden = fullBlocks.has(texture(entry.index));
-    if (!/double/i.test(entry.name)) entry.name = `${entry.name} (double)`;
-  }
   // A block's own picture is its side. It is also its top or bottom unless that
   // side has a picture of its own: stone looks the same from above, a log does not.
   for (const entry of blocks) entry.sides = new Set(palette.blocks[entry.index].sides || ["side", "top", "bottom"]);
@@ -74,10 +91,23 @@ export function listEntries(palette) {
       name: `${block.name} ${face.face[0].toUpperCase()}${face.face.slice(1)}`,
       rgb: face.rgb, lab: [palette.faceLab[index * 3], palette.faceLab[index * 3 + 1], palette.faceLab[index * 3 + 2]],
       noise: noiseOf(palette.faceTiles, index, 3), sides: new Set(face.sides || [face.face]),
-      falling: block.falling, technical: block.technical, hidden: block.hidden,
+      falling: block.falling, technical: block.technical,
     };
   });
-  return [...blocks, ...faces, ...make("deco", palette.decorations, palette.decoLab, palette.decoTiles, 4)];
+  const decorations = make("deco", palette.decorations, palette.decoLab, palette.decoTiles, 4);
+
+  // A slab listed among the blocks is two slabs stacked; say so. (The single
+  // slab, with its half shape, is a decoration.)
+  for (const entry of blocks) {
+    if (/slab/.test(entry.id) && !/double/i.test(entry.name)) entry.name = `${entry.name} (double)`;
+  }
+
+  const cubeBytes = PIXELS * 3, decoBytes = DECO_PX * DECO_PX * 4;
+  collapse([...blocks, ...faces], (entry) => (entry.kind === "face" ? palette.faceTiles : palette.tiles)
+    .subarray(entry.index * cubeBytes, (entry.index + 1) * cubeBytes).join());
+  collapse(decorations, (entry) => palette.decoTiles.subarray(entry.index * decoBytes, (entry.index + 1) * decoBytes).join());
+
+  return [...blocks, ...faces, ...decorations];
 }
 
 export function labOf(rgb) {
