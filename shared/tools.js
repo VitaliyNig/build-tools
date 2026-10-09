@@ -25,6 +25,18 @@ export const TOOLS = [
       "#79553a", "#8d6e4a", "#6b4a32", "#79553a", "#6b4a32", "#79553a", "#8d6e4a", "#6b4a32"],
   },
   {
+    id: "image2banners",
+    href: "image2banners/",
+    title: { en: "Image2Banners", ru: "Image2Banners" },
+    description: {
+      en: "Converts an image into Minecraft banner art: patterns for every banner, matching blocks behind them, crafting steps, /give commands and a structure file. Web port of the app by MARSTeamMC.",
+      ru: "Превращает изображение в арт из баннеров Minecraft: узоры для каждого баннера, подходящие блоки позади, шаги крафта, команды /give и файл структуры. Веб-порт программы от MARSTeamMC.",
+    },
+    tags: ["Minecraft", "Banners", "MARSTeamMC"],
+    icon: ["#f9fffe", "#b02e26", "#b02e26", "#f9fffe", "#f9fffe", "#fed83d", "#fed83d", "#f9fffe",
+      "#f9fffe", "#3c44aa", "#3c44aa", "#f9fffe", "#f9fffe", "#1d1d21", "#1d1d21", "#f9fffe"],
+  },
+  {
     id: "geo-to-schematic",
     // Hosted elsewhere: `external` makes the card open the site in a new tab.
     href: "https://reyysun.github.io/geo-to-schematic/",

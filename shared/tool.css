@@ -1,3 +1,4 @@
+/* Layout shared by the tools: stage with a zoomable viewport, side panel, controls column. */
 body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 .topbar .subtitle { color: var(--muted); }
 

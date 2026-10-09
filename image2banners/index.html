@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Image2Banners</title>
+  <link rel="stylesheet" href="../shared/base.css">
+  <link rel="stylesheet" href="../shared/tool.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="../" data-i18n="back"></a>
+    <h1>Image2Banners</h1>
+    <span class="subtitle" data-i18n="subtitle"></span>
+    <span class="spacer"></span>
+    <select id="lang" aria-label="Language / Язык"></select>
+  </div>
+
+  <div class="app">
+    <section class="stage">
+      <div class="pane">
+        <div class="result-main">
+          <div class="viewport" id="view">
+            <div class="content">
+              <canvas id="art" class="crisp" width="1" height="1"></canvas>
+              <div id="selection" hidden></div>
+            </div>
+            <div class="empty" id="dropHint" data-i18n="dropHint"></div>
+          </div>
+          <div class="zoombar">
+            <button id="zoomIn" aria-label="Zoom in">＋</button>
+            <button id="zoomOut" aria-label="Zoom out">－</button>
+            <button id="zoomFit" data-i18n="fit"></button>
+            <span class="hint" data-i18n="zoomHint"></span>
+          </div>
+        </div>
+        <aside class="materials" id="details">
+          <p class="hint" id="detailsHint" data-i18n="detailsHint"></p>
+          <div id="detailsBody" hidden>
+            <h2 id="detailsTitle"></h2>
+            <div class="result-row">
+              <canvas id="bannerResult" class="pixel" width="20" height="39"></canvas>
+              <div>
+                <div class="block-row"><canvas id="blockIcon" class="pixel" width="22" height="22"></canvas><span id="blockName"></span></div>
+                <p class="hint" data-i18n="blockHint"></p>
+              </div>
+            </div>
+            <div id="commandBox">
+              <label class="hint" for="command" data-i18n="giveCommand"></label>
+              <textarea id="command" rows="4" readonly></textarea>
+              <button id="copyCommand" data-i18n="copy"></button>
+            </div>
+            <h3 data-i18n="stepsTitle"></h3>
+            <p class="hint" data-i18n="stepsHint"></p>
+            <ol id="steps"></ol>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <aside class="controls">
+      <button id="load" data-i18n="load"></button>
+      <input type="file" id="file" accept="image/*,.json,application/json" hidden>
+
+      <fieldset>
+        <legend data-i18n="size"></legend>
+        <label class="row"><span data-i18n="width"></span><input type="number" id="width" min="1" max="128" value="8"></label>
+        <label class="row"><span data-i18n="height"></span><input type="number" id="height" min="1" max="128" value="8"></label>
+        <p class="hint" data-i18n="sizeHint"></p>
+      </fieldset>
+
+      <fieldset>
+        <legend data-i18n="options"></legend>
+        <label class="check" data-i18n-title="optBlocksTip"><input type="checkbox" id="optBlocks" checked><span data-i18n="optBlocks"></span></label>
+        <label class="check" data-i18n-title="optLayeringTip"><input type="checkbox" id="optLayering" checked><span data-i18n="optLayering"></span></label>
+        <label class="check" data-i18n-title="optBigTip"><input type="checkbox" id="optBig" checked><span data-i18n="optBig"></span></label>
+        <label class="check" data-i18n-title="optItemsTip"><input type="checkbox" id="optItems" checked><span data-i18n="optItems"></span></label>
+        <div class="sliders">
+          <label for="threads"><span data-i18n="threads"></span> <span class="help" data-i18n-title="threadsTip">?</span></label>
+          <input type="range" id="threads" min="1" max="1" value="1" data-i18n-title="threadsTip">
+          <output id="threadsValue">1</output>
+          <label for="compare"><span data-i18n="compare"></span> <span class="help" data-i18n-title="compareTip">?</span></label>
+          <input type="range" id="compare" min="0" max="100" value="90" data-i18n-title="compareTip">
+          <output id="compareValue">90</output>
+        </div>
+      </fieldset>
+
+      <button id="generate" class="primary" disabled></button>
+
+      <fieldset>
+        <legend data-i18n="save"></legend>
+        <button id="savePng" data-i18n="savePng" disabled></button>
+        <button id="saveJson" data-i18n="saveJson" data-i18n-title="saveJsonTip" disabled></button>
+        <button id="saveNbt" data-i18n="saveNbt" disabled></button>
+        <p class="hint" data-i18n="saveNbtTip"></p>
+      </fieldset>
+
+      <p class="hint credit">
+        <span data-i18n="credit"></span>
+        <a href="https://github.com/MARSTeamMC/Image2Banners" target="_blank" rel="noopener">Image2Banners</a>
+        <span data-i18n="creditBy"></span>
+        <a href="LICENSE-Image2Banners.txt" target="_blank" rel="noopener">BSD 2-Clause</a>.
+      </p>
+    </aside>
+  </div>
+
+  <div class="status" id="status" role="status"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

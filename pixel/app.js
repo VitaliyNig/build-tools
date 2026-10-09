@@ -6,7 +6,7 @@ import { materialCounts } from "./core/quantize.js";
 import { isLegacy } from "./core/legacy.js";
 import { buildSchematic } from "./core/schematic.js";
 import { atlasStyle, importJarFile, listPalettes, loadPalette, tileIcon } from "./palettes.js";
-import { PanZoom } from "./panzoom.js";
+import { PanZoom } from "../shared/panzoom.js";
 import { CATEGORIES, STRINGS } from "./strings.js";
 
 const MAX_SOURCE_SIDE = 4096;   // larger images are downscaled on load

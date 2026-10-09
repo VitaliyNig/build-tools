@@ -1,0 +1,35 @@
+/* Image2Banners-specific parts; the layout comes from ../shared/tool.css. */
+canvas.pixel { image-rendering: pixelated; }
+
+#selection {
+  position: absolute; box-sizing: border-box; pointer-events: none;
+  outline: 1px solid #fff; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.7);
+}
+#selection[hidden] { display: none; }
+
+#details { overflow-y: auto; }
+#details h2 { margin: 0 0 8px; font-size: 15px; }
+#details h3 { margin: 12px 0 2px; font-size: 13px; }
+.result-row { display: flex; gap: 12px; align-items: flex-start; }
+#bannerResult { width: 80px; height: 156px; flex: none; border: 1px solid var(--border); }
+.block-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+#blockIcon { width: 44px; height: 44px; border: 1px solid var(--border); }
+
+#commandBox { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+#commandBox[hidden] { display: none; }
+#command {
+  width: 100%; resize: vertical; font: 12px/1.4 ui-monospace, Consolas, monospace;
+  color: inherit; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 6px;
+}
+
+#steps { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+#steps li {
+  display: flex; align-items: center; gap: 8px; padding: 6px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+}
+#steps canvas { width: 30px; height: 58px; flex: none; }
+#steps .arrow { color: var(--muted); }
+#steps .number { width: 18px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+
+.credit { margin-top: auto; padding-top: 6px; }
+.credit a { color: var(--accent); }
