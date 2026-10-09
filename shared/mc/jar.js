@@ -1,7 +1,11 @@
-// Version-specific wall palettes built from Java client JAR assets, in the browser.
+// Version-specific block palettes built from Java client JAR assets, in the browser.
 // Reads data only; nothing from the JAR is ever executed.
+//
+// Two lists are produced: "blocks" are full opaque cubes usable in a wall, and
+// "decorations" are plants and see-through or biome-tinted cubes (flowers,
+// leaves, glass), which only make sense as colour references.
 import { isLegacy, legacyBlock } from "./legacy.js";
-import { TILE_BYTES, TILE_PX } from "./palette.js";
+import { DECO_BYTES, TILE_BYTES, TILE_PX } from "./palette.js";
 import { ZipArchive } from "./zip.js";
 
 // The launcher JSON only started exposing ``world_version`` in newer client
@@ -24,6 +28,20 @@ const KNOWN_DATA_VERSIONS = {
 };
 const DEFAULT_DATA_VERSION = 4189;
 const FACES = ["down", "east", "north", "south", "up", "west"];
+
+// Model families drawn as flat sprites, and the texture variable each one uses.
+const SPRITE_PARENTS = {
+  cross: "cross", tinted_cross: "cross", tallgrass: "cross", template_seagrass: "texture",
+  coral_fan: "fan", crop: "crop",
+};
+// Biome-dependent colours are fixed to the plains biome.
+const TINTS = [
+  [/birch_leaves/, [0x80, 0xa7, 0x55]], [/spruce_leaves/, [0x61, 0x99, 0x61]],
+  [/mangrove_leaves/, [0x92, 0xc6, 0x48]], [/lily_pad|waterlily/, [0x20, 0x80, 0x30]],
+  [/leaves|vine/, [0x77, 0xab, 0x2f]], [/./, [0x91, 0xbd, 0x59]],
+];
+const UNTINTED = /cherry|azalea|pale_oak/;  // greyish leaves that still keep their own colour
+const MIN_COVERAGE = 0.08;  // sprites with fewer visible pixels have no useful colour
 
 function assetPath(resource, kind, extension) {
   const colon = resource.indexOf(":");
@@ -100,6 +118,8 @@ class JarAssets {
       this.models.set(name, {
         ...parent, ...data,
         textures: { ...(parent.textures || {}), ...(data.textures || {}) },
+        // Own and inherited model names, without namespace and folder.
+        lineage: [name.replace(/^minecraft:/, "").replace(/^block\//, ""), ...(parent.lineage || [])],
       });
     }
     return this.models.get(name);
@@ -107,10 +127,13 @@ class JarAssets {
 
   async texture(reference, textures) {
     const seen = new Set();
+    // Newer versions may give a texture as {sprite, ...render flags}.
+    const sprite = (value) => (value && typeof value === "object" ? value.sprite : value);
+    reference = sprite(reference);
     while (reference.startsWith("#")) {
       if (seen.has(reference)) throw new Error("Cyclic texture reference");
       seen.add(reference);
-      reference = textures[reference.slice(1)];
+      reference = sprite(textures[reference.slice(1)]);
     }
     const path = assetPath(reference, "textures", "png");
     if (!this.textures.has(path)) this.textures.set(path, this.loadTexture(path));
@@ -163,6 +186,66 @@ class JarAssets {
     }
     return north;
   }
+
+  /**
+   * A 16x16 RGBA picture of a plant sprite or of a see-through / tinted cube,
+   * with its average visible colour: {tile, rgb}, else null.
+   */
+  async decorationTile(entry, block) {
+    if (entry.x || entry.y) return null;
+    const model = await this.model(entry.model);
+    const textures = model.textures || {}, elements = model.elements || [];
+    let image = null;
+    const family = model.lineage.find((name) => name in SPRITE_PARENTS);
+    if (family) {
+      image = await this.texture(`#${SPRITE_PARENTS[family]}`, textures);
+    } else if (elements.length === 1) {
+      const cube = elements[0], north = (cube.faces || {}).north;
+      const same = (a, b) => Array.isArray(a) && a.length === 3 && a.every((v, i) => v === b[i]);
+      if (!north || !same(cube.from, [0, 0, 0]) || !same(cube.to, [16, 16, 16]) || "rotation" in cube) return null;
+      const texture = await this.texture(north.texture, textures);
+      const uv = north.uv || [0, 0, 16, 16];
+      const box = uv.map((v, i) => Math.round(v / 16 * (i % 2 === 0 ? texture.w : texture.h)));
+      image = rotateClockwise(crop(texture, ...box), (north.rotation || 0) / 90);
+    }
+    if (!image || !image.w || !image.h) return null;
+
+    const tinted = model.lineage.includes("tinted_cross") || model.lineage.includes("leaves")
+      || elements.some((element) => Object.values(element.faces || {}).some((face) => "tintindex" in face));
+    // The game only tints some of the blocks whose models allow it (cherry and
+    // azalea leaves keep their own colours); those that it does tint are grey.
+    let spread = 0, opaque = 0;
+    for (let p = 0; p < image.data.length; p += 4) {
+      if (image.data[p + 3] < 128) continue;
+      spread += Math.abs(image.data[p] - image.data[p + 1]) + Math.abs(image.data[p + 1] - image.data[p + 2]);
+      opaque++;
+    }
+    const grey = opaque > 0 && spread / opaque < 40 && !UNTINTED.test(block);
+    const tint = tinted && grey ? TINTS.find(([pattern]) => pattern.test(block))[1] : [255, 255, 255];
+    const tile = new Uint8Array(DECO_BYTES), sum = [0, 0, 0];
+    let visible = 0;
+    for (let y = 0; y < TILE_PX; y++) {
+      const sy = Math.min(image.h - 1, Math.floor((y + 0.5) * image.h / TILE_PX));
+      for (let x = 0; x < TILE_PX; x++) {
+        const sx = Math.min(image.w - 1, Math.floor((x + 0.5) * image.w / TILE_PX));
+        const s = (sy * image.w + sx) * 4, d = (y * TILE_PX + x) * 4;
+        for (let c = 0; c < 3; c++) tile[d + c] = Math.round(image.data[s + c] * tint[c] / 255);
+        tile[d + 3] = image.data[s + 3];
+        if (tile[d + 3] >= 128) { visible++; for (let c = 0; c < 3; c++) sum[c] += tile[d + c]; }
+      }
+    }
+    if (visible < MIN_COVERAGE * TILE_PX * TILE_PX) return null;
+    // A plain opaque cube that is not a wall block (odd model) is not a decoration either.
+    if (!family && !tinted && visible === TILE_PX * TILE_PX && tile.every((v, i) => i % 4 !== 3 || v === 255)) return null;
+    return { tile, rgb: sum.map((v) => Math.round(v / visible)) };
+  }
+}
+
+/** Variant order for decorations: the top of a tall plant, then the oldest crop stage. */
+function decorationOrder(a, b) {
+  const rank = (key) => (key.includes("half=upper") ? 0 : 1);
+  const age = (key) => Number((/age=(\d+)/.exec(key) || [0, -1])[1]);
+  return rank(a) - rank(b) || age(b) - age(a) || (a < b ? -1 : a > b ? 1 : 0);
 }
 
 function category(block) {
@@ -202,8 +285,9 @@ async function versionMetadata(archive, fileName) {
 
 /**
  * Build a palette from a client JAR's bytes.
- * Returns {version, dataVersion, blocks, tiles, skipped}; throws Error("no-blocks")
- * when the archive has no supported full blocks.
+ * Returns {version, dataVersion, blocks, tiles, decorations, decoTiles, skipped};
+ * tiles are packed RGB and decoTiles packed RGBA, 16x16 each. Throws
+ * Error("no-blocks") when the archive has no supported full blocks.
  */
 export async function importJar(buffer, fileName, decodePng, onProgress) {
   const archive = new ZipArchive(buffer);
@@ -211,13 +295,13 @@ export async function importJar(buffer, fileName, decodePng, onProgress) {
   const assets = new JarAssets(archive, decodePng);
   const prefix = "assets/minecraft/blockstates/";
   const states = archive.names().filter((n) => n.startsWith(prefix) && n.endsWith(".json")).sort();
-  const blocks = [], tiles = [], skipped = [];
+  const blocks = [], tiles = [], decorations = [], decoTiles = [], skipped = [];
   for (let s = 0; s < states.length; s++) {
     if (onProgress && s % 16 === 0) onProgress(s / states.length);
     const block = states[s].slice(prefix.length, -5);
-    let chosen = null;
+    let chosen = null, variants = {};
     try {
-      const variants = (await archive.json(states[s])).variants || {};
+      variants = (await archive.json(states[s])).variants || {};
       search: for (const properties of Object.keys(variants).sort()) {
         const entries = variants[properties];
         for (const entry of Array.isArray(entries) ? entries : [entries]) {
@@ -228,8 +312,27 @@ export async function importJar(buffer, fileName, decodePng, onProgress) {
       }
     } catch { /* unreadable blockstate: skip */ }
     // Pre-1.13 variants without a known numeric id could not be exported.
-    if (chosen && isLegacy(dataVersion) && !legacyBlock(`minecraft:${block}`)) chosen = null;
-    if (!chosen) { skipped.push(block); continue; }
+    if (chosen && isLegacy(dataVersion) && !legacyBlock(`minecraft:${block}`)) { skipped.push(block); continue; }
+    if (!chosen) {
+      let decoration = null;
+      search: for (const properties of Object.keys(variants).sort(decorationOrder)) {
+        const entries = variants[properties];
+        for (const entry of Array.isArray(entries) ? entries : [entries]) {
+          try { decoration = await assets.decorationTile(entry, block); } catch { continue; }
+          if (decoration) { decoration.properties = properties === "normal" ? "" : properties; break search; }
+        }
+      }
+      if (decoration) {
+        decorations.push({
+          id: `minecraft:${block}` + (decoration.properties ? `[${decoration.properties}]` : ""),
+          name: titleCase(block), rgb: decoration.rgb,
+        });
+        decoTiles.push(decoration.tile);
+      } else {
+        skipped.push(block);
+      }
+      continue;
+    }
     // Legacy blockstates use ``normal`` as a variant selector, not as a real
     // block-state property.
     const properties = chosen.properties === "normal" ? "" : chosen.properties;
@@ -247,5 +350,7 @@ export async function importJar(buffer, fileName, decodePng, onProgress) {
   if (!blocks.length) throw new Error("no-blocks");
   const packed = new Uint8Array(blocks.length * TILE_BYTES);
   tiles.forEach((tile, i) => packed.set(tile, i * TILE_BYTES));
-  return { version: name, dataVersion, blocks, tiles: packed, skipped };
+  const packedDeco = new Uint8Array(decorations.length * DECO_BYTES);
+  decoTiles.forEach((tile, i) => packedDeco.set(tile, i * DECO_BYTES));
+  return { version: name, dataVersion, blocks, tiles: packed, decorations, decoTiles: packedDeco, skipped };
 }

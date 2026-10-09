@@ -3,20 +3,28 @@ import { rgbToLab } from "./color.js";
 
 export const TILE_PX = 16;
 export const TILE_BYTES = TILE_PX * TILE_PX * 3;
+export const DECO_BYTES = TILE_PX * TILE_PX * 4;
+
+function labOf(entries) {
+  const lab = new Float32Array(entries.length * 3);
+  entries.forEach((entry, i) => rgbToLab(entry.rgb[0], entry.rgb[1], entry.rgb[2], lab, i * 3));
+  return lab;
+}
 
 /**
- * blocks: [{id, name, category, rgb: [r, g, b]}]
- * tiles:  Uint8Array of blocks.length * 768 packed RGB bytes (row-major 16x16).
+ * blocks:      [{id, name, category, rgb: [r, g, b]}] - full opaque cubes
+ * tiles:       Uint8Array of blocks.length * 768 packed RGB bytes (row-major 16x16)
+ * decorations: [{id, name, rgb}] - plants, leaves, glass; optional
+ * decoTiles:   Uint8Array of decorations.length * 1024 packed RGBA bytes
  */
-export function makePalette({ key, version, dataVersion, blocks, tiles }) {
+export function makePalette({ key, version, dataVersion, blocks, tiles, decorations = [], decoTiles = new Uint8Array(0) }) {
   if (!blocks.length) throw new Error("palette is empty");
   const rgb = new Float32Array(blocks.length * 3);
-  const lab = new Float32Array(blocks.length * 3);
-  blocks.forEach((b, i) => {
-    rgb.set(b.rgb, i * 3);
-    rgbToLab(b.rgb[0], b.rgb[1], b.rgb[2], lab, i * 3);
-  });
-  return { key, version, dataVersion, blocks, tiles, rgb, lab, size: blocks.length };
+  blocks.forEach((b, i) => rgb.set(b.rgb, i * 3));
+  return {
+    key, version, dataVersion, blocks, tiles, rgb, lab: labOf(blocks), size: blocks.length,
+    decorations, decoTiles, decoLab: labOf(decorations),
+  };
 }
 
 /** New palette keeping only blocks whose id is in enabledIds (a Set). */
@@ -40,16 +48,16 @@ export function categoryMap(palette) {
   return new Map([...out].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
 }
 
-/** Cut an RGBA atlas (cols tiles per row) into packed RGB tiles. */
-export function tilesFromAtlas(rgba, atlasWidth, count, cols) {
-  const tiles = new Uint8Array(count * TILE_BYTES);
+/** Cut an RGBA atlas (cols tiles per row) into packed tiles of 3 (RGB) or 4 (RGBA) channels. */
+export function tilesFromAtlas(rgba, atlasWidth, count, cols, channels = 3) {
+  const size = TILE_PX * TILE_PX * channels, tiles = new Uint8Array(count * size);
   for (let i = 0; i < count; i++) {
     const ox = (i % cols) * TILE_PX, oy = Math.floor(i / cols) * TILE_PX;
     for (let y = 0; y < TILE_PX; y++) {
       for (let x = 0; x < TILE_PX; x++) {
         const s = ((oy + y) * atlasWidth + ox + x) * 4;
-        const d = i * TILE_BYTES + (y * TILE_PX + x) * 3;
-        tiles[d] = rgba[s]; tiles[d + 1] = rgba[s + 1]; tiles[d + 2] = rgba[s + 2];
+        const d = i * size + (y * TILE_PX + x) * channels;
+        for (let c = 0; c < channels; c++) tiles[d + c] = rgba[s + c];
       }
     }
   }

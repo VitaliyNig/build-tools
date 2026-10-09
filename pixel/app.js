@@ -1,11 +1,11 @@
 // Pixel: controls, edit canvas, result preview, export.
 import { bindLanguageSelect, getLang } from "../shared/i18n.js";
 import { applyAdjustments, isNeutral, rotate90 } from "./core/imageops.js";
-import { categoryMap, subset, TILE_BYTES, TILE_PX } from "./core/palette.js";
+import { categoryMap, subset, TILE_BYTES, TILE_PX } from "../shared/mc/palette.js";
 import { materialCounts } from "./core/quantize.js";
-import { isLegacy } from "./core/legacy.js";
+import { isLegacy } from "../shared/mc/legacy.js";
 import { buildSchematic } from "./core/schematic.js";
-import { atlasStyle, importJarFile, listPalettes, loadPalette, tileIcon } from "./palettes.js";
+import { atlasStyle, importJarFile, listPalettes, loadPalette, tileIcon } from "../shared/mc/palettes.js";
 import { PanZoom } from "../shared/panzoom.js";
 import { CATEGORIES, STRINGS } from "./strings.js";
 

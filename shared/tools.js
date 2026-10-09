@@ -25,6 +25,18 @@ export const TOOLS = [
       "#79553a", "#8d6e4a", "#6b4a32", "#79553a", "#6b4a32", "#79553a", "#8d6e4a", "#6b4a32"],
   },
   {
+    id: "palette",
+    href: "palette/",
+    title: { en: "Palette", ru: "Palette" },
+    description: {
+      en: "Find Minecraft blocks and decorations by colour, build block gradients, and collect a palette you can save or share by link. Works with any game version.",
+      ru: "Подбор блоков и декораций Minecraft по цвету, градиенты из блоков и своя палитра, которую можно сохранить или отправить ссылкой. Работает с любой версией игры.",
+    },
+    tags: ["Minecraft", "Colours"],
+    icon: ["#b02e26", "#f9801d", "#fed83d", "#80c71f", "#f9801d", "#fed83d", "#80c71f", "#3ab3da",
+      "#fed83d", "#80c71f", "#3ab3da", "#3c44aa", "#80c71f", "#3ab3da", "#3c44aa", "#8932b8"],
+  },
+  {
     id: "image2banners",
     href: "image2banners/",
     title: { en: "Image2Banners", ru: "Image2Banners" },

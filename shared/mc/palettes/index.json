@@ -4,17 +4,20 @@
     {
       "version": "26.3",
       "data_version": 5023,
-      "blocks": 484
+      "blocks": 484,
+      "decorations": 134
     },
     {
       "version": "1.21.4",
       "data_version": 4189,
-      "blocks": 429
+      "blocks": 429,
+      "decorations": 124
     },
     {
       "version": "1.12.2",
       "data_version": 1343,
-      "blocks": 208
+      "blocks": 208,
+      "decorations": 60
     }
   ]
 }

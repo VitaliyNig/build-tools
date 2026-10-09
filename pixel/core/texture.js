@@ -1,6 +1,6 @@
 // Match source patches against upright block faces, with bounded working memory.
-import { rgbToLab } from "./color.js";
-import { TILE_BYTES, TILE_PX } from "./palette.js";
+import { rgbToLab } from "../../shared/mc/color.js";
+import { TILE_BYTES, TILE_PX } from "../../shared/mc/palette.js";
 import { resize } from "./resample.js";
 
 const PIXELS = TILE_PX * TILE_PX;

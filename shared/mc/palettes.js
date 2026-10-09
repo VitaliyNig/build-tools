@@ -1,10 +1,11 @@
 // Palette storage: versions bundled with the site plus JARs imported in this browser.
-import { importJar } from "./core/jar.js";
-import { makePalette, TILE_BYTES, TILE_PX, tilesFromAtlas } from "./core/palette.js";
+import { importJar } from "./jar.js";
+import { makePalette, TILE_BYTES, TILE_PX, tilesFromAtlas } from "./palette.js";
 
 const BUNDLED = new URL("./palettes/", import.meta.url);
 const ATLAS_COLS = 32;
 const DB_NAME = "tools.pixel", STORE = "palettes";
+const RECORD_FORMAT = 2;      // 2: imported palettes also carry decorations
 
 const loaded = new Map();     // key -> palette
 const session = new Map();    // imported records, also the fallback when IndexedDB is unavailable
@@ -66,10 +67,15 @@ export async function loadPalette(key) {
       const response = await fetch(new URL(`${encodeURIComponent(name)}.json`, BUNDLED));
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
-      const atlas = await decodeImage(await (await fetch(new URL(`${encodeURIComponent(name)}.png`, BUNDLED))).blob());
+      const image = async (suffix) => decodeImage(
+        await (await fetch(new URL(`${encodeURIComponent(name)}${suffix}.png`, BUNDLED))).blob());
+      const atlas = await image(""), decorations = data.decorations || [];
+      const decoAtlas = decorations.length ? await image(".deco") : null;
       palette = makePalette({
         key, version: data.version, dataVersion: data.data_version, blocks: data.blocks,
         tiles: tilesFromAtlas(atlas.data, atlas.w, data.blocks.length, data.cols),
+        decorations,
+        decoTiles: decoAtlas ? tilesFromAtlas(decoAtlas.data, decoAtlas.w, decorations.length, data.cols, 4) : undefined,
       });
     } else {
       const record = session.get(name);
@@ -93,10 +99,11 @@ export async function importJarFile(file, onProgress) {
   const buffer = await file.arrayBuffer();
   const sha = await digest(buffer, file);
   let record = session.get(sha);
-  if (!record) {
+  if (!record || record.format !== RECORD_FORMAT) {
     const decodePng = (bytes) => decodeImage(new Blob([bytes], { type: "image/png" }));
-    const { version, dataVersion, blocks, tiles, skipped } = await importJar(buffer, file.name, decodePng, onProgress);
-    record = { sha, version, dataVersion, blocks, tiles, skipped: skipped.length };
+    const result = await importJar(buffer, file.name, decodePng, onProgress);
+    record = { ...result, sha, format: RECORD_FORMAT, skipped: result.skipped.length };
+    loaded.delete(`jar:${sha}`);
     session.set(sha, record);
     try { await store("readwrite", (s) => s.put(record)); } catch { /* kept for this session */ }
   }
@@ -136,4 +143,22 @@ export function tileIcon(index) {
   icon.className = "tile";
   icon.style.backgroundPosition = `${-(index % ATLAS_COLS) * 20}px ${-Math.floor(index / ATLAS_COLS) * 20}px`;
   return icon;
+}
+
+/**
+ * A 16x16 canvas showing one block (kind "block") or decoration (kind "deco").
+ * Scale it with CSS and `image-rendering: pixelated`.
+ */
+export function tileCanvas(palette, kind, index) {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = TILE_PX;
+  const image = new ImageData(TILE_PX, TILE_PX), deco = kind === "deco";
+  const source = deco ? palette.decoTiles : palette.tiles, step = deco ? 4 : 3;
+  for (let p = 0; p < TILE_PX * TILE_PX; p++) {
+    const s = index * TILE_PX * TILE_PX * step + p * step;
+    image.data[p * 4] = source[s]; image.data[p * 4 + 1] = source[s + 1];
+    image.data[p * 4 + 2] = source[s + 2]; image.data[p * 4 + 3] = deco ? source[s + 3] : 255;
+  }
+  canvas.getContext("2d").putImageData(image, 0, 0);
+  return canvas;
 }

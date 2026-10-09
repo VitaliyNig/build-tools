@@ -7,6 +7,7 @@ folder. There is no build step and no backend: plain HTML, CSS and ES modules.
 | Tool | Folder | What it does |
 |------|--------|--------------|
 | **Pixel** | `pixel/` | Minecraft pixel-art generator |
+| **Palette** | `palette/` | Blocks and decorations by colour, block gradients, shareable palettes |
 | **Image2Banners** | `image2banners/` | Image to Minecraft banner art; web port of the app by MARSTeamMC |
 | **GeoToSchematic** | external link | KML/GeoJSON outlines to schematics, by reyysun ([site](https://reyysun.github.io/geo-to-schematic/)) |
 | **Big Sign Letters** | external link | Large single-letter text for Minecraft signs, by SuperFromND ([site](https://superfromnd.gitlab.io/bigsigns/)) |
@@ -15,8 +16,12 @@ folder. There is no build step and no backend: plain HTML, CSS and ES modules.
 index.html     hub page, built from shared/tools.js
 shared/        theme (base.css), tool layout (tool.css), language switch (i18n.js),
                zoom/pan view (panzoom.js), tool registry (tools.js)
+shared/mc/     Minecraft block palettes used by Pixel and Palette: bundled
+               versions, the client-JAR importer and colour maths
 pixel/         the Pixel tool
+palette/       the Palette tool
 image2banners/ the Image2Banners tool
+tools/         build-palettes.mjs, a Node script that rebuilds the bundled palettes
 .nojekyll      turns GitHub's Jekyll processing off
 ```
 
@@ -94,7 +99,7 @@ follows the version of the palette the result was generated with:
 
 Sponge v2 is used rather than v3 because every reader of v3 also reads v2.
 Versions before 1.13 cannot load `.schem`, and their blockstate names are model
-variants rather than block ids, so `pixel/core/legacy.js` maps them to id:data
+variants rather than block ids, so `shared/mc/legacy.js` maps them to id:data
 pairs.
 
 In-game with WorldEdit: put the file in WorldEdit's `schematics` folder, then
@@ -104,7 +109,7 @@ are replaced with air.
 
 Both formats were checked structurally with an independent NBT parser, not by
 pasting in every game version. The 1.12 id table in particular is hand-written;
-if a block comes out wrong in 1.12, fix its entry in `pixel/core/legacy.js`.
+if a block comes out wrong in 1.12, fix its entry in `shared/mc/legacy.js`.
 
 ### Adding a Minecraft version
 **Add JAR…** parses a client JAR (for example `1.21.4.jar` from
@@ -115,15 +120,23 @@ so it is stored per browser and per device, and is lost when site data is cleare
   included; plants, fluids, transparent blocks, stairs and slabs are skipped.
 - JARs without an embedded `version.json` (1.12 and earlier) are labelled from
   the filename, so keep the version number in it.
-- For versions before 1.13, variants missing from `pixel/core/legacy.js` are
+- For versions before 1.13, variants missing from `shared/mc/legacy.js` are
   skipped, because they could not be exported.
 - Versions before 1.8 have no blockstate files and cannot be imported.
 
-To bundle a version with the site instead, add `<version>.json` and
-`<version>.png` to `pixel/palettes/` and list it in `pixel/palettes/index.json`.
-The JSON holds `version`, `data_version`, `cols` and `blocks` (`id`, `name`,
-`category`, average `rgb`); the PNG is an atlas of 16×16 tiles, `cols` per row,
-in block order.
+Imported versions are shared between Pixel and Palette.
+
+To bundle a version with the site instead, run the builder on its client JAR
+(Node 22+, no dependencies); it uses the same importer as the site:
+
+```bash
+node tools/build-palettes.mjs path/to/1.21.4.jar
+```
+
+It writes `<version>.json` (blocks and decorations with their average colours),
+`<version>.png` (block tiles) and `<version>.deco.png` (decoration tiles, with
+transparency) into `shared/mc/palettes/` and adds the version to `index.json`.
+Atlases hold 16×16 tiles, 32 per row, in list order.
 
 ### Browser support
 Needs a current browser: module workers, `DecompressionStream`/`CompressionStream`
@@ -136,21 +149,23 @@ pixel/
   index.html              page (layout from ../shared/tool.css)
   app.js                  UI: controls, edit canvas, result view, export
   worker.js               generation off the UI thread
-  palettes.js             bundled palettes + JARs imported into IndexedDB
   strings.js              UI strings (en/ru)
-  palettes/               bundled versions (index.json, <version>.json, <version>.png)
   core/                   UI-independent logic, no DOM access
     pipeline.js           source image + settings -> block grid
     imageops.js           adjustments, rotation
     warp.js               perspective correction
     resample.js           Lanczos / box resize
-    color.js              sRGB -> CIE-Lab
-    palette.js            palette arrays, subsets, atlas cutting
     quantize.js           nearest block, dithering, material counts
     texture.js            texture-aware matching
     schematic.js          .schem and .schematic writers
-    legacy.js             pre-1.13 numeric block ids
-    zip.js, jar.js        client JAR reader and palette importer
+
+shared/mc/                shared with Palette
+  palettes.js             bundled palettes + JARs imported into IndexedDB
+  palettes/               bundled versions (see "Adding a Minecraft version")
+  palette.js              palette arrays, subsets, atlas cutting
+  color.js                sRGB -> CIE-Lab
+  zip.js, jar.js          client JAR reader and palette importer
+  legacy.js               pre-1.13 numeric block ids
 ```
 
 ### Notes
@@ -160,9 +175,43 @@ pixel/
   capped at 8192 px per side; transparent image areas become white.
 - Falling blocks (sand, gravel, concrete powder) are in the palette and will drop
   from an unsupported wall; disable them in **Choose blocks…** if needed.
-- `pixel/palettes/*.png` contain Minecraft block textures, which are Mojang's
+- `shared/mc/palettes/*.png` contain Minecraft block textures, which are Mojang's
   assets. To publish without them, delete the palette files, empty the list in
-  `pixel/palettes/index.json`, and let users import their own client JAR.
+  `shared/mc/palettes/index.json`, and let users import their own client JAR.
+
+## Palette
+Finds Minecraft blocks by colour. It combines what
+[blockcolors.app](https://blockcolors.app/), [HueBlocks](https://1280px.github.io/hueblocks/)
+and [Block Palettes](https://www.blockpalettes.com/) each do, as an original
+implementation on top of the palettes Pixel already uses, so it works with any
+game version, including ones imported from a client JAR.
+
+- **By colour** — pick a colour or type a HEX code and get the closest
+  **blocks** and, separately, the closest **decorations** (flowers, saplings,
+  leaves, corals, glass). Search by name narrows the list.
+- **Gradient** — two to six colours and a number of steps give a row of blocks
+  running between them. Colours are blended in OkLab so the steps look even;
+  **No repeats** uses every block once.
+- **My Palette** — click blocks to collect them. Save palettes in the browser,
+  copy the block names, or copy a link that opens the same palette for anyone.
+  A click on a collected block searches for similar ones, and **Use my palette
+  as colours** turns the collection into gradient stops.
+- **Filters** — hide falling blocks (sand, gravel, concrete powder), hide
+  technical blocks (command blocks, bedrock, spawners), and prefer plain
+  textures over busy ones of the same average colour.
+
+Blocks are full opaque cubes. Decorations are sprite-shaped plants and
+see-through or biome-tinted cubes; biome tints use the plains colours. Stairs,
+slabs, fences and other partial shapes are not listed. There is no shared
+gallery: that needs a server, and this site has none.
+
+```
+palette/
+  index.html, style.css   page and layout
+  app.js                  UI: matching, gradient, my palette, saved palettes, links
+  core.js                 ranking, filters, OkLab gradients (no DOM access)
+  strings.js              UI strings (en/ru)
+```
 
 ## Image2Banners
 Converts an image into banner art: for every banner slot (1 block wide, 2 blocks

@@ -1,5 +1,5 @@
 // Runs generation off the UI thread.
-import { makePalette } from "./core/palette.js";
+import { makePalette } from "../shared/mc/palette.js";
 import { generate } from "./core/pipeline.js";
 
 self.onmessage = ({ data }) => {

@@ -1,5 +1,5 @@
 // Map an RGB grid to nearest palette blocks (Lab distance), optional dithering.
-import { rgbToLab } from "./color.js";
+import { rgbToLab } from "../../shared/mc/color.js";
 
 /** grid: w*h*3 RGB bytes. Returns Uint16Array of palette indices, row-major. */
 export function quantize(grid, w, h, palette, dither = 0) {

@@ -7,7 +7,7 @@
 //
 // The grid is written as a vertical wall: Width = image columns, Height = image
 // rows, Length (depth) = 1.
-import { isLegacy, legacyBlock } from "./legacy.js";
+import { isLegacy, legacyBlock } from "../../shared/mc/legacy.js";
 
 const TAG = { END: 0, SHORT: 2, INT: 3, BYTE_ARRAY: 7, STRING: 8, LIST: 9, COMPOUND: 10, INT_ARRAY: 11 };
 const encoder = new TextEncoder();

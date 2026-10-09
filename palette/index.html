@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Palette</title>
+  <link rel="stylesheet" href="../shared/base.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="../" data-i18n="back"></a>
+    <h1>Palette</h1>
+    <span class="subtitle" data-i18n="subtitle"></span>
+    <span class="spacer"></span>
+    <select id="lang" aria-label="Language / Язык"></select>
+  </div>
+
+  <div class="layout">
+    <main>
+      <div class="bar">
+        <label><span data-i18n="version"></span> <select id="paletteVersion"></select></label>
+        <button id="addJar" data-i18n="addJar"></button>
+        <input type="file" id="jarFile" accept=".jar" hidden>
+        <span class="spacer"></span>
+        <label class="check" data-i18n-title="noFallingTip"><input type="checkbox" id="noFalling"><span data-i18n="noFalling"></span></label>
+        <label class="check" data-i18n-title="noTechnicalTip"><input type="checkbox" id="noTechnical" checked><span data-i18n="noTechnical"></span></label>
+        <label class="check" data-i18n-title="smoothTip"><input type="checkbox" id="smooth"><span data-i18n="smooth"></span></label>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button id="tabMatch" role="tab" aria-selected="true" data-i18n="tabMatch"></button>
+        <button id="tabGradient" role="tab" aria-selected="false" data-i18n="tabGradient"></button>
+      </div>
+
+      <section id="matchPane">
+        <div class="bar">
+          <input type="color" id="colour" value="#7fb238" aria-label="Colour">
+          <input type="text" id="hex" value="#7fb238" size="8" spellcheck="false" aria-label="HEX">
+          <input type="search" id="search">
+        </div>
+        <div class="results">
+          <div class="group wide">
+            <h2 data-i18n="matchingBlocks"></h2>
+            <div class="tiles" id="blockResults"></div>
+          </div>
+          <div class="group">
+            <h2 data-i18n="decorations"></h2>
+            <div class="tiles" id="decoResults"></div>
+          </div>
+        </div>
+        <p class="hint" data-i18n="matchHint"></p>
+      </section>
+
+      <section id="gradientPane" hidden>
+        <div class="bar">
+          <div id="stops" class="stops"></div>
+          <button id="addStop" data-i18n-title="addStopTip">＋</button>
+          <label><span data-i18n="steps"></span> <input type="number" id="steps" min="2" max="64" value="9"></label>
+          <label class="check"><input type="checkbox" id="unique" checked><span data-i18n="unique"></span></label>
+          <label class="check"><input type="checkbox" id="withDeco"><span data-i18n="withDeco"></span></label>
+        </div>
+        <div class="group">
+          <div class="strip" id="gradientColours"></div>
+          <div class="tiles row" id="gradientResults"></div>
+        </div>
+        <div class="bar">
+          <button id="stopsFromPalette" data-i18n="stopsFromPalette"></button>
+          <button id="addGradient" data-i18n="addGradient"></button>
+        </div>
+        <p class="hint" data-i18n="gradientHint"></p>
+      </section>
+    </main>
+
+    <aside>
+      <h2 data-i18n="myPalette"></h2>
+      <div class="tiles mine" id="mine"></div>
+      <p class="hint" id="mineHint" data-i18n="mineHint"></p>
+      <ul id="mineNames"></ul>
+      <div class="bar">
+        <input type="text" id="paletteName" maxlength="40">
+        <button id="save" data-i18n="save"></button>
+      </div>
+      <div class="bar">
+        <button id="share" data-i18n="share"></button>
+        <button id="copyNames" data-i18n="copyNames"></button>
+        <button id="clear" data-i18n="clear"></button>
+      </div>
+      <h2 data-i18n="saved"></h2>
+      <ul id="savedList"></ul>
+      <p class="hint" id="savedHint" data-i18n="savedHint"></p>
+    </aside>
+  </div>
+
+  <div class="status" id="status" role="status"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
