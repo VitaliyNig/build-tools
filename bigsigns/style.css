@@ -1,0 +1,40 @@
+body { display: flex; flex-direction: column; min-height: 100vh; }
+.topbar .subtitle { color: var(--muted); }
+main { flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; min-width: 0; }
+.hint { margin: 0; color: var(--muted); font-size: 12px; max-width: 900px; }
+.hint[hidden] { display: none; }
+#unknown { color: var(--danger); }
+
+.entry { display: flex; gap: 8px; max-width: 640px; }
+.option { display: flex; align-items: center; gap: 8px; }
+.entry input {
+  flex: 1; min-width: 0; font: 600 20px/1.3 var(--font); letter-spacing: 0.04em;
+  color: inherit; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px;
+}
+
+/* One card per sign, in reading order. */
+.signs { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.sign {
+  display: flex; flex-direction: column; gap: 6px; width: 312px; padding: 12px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.sign canvas { display: block; width: 288px; height: 144px; image-rendering: pixelated; border-radius: 4px; }
+.sign .caption { display: flex; align-items: baseline; gap: 8px; }
+.sign .caption b { font-size: 16px; }
+.sign .caption span { color: var(--muted); font-size: 12px; }
+
+.line { display: flex; align-items: center; gap: 6px; }
+.line .number { flex: none; width: 14px; color: var(--muted); font-size: 12px; text-align: center; }
+.line code {
+  flex: 1; min-width: 0; overflow: hidden; padding: 3px 6px; border-radius: 4px;
+  background: var(--surface-2); font: 13px/1.3 ui-monospace, Consolas, monospace; white-space: pre; user-select: all;
+}
+.line code.empty { color: var(--muted); font-family: var(--font); font-size: 12px; user-select: none; }
+.line button { flex: none; width: 34px; padding: 3px 0; }
+.line button.done { background: var(--accent); border-color: var(--accent); }
+
+.status {
+  padding: 5px 16px; min-height: 30px;
+  background: var(--surface); border-top: 1px solid var(--border); color: var(--muted);
+}
+.status.error { color: var(--danger); }

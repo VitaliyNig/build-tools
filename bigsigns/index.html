@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Big Signs</title>
+  <link rel="stylesheet" href="../shared/base.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="../" data-i18n="back"></a>
+    <h1>Big Signs</h1>
+    <span class="subtitle" data-i18n="subtitle"></span>
+    <span class="spacer"></span>
+    <select id="lang" aria-label="Language / Язык"></select>
+  </div>
+
+  <main>
+    <div class="entry">
+      <input type="text" id="text" maxlength="64" spellcheck="false" autocomplete="off">
+      <button id="clear" data-i18n="clear"></button>
+    </div>
+    <label class="option"><span data-i18n="perSign"></span>
+      <select id="perSign">
+        <option value="1" data-i18n="perSign1"></option>
+        <option value="2" data-i18n="perSign2"></option>
+      </select>
+    </label>
+    <p class="hint" data-i18n="howTo"></p>
+    <p class="hint" id="pairsHint" data-i18n="pairsHint" hidden></p>
+    <p class="hint" id="unknown" hidden></p>
+
+    <div class="signs" id="signs"></div>
+
+    <p class="hint" data-i18n="accuracy"></p>
+    <p class="hint">
+      <span data-i18n="credit"></span>
+      <a href="https://superfromnd.gitlab.io/bigsigns/" target="_blank" rel="noopener">Big Sign Letters</a>
+      <span data-i18n="creditBy"></span>
+    </p>
+  </main>
+
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

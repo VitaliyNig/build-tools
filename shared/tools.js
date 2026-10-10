@@ -64,12 +64,11 @@ export const TOOLS = [
   },
   {
     id: "bigsigns",
-    href: "https://superfromnd.gitlab.io/bigsigns/",
-    external: true,
-    title: { en: "Big Sign Letters", ru: "Big Sign Letters" },
+    href: "bigsigns/",
+    title: { en: "Big Signs", ru: "Big Signs" },
     description: {
-      en: "Text to copy onto a Minecraft sign, line by line, to make one large letter, digit or symbol per sign for decoration. A tool by SuperFromND.",
-      ru: "Текст для копирования на табличку Minecraft построчно: на каждой табличке получается одна большая буква, цифра или символ для декора. Инструмент от SuperFromND.",
+      en: "Type a word and get the lines to paste into Minecraft signs: one big letter per sign, Latin and Cyrillic, with a pixel-exact preview. After an idea by SuperFromND.",
+      ru: "Введите слово и получите строки для вставки в таблички Minecraft: одна большая буква на табличку, латиница и кириллица, предпросмотр с точностью до пикселя. По идее SuperFromND.",
     },
     tags: ["Minecraft", "Signs", "SuperFromND"],
     // A letter "A" on a sign.

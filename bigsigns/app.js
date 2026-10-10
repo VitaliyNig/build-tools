@@ -1,0 +1,136 @@
+// Big Signs: type a word, get the four lines to paste into each sign.
+import "../shared/tooltip.js";
+import { bindLanguageSelect, getLang } from "../shared/i18n.js";
+import { BLOCK_INK, LINE_PITCH, LINES, signsFor } from "./core.js";
+import { STRINGS } from "./strings.js";
+
+const TEXT_KEY = "bigsigns.text", PER_SIGN_KEY = "bigsigns.perSign";
+// The face of a sign in text pixels, and how much each is enlarged on the page.
+const FACE_W = 96, FACE_H = 48, SCALE = 3;
+const BOARD = "#a8825a", GRAIN = "#9a7650", INK = "#000000";
+
+const $ = (id) => document.getElementById(id);
+
+const state = {
+  lang: getLang(),
+  copied: new Set(),   // "sign index:line" of the lines already copied, to keep one's place
+  status: ["statusStart"],
+};
+
+// ---------- i18n ----------
+function t(key, ...args) {
+  const value = STRINGS[key][state.lang === "ru" ? 1 : 0];
+  return typeof value === "function" ? value(...args) : value;
+}
+
+function setStatus(key, ...args) {
+  state.status = [key, ...args];
+  $("status").textContent = t(...state.status);
+  $("status").classList.toggle("error", key.startsWith("err"));
+}
+
+function retranslate() {
+  for (const el of document.querySelectorAll("[data-i18n]")) el.textContent = t(el.dataset.i18n);
+  document.title = `Big Signs — ${t("subtitle")}`;
+  $("text").placeholder = t("placeholder");
+  $("status").textContent = t(...state.status);
+  render();
+}
+
+// ---------- signs ----------
+/** The sign as the game draws it: every block where the font puts it. */
+function picture(lines) {
+  const canvas = document.createElement("canvas");
+  canvas.width = FACE_W * SCALE; canvas.height = FACE_H * SCALE;
+  const context = canvas.getContext("2d");
+  context.fillStyle = BOARD;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = GRAIN;
+  for (let y = 12; y < FACE_H; y += 12) context.fillRect(0, y * SCALE, canvas.width, SCALE);
+  context.fillStyle = INK;
+  const top = (FACE_H - LINES * LINE_PITCH) / 2 + 1, half = BLOCK_INK / 2;
+  (lines || []).forEach((line, index) => {
+    for (const { x, cell } of line.blocks) {
+      const y = top + index * LINE_PITCH + (cell === "▄" ? half : 0), height = cell === "█" ? BLOCK_INK : half;
+      context.fillRect((FACE_W / 2 + x) * SCALE, y * SCALE, BLOCK_INK * SCALE, height * SCALE);
+    }
+  });
+  return canvas;
+}
+
+async function copyLine(text, key, sign, line, button) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    setStatus("errCopy");
+    return;
+  }
+  state.copied.add(key);
+  button.classList.add("done");
+  setStatus("statusCopied", sign, line);
+}
+
+function card(sign, index) {
+  const item = document.createElement("div");
+  item.className = "sign";
+  const blank = sign.lines && sign.lines.every((line) => !line.text);
+  const caption = Object.assign(document.createElement("div"), { className: "caption" });
+  const name = sign.characters.toUpperCase().replace(/ /g, "␣");
+  caption.append(Object.assign(document.createElement("b"), { textContent: name }));
+  if (!sign.lines || blank) {
+    caption.append(Object.assign(document.createElement("span"), { textContent: t(sign.lines ? "blank" : "noGlyph") }));
+  }
+  item.append(picture(sign.lines), caption);
+  if (!sign.lines || blank) return item;
+
+  sign.lines.forEach((line, number) => {
+    const key = `${index}:${number}`, row = document.createElement("div");
+    row.className = "line";
+    const label = Object.assign(document.createElement("span"), { className: "number", textContent: number + 1 });
+    // Spaces are part of the line: show the text exactly, without collapsing them.
+    const text = Object.assign(document.createElement("code"), { textContent: line.text || t("emptyLine") });
+    text.classList.toggle("empty", !line.text);
+    const button = Object.assign(document.createElement("button"), { type: "button", textContent: "📋", title: t("copyLine", number + 1) });
+    button.disabled = !line.text;
+    button.classList.toggle("done", state.copied.has(key));
+    button.addEventListener("click", () => copyLine(line.text, key, name, number + 1, button));
+    row.append(label, text, button);
+    item.append(row);
+  });
+  return item;
+}
+
+function render() {
+  const signs = signsFor($("text").value, Number($("perSign").value));
+  $("signs").replaceChildren(...signs.map(card));
+  const unknown = [...new Set(signs.filter((sign) => !sign.lines).map((sign) => sign.characters))];
+  $("pairsHint").hidden = $("perSign").value !== "2";
+  $("unknown").hidden = !unknown.length;
+  $("unknown").textContent = t("unknown", unknown.join(" "));
+}
+
+function textChanged() {
+  state.copied.clear();
+  try {
+    localStorage.setItem(TEXT_KEY, $("text").value);
+    localStorage.setItem(PER_SIGN_KEY, $("perSign").value);
+  } catch { /* storage unavailable */ }
+  render();
+  const count = $("signs").children.length;
+  setStatus(count ? "statusSigns" : "statusStart", count);
+}
+
+function start() {
+  try {
+    $("text").value = localStorage.getItem(TEXT_KEY) || "";
+    $("perSign").value = localStorage.getItem(PER_SIGN_KEY) === "2" ? "2" : "1";
+  } catch { /* storage unavailable */ }
+  $("text").addEventListener("input", textChanged);
+  $("perSign").addEventListener("change", textChanged);
+  $("clear").addEventListener("click", () => { $("text").value = ""; textChanged(); $("text").focus(); });
+  bindLanguageSelect($("lang"), (lang) => { state.lang = lang; retranslate(); });
+  retranslate();
+  textChanged();
+}
+
+start();

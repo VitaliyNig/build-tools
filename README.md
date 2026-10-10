@@ -10,7 +10,7 @@ folder. There is no build step and no backend: plain HTML, CSS and ES modules.
 | **Palette** | `palette/` | Blocks and decorations by colour, block gradients, shareable palettes |
 | **Image2Banners** | `image2banners/` | Image to Minecraft banner art; web port of the app by MARSTeamMC |
 | **GeoToSchematic** | external link | KML/GeoJSON outlines to schematics, by reyysun ([site](https://reyysun.github.io/geo-to-schematic/)) |
-| **Big Sign Letters** | external link | Large single-letter text for Minecraft signs, by SuperFromND ([site](https://superfromnd.gitlab.io/bigsigns/)) |
+| **Big Signs** | `bigsigns/` | Big letters for Minecraft signs, one per sign, Latin and Cyrillic; after an idea by SuperFromND ([site](https://superfromnd.gitlab.io/bigsigns/)) |
 
 ```
 index.html     hub page, built from shared/tools.js
@@ -238,6 +238,36 @@ palette/
   app.js                  UI: matching, gradient, my palette, saved palettes, links
   core.js                 ranking, filters, OkLab gradients (no DOM access)
   strings.js              UI strings (en/ru)
+```
+
+## Big Signs
+Turns a word into Minecraft signs with one big letter each. A sign line of the
+block characters `█ ▀ ▄` gives two rows of "pixels", so the four lines of a sign
+hold a letter 8 rows tall. For every sign the tool shows the four lines to copy
+and paste into it.
+
+The idea, and the trick itself, come from
+[Big Sign Letters](https://superfromnd.gitlab.io/bigsigns/) by **SuperFromND**.
+This tool is written from scratch around it:
+- **Whole words** — type a text and get every sign in order, instead of picking
+  letters one at a time.
+- **Latin, Cyrillic, digits and punctuation**, in a font of its own.
+- **Exact padding.** The game centres each line separately, and a space (4 px)
+  is narrower than a block (9 px), so a letter only comes out straight when
+  every line is padded with the right number of spaces. The tool tries the
+  paddings and keeps the one that puts the blocks closest to their columns;
+  no block ends up more than 2 px off.
+- **Two letters on a sign**, as an option: a second, narrower font (four columns
+  where the letter allows it) and a single space between the letters. A sign
+  line holds 90 px, so two wide letters (Ж, Ш, Ы…) in a row still get a sign each.
+- **Pixel-exact preview**, drawn from the widths of the game's default font.
+
+```
+bigsigns/
+  index.html, style.css   page
+  app.js                  UI: text input, sign cards, copy buttons
+  strings.js              UI strings (en/ru)
+  core.js                 the font, and the padding of sign lines
 ```
 
 ## Image2Banners
