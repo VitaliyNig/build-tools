@@ -19,12 +19,15 @@ function labOf(entries) {
  * faces:       [{block, face, rgb}] - other sides of the blocks that look
  *              different from the north one; optional
  * faceTiles:   Uint8Array of faces.length * 768 packed RGB bytes
+ * fronts:      [{id, name, rgb}] - blocks that are not full cubes but fill the
+ *              square seen from the north (shulker box, open trapdoor); optional
+ * frontTiles:  Uint8Array of fronts.length * 768 packed RGB bytes
  * decorations: [{id, name, rgb}] - plants, leaves, glass; optional
  * decoTiles:   Uint8Array of decorations.length * 1024 packed RGBA bytes
  */
 export function makePalette({
   key, version, dataVersion, blocks, tiles, faces = [], faceTiles = new Uint8Array(0),
-  decorations = [], decoTiles = new Uint8Array(0),
+  fronts = [], frontTiles = new Uint8Array(0), decorations = [], decoTiles = new Uint8Array(0),
 }) {
   if (!blocks.length) throw new Error("palette is empty");
   const rgb = new Float32Array(blocks.length * 3);
@@ -32,6 +35,7 @@ export function makePalette({
   return {
     key, version, dataVersion, blocks, tiles, rgb, lab: labOf(blocks), size: blocks.length,
     faces, faceTiles, faceLab: labOf(faces),
+    fronts, frontTiles,
     decorations, decoTiles, decoLab: labOf(decorations),
   };
 }

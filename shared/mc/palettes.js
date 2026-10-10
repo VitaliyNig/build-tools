@@ -6,8 +6,9 @@ import { decodePng } from "./png.js";
 const BUNDLED = new URL("./palettes/", import.meta.url);
 const ATLAS_COLS = 32;
 const DB_NAME = "tools.pixel", STORE = "palettes";
-// 2: + decorations, 3: + other sides of blocks, 4: 32 px decorations with 3D models, 5: exact pixels (no canvas)
-const RECORD_FORMAT = 5;
+// 2: + decorations, 3: + other sides of blocks, 4: 32 px decorations with 3D models, 5: exact pixels (no canvas),
+// 6: + fronts
+const RECORD_FORMAT = 6;
 
 const loaded = new Map();     // key -> palette
 const session = new Map();    // imported records, also the fallback when IndexedDB is unavailable
@@ -77,6 +78,8 @@ export async function loadPalette(key) {
       const image = async (suffix) => decodeImage(new Uint8Array(
         await (await fetch(new URL(`${encodeURIComponent(name)}${suffix}.png`, BUNDLED))).arrayBuffer()));
       const atlas = await image(""), decorations = data.decorations || [], faces = data.faces || [];
+      const fronts = data.fronts || [];
+      const frontAtlas = fronts.length ? await image(".fronts") : null;
       const decoAtlas = decorations.length ? await image(".deco") : null;
       const faceAtlas = faces.length ? await image(".faces") : null;
       palette = makePalette({
@@ -84,6 +87,8 @@ export async function loadPalette(key) {
         tiles: tilesFromAtlas(atlas.data, atlas.w, data.blocks.length, data.cols),
         faces,
         faceTiles: faceAtlas ? tilesFromAtlas(faceAtlas.data, faceAtlas.w, faces.length, data.cols) : undefined,
+        fronts,
+        frontTiles: frontAtlas ? tilesFromAtlas(frontAtlas.data, frontAtlas.w, fronts.length, data.cols) : undefined,
         decorations,
         decoTiles: decoAtlas ? tilesFromAtlas(decoAtlas.data, decoAtlas.w, decorations.length, data.cols, 4, DECO_PX) : undefined,
       });

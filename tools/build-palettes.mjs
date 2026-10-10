@@ -6,6 +6,7 @@
 //   <version>.json      block and decoration lists (id, name, category, average rgb)
 //   <version>.png       atlas of block tiles, 16x16, 32 per row, in list order
 //   <version>.faces.png atlas of the other sides of blocks, same layout
+//   <version>.fronts.png atlas of non-cube blocks that fill the square from the north, same layout
 //   <version>.deco.png  atlas of decoration tiles (32x32, with transparency), 32 per row
 // and adds the version to index.json. It uses the same importer as the site.
 import fs from "node:fs";
@@ -74,17 +75,20 @@ for (const jar of jars) {
   const { version } = result;
   fs.writeFileSync(path.join(OUT, `${version}.json`), JSON.stringify({
     version, data_version: result.dataVersion, cols: COLS, blocks: result.blocks, faces: result.faces,
-    decorations: result.decorations,
+    fronts: result.fronts, decorations: result.decorations,
   }));
   fs.writeFileSync(path.join(OUT, `${version}.png`), atlas(result.tiles, result.blocks.length, 3));
   fs.writeFileSync(path.join(OUT, `${version}.faces.png`), atlas(result.faceTiles, result.faces.length, 3));
+  const frontsPath = path.join(OUT, `${version}.fronts.png`);
+  if (result.fronts.length) fs.writeFileSync(frontsPath, atlas(result.frontTiles, result.fronts.length, 3));
+  else fs.rmSync(frontsPath, { force: true });
   fs.writeFileSync(path.join(OUT, `${version}.deco.png`), atlas(result.decoTiles, result.decorations.length, 4, DECO_PX));
   index.palettes = index.palettes.filter((entry) => entry.version !== version);
   index.palettes.push({
     version, data_version: result.dataVersion, blocks: result.blocks.length, faces: result.faces.length,
-    decorations: result.decorations.length,
+    fronts: result.fronts.length, decorations: result.decorations.length,
   });
-  console.log(`${version}: ${result.blocks.length} blocks, ${result.faces.length} other faces, ${result.decorations.length} decorations, ${result.skipped.length} skipped`);
+  console.log(`${version}: ${result.blocks.length} blocks, ${result.faces.length} other faces, ${result.fronts.length} fronts, ${result.decorations.length} decorations, ${result.skipped.length} skipped`);
 }
 index.palettes.sort(newerFirst);
 index.default ||= index.palettes[0].version;

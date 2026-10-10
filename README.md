@@ -133,9 +133,11 @@ To bundle a version with the site instead, run the builder on its client JAR
 node tools/build-palettes.mjs path/to/1.21.4.jar
 ```
 
-It writes `<version>.json` (blocks, their other sides and decorations, with
-average colours), `<version>.png` (block tiles, north side),
-`<version>.faces.png` (the other sides that look different) and
+It writes `<version>.json` (blocks, their other sides, fronts and decorations,
+with average colours), `<version>.png` (block tiles, north side),
+`<version>.faces.png` (the other sides that look different),
+`<version>.fronts.png` (blocks that are not cubes but fill the square seen from
+the north: shulker boxes, open trapdoors without holes, the composter) and
 `<version>.deco.png` (decoration tiles, 32×32, with transparency) into `shared/mc/palettes/` and adds the version to `index.json`.
 Atlases hold 32 tiles per row, in list order; block tiles are 16×16.
 
@@ -282,7 +284,8 @@ on the test image. Intentional differences:
   that version's textures) instead of the original's fixed list, so the blocks
   behind banners differ from the desktop app's. Other sides of a block are used
   where the block can be turned to show them: the end of a log, the top of a
-  barrel, the back of a furnace.
+  barrel, the back of a furnace. Shulker boxes, open trapdoors and the composter
+  are used too, in versions from 1.13 on.
 - The original appends the last pattern once more when a layer brings no
   improvement; the port does not, so the saved list matches the preview.
 - The saved PNG is drawn from the final data (crisp blocks, banners placed as in

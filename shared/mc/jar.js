@@ -1,12 +1,14 @@
 // Version-specific block palettes built from Java client JAR assets, in the browser.
 // Reads data only; nothing from the JAR is ever executed.
 //
-// Three lists are produced: "blocks" are full opaque cubes usable in a wall,
+// Four lists are produced: "blocks" are full opaque cubes usable in a wall,
 // drawn by their north side; "faces" are the other sides of those cubes that
-// look different (the top of a log, the bottom of a piston); and "decorations"
+// look different (the top of a log, the bottom of a piston); "decorations"
 // are everything else worth showing: plants, see-through or biome-tinted cubes
 // (flowers, leaves, glass) drawn flat, and blocks with a shape of their own
-// (anvils, hoppers, cauldrons, stairs, slabs) drawn as small 3D pictures.
+// (anvils, hoppers, cauldrons, stairs, slabs) drawn as small 3D pictures; and
+// "fronts" are blocks that are not full cubes but fill the whole square when
+// looked at from the north (a shulker box on its side, an open trapdoor).
 import { isLegacy, legacyBlock } from "./legacy.js";
 import { DECO_BYTES, DECO_PX, TILE_BYTES, TILE_PX } from "./palette.js";
 import { renderModel } from "./render.js";
@@ -74,6 +76,22 @@ function crop(image, x0, y0, x1, y1) {
     }
   }
   return { data, w, h };
+}
+
+/** The part of a texture a model face shows; a uv box given backwards mirrors it. */
+function faceImage(texture, face) {
+  const uv = face.uv || [0, 0, 16, 16];
+  const [x0, y0, x1, y1] = uv.map((v, i) => Math.round(v / 16 * (i % 2 === 0 ? texture.w : texture.h)));
+  const part = crop(texture, Math.min(x0, x1), Math.min(y0, y1), Math.max(x0, x1), Math.max(y0, y1));
+  if (!part.w || !part.h) throw new Error("Empty face");
+  const out = new Uint8ClampedArray(part.data.length);
+  for (let y = 0; y < part.h; y++) {
+    for (let x = 0; x < part.w; x++) {
+      const s = ((y1 < y0 ? part.h - 1 - y : y) * part.w + (x1 < x0 ? part.w - 1 - x : x)) * 4;
+      out.set(part.data.subarray(s, s + 4), (y * part.w + x) * 4);
+    }
+  }
+  return rotateClockwise({ data: out, w: part.w, h: part.h }, (face.rotation || 0) / 90);
 }
 
 function rotateClockwise(image, quarterTurns) {
@@ -246,6 +264,45 @@ class JarAssets {
   }
 
   /**
+   * The picture of a block that is not a full cube but, in the right state,
+   * fills the whole square for someone looking at it from the north:
+   * {properties, tile}, else null. Pictures with holes do not count.
+   *
+   * state: the block's blockstate file.
+   */
+  async frontTile(block, state) {
+    let image = null, properties = "";
+    if (/(^|_)shulker_box$/.test(block)) {
+      // Drawn by code from the shulker's texture; lying on its side it shows the top of its lid.
+      const colour = block.replace(/_?shulker_box$/, "");
+      const texture = await this.texture(`minecraft:entity/shulker/shulker${colour ? `_${colour}` : ""}`, {});
+      const k = texture.w / 64;
+      image = crop(texture, 16 * k, 0, 32 * k, 16 * k);
+      properties = "facing=north";
+    } else if (/(^|_)trapdoor$/.test(block)) {
+      // Open and hinged on the north edge, the door stands flush with the north side.
+      properties = "facing=south,half=bottom,open=true";
+      const entries = (state.variants || {})[properties];
+      const entry = Array.isArray(entries) ? entries[0] : entries;
+      if (!entry || entry.x) return null;
+      const model = await this.model(entry.model), door = (model.elements || [])[0];
+      // The model is turned about the vertical axis: which of its sides ends up facing north.
+      const side = { 0: "north", 90: "west", 180: "south", 270: "east" }[entry.y || 0];
+      const face = door && (door.faces || {})[side];
+      if (!face) return null;
+      image = faceImage(await this.texture(face.texture, model.textures || {}), face);
+    } else if (block === "composter") {
+      const part = (state.multipart || []).find((item) => !item.when);
+      if (!part) return null;
+      const model = await this.model(part.apply.model);
+      image = await this.texture("#side", model.textures || {});
+    }
+    if (!image || !image.w || !image.h) return null;
+    for (let i = 3; i < image.data.length; i += 4) if (image.data[i] !== 255) return null;
+    return { properties, tile: toTile(image) };
+  }
+
+  /**
    * A small 3D picture of a block with a shape of its own (anvil, hopper,
    * stairs), as the inventory shows it: {tile, rgb}, else null.
    */
@@ -358,8 +415,9 @@ async function versionMetadata(archive, fileName) {
 
 /**
  * Build a palette from a client JAR's bytes.
- * Returns {version, dataVersion, blocks, tiles, faces, faceTiles, decorations,
- * decoTiles, skipped}. faces is [{block: index into blocks, face: "top" |
+ * Returns {version, dataVersion, blocks, tiles, faces, faceTiles, fronts,
+ * frontTiles, decorations, decoTiles, skipped}. fronts is [{id, name, rgb}],
+ * each in the state that shows its picture to the north. faces is [{block: index into blocks, face: "top" |
  * "bottom" | "side", sides: every side it is seen on, rgb}]; a block carries
  * `sides` too when its own picture is not on all of them. tiles and faceTiles are packed RGB, decoTiles packed
  * RGBA, 16x16 each. Throws
@@ -372,12 +430,23 @@ export async function importJar(buffer, fileName, decodePng, onProgress) {
   const prefix = "assets/minecraft/blockstates/";
   const states = archive.names().filter((n) => n.startsWith(prefix) && n.endsWith(".json")).sort();
   const blocks = [], tiles = [], faces = [], faceTiles = [], decorations = [], decoTiles = [], skipped = [];
+  const fronts = [], frontTiles = [];
   for (let s = 0; s < states.length; s++) {
     if (onProgress && s % 16 === 0) onProgress(s / states.length);
     const block = states[s].slice(prefix.length, -5);
     let chosen = null, variants = {};
     try {
-      variants = (await archive.json(states[s])).variants || {};
+      const state = await archive.json(states[s]);
+      // Blocks named with numbers before 1.13 are left to the lists that can export them.
+      const front = isLegacy(dataVersion) ? null : await assets.frontTile(block, state).catch(() => null);
+      if (front) {
+        fronts.push({
+          id: `minecraft:${block}` + (front.properties ? `[${front.properties}]` : ""),
+          name: titleCase(block), rgb: averageColour(front.tile),
+        });
+        frontTiles.push(front.tile);
+      }
+      variants = state.variants || {};
       search: for (const properties of Object.keys(variants).sort()) {
         const entries = variants[properties];
         for (const entry of Array.isArray(entries) ? entries : [entries]) {
@@ -452,10 +521,12 @@ export async function importJar(buffer, fileName, decodePng, onProgress) {
   tiles.forEach((tile, i) => packed.set(tile, i * TILE_BYTES));
   const packedFaces = new Uint8Array(faces.length * TILE_BYTES);
   faceTiles.forEach((tile, i) => packedFaces.set(tile, i * TILE_BYTES));
+  const packedFronts = new Uint8Array(fronts.length * TILE_BYTES);
+  frontTiles.forEach((tile, i) => packedFronts.set(tile, i * TILE_BYTES));
   const packedDeco = new Uint8Array(decorations.length * DECO_BYTES);
   decoTiles.forEach((tile, i) => packedDeco.set(tile, i * DECO_BYTES));
   return {
     version: name, dataVersion, blocks, tiles: packed, faces, faceTiles: packedFaces,
-    decorations, decoTiles: packedDeco, skipped,
+    fronts, frontTiles: packedFronts, decorations, decoTiles: packedDeco, skipped,
   };
 }

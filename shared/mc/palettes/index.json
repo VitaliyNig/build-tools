@@ -6,6 +6,7 @@
       "data_version": 5023,
       "blocks": 484,
       "faces": 139,
+      "fronts": 22,
       "decorations": 520
     },
     {
@@ -13,6 +14,7 @@
       "data_version": 4189,
       "blocks": 429,
       "faces": 137,
+      "fronts": 22,
       "decorations": 401
     },
     {
@@ -20,6 +22,7 @@
       "data_version": 1343,
       "blocks": 208,
       "faces": 49,
+      "fronts": 0,
       "decorations": 155
     }
   ]

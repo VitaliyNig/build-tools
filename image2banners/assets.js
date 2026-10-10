@@ -62,7 +62,8 @@ function turnedTo(id, face, nth) {
 /**
  * The blocks of a palette (shared/mc/palette.js) that can back a banner:
  * {names, labels, tiles}, see prepareAssets. Besides every block seen from the
- * front, its other sides where the block can be turned to show them.
+ * front, its other sides where the block can be turned to show them, and the
+ * blocks that are not cubes but look like one from the front.
  * Plain data, so it can be sent to a worker.
  */
 export function blockSetOf(palette) {
@@ -84,6 +85,11 @@ export function blockSetOf(palette) {
     names.push(name);
     labels.push(`${block.name} (${face.face})`);
     sources.push(palette.faceTiles.subarray(i * bytes, (i + 1) * bytes));
+  });
+  (palette.fronts || []).forEach((front, i) => {
+    names.push(front.id.replace(/^minecraft:/, ""));
+    labels.push(front.name);
+    sources.push(palette.frontTiles.subarray(i * bytes, (i + 1) * bytes));
   });
   const tiles = new Uint8Array(names.length * bytes);
   sources.forEach((tile, i) => tiles.set(tile, i * bytes));
