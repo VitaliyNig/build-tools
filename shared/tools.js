@@ -8,6 +8,8 @@ export const SITE = {
     en: "Small tools that run entirely in your browser. Nothing is uploaded.",
     ru: "Небольшие инструменты, которые работают прямо в браузере. Ничего никуда не загружается.",
   },
+  favourite: { en: "Add to favourites", ru: "Добавить в избранное" },
+  unfavourite: { en: "Remove from favourites", ru: "Убрать из избранного" },
 };
 
 export const TOOLS = [

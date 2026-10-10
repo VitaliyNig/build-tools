@@ -16,10 +16,21 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       text-decoration: none;
-      transition: border-color 0.15s, transform 0.15s;
+      transition: border-color 0.15s;
     }
-    .card:hover { border-color: var(--accent); transform: translateY(-2px); }
-    .card header { display: flex; align-items: center; gap: 12px; }
+    /* The star sits next to the card link, not inside it: a button cannot live in an <a>. */
+    .cell { position: relative; display: flex; transition: transform 0.15s; }
+    .cell:hover { transform: translateY(-2px); }
+    .cell .card { flex: 1; }
+    .cell:hover .card { border-color: var(--accent); }
+    .card header { display: flex; align-items: center; gap: 12px; padding-right: 28px; }
+    .star {
+      position: absolute; top: 10px; right: 10px;
+      padding: 2px 6px; border: 0; background: none;
+      color: var(--muted); font-size: 20px; line-height: 1; opacity: 0.55;
+    }
+    .star:hover, .star:focus-visible { opacity: 1; }
+    .star[aria-pressed="true"] { color: #e0a800; opacity: 1; }
     .card h2 { margin: 0; font-size: 17px; }
     .card p { margin: 0; color: var(--muted); }
     .icon { display: grid; grid-template-columns: repeat(4, 9px); border-radius: 4px; overflow: hidden; }
@@ -42,12 +53,33 @@
     import { bindLanguageSelect, getLang } from "./shared/i18n.js";
     import { SITE, TOOLS } from "./shared/tools.js";
 
+    // Favourite tools live in this browser only and are listed first.
+    const FAV_KEY = "tools.favourites";
+    const favourites = new Set(loadFavourites());
+
+    function loadFavourites() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(FAV_KEY));
+        if (Array.isArray(saved)) return saved;
+      } catch { /* storage unavailable or damaged */ }
+      return [];
+    }
+
+    function toggleFavourite(id) {
+      if (!favourites.delete(id)) favourites.add(id);
+      try { localStorage.setItem(FAV_KEY, JSON.stringify([...favourites])); } catch { /* storage unavailable */ }
+      render(getLang());
+      document.querySelector(`.star[data-id="${id}"]`)?.focus();
+    }
+
     function render(lang) {
       document.title = SITE.title[lang];
       document.getElementById("title").textContent = SITE.title[lang];
       document.getElementById("tagline").textContent = SITE.tagline[lang];
       const grid = document.getElementById("grid");
-      grid.replaceChildren(...TOOLS.map((tool) => {
+      // The sort is stable, so each group keeps the registry order.
+      const tools = [...TOOLS].sort((a, b) => favourites.has(b.id) - favourites.has(a.id));
+      grid.replaceChildren(...tools.map((tool) => {
         const card = document.createElement("a");
         card.className = "card";
         card.href = tool.href;
@@ -65,7 +97,20 @@
         tags.className = "tags";
         for (const tag of tool.tags) tags.appendChild(document.createElement("span")).textContent = tag;
         card.append(header, text, tags);
-        return card;
+        const on = favourites.has(tool.id);
+        const star = document.createElement("button");
+        star.type = "button";
+        star.className = "star";
+        star.dataset.id = tool.id;
+        star.textContent = on ? "★" : "☆";
+        star.setAttribute("aria-pressed", on);
+        star.title = (on ? SITE.unfavourite : SITE.favourite)[lang];
+        star.setAttribute("aria-label", `${star.title}: ${tool.title[lang]}`);
+        star.addEventListener("click", () => toggleFavourite(tool.id));
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.append(card, star);
+        return cell;
       }));
     }
 
