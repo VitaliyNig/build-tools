@@ -4,6 +4,18 @@ export const STRINGS = {
   subtitle: ["Big letters for Minecraft signs", "Большие буквы для табличек Minecraft"],
   placeholder: ["Type a word…", "Введите слово…"],
   clear: ["Clear", "Очистить"],
+  sign: ["Sign:", "Табличка:"],
+  sign_standing: ["ordinary — lines up to 90 px", "обычная — строка до 90 px"],
+  sign_hanging: ["hanging — lines up to 60 px", "подвесная — строка до 60 px"],
+  signHint: [
+    "A hanging sign takes lines a third shorter, and its lines stand closer together. Fewer letters fit on it, and the widest ones do not fit at all.",
+    "На подвесной табличке строка на треть короче, а строки стоят плотнее. Букв на неё помещается меньше, а самые широкие не помещаются вовсе.",
+  ],
+  tooWide: ["too wide for this sign", "не помещается на эту табличку"],
+  tooWideList: [
+    (list) => `Too wide for this sign in this font: ${list}. Pick a narrower font.`,
+    (list) => `Не помещаются на эту табличку этим шрифтом: ${list}. Выберите более узкий шрифт.`,
+  ],
   style: ["Font", "Шрифт"],
   sample: ["ABCD", "АБВГ"],
   style_large: ["large — one letter to a sign", "крупный — одна буква на табличку"],

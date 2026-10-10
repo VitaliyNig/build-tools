@@ -23,6 +23,13 @@ export const BLOCK_ADVANCE = 9, BLOCK_INK = 8, SPACE_ADVANCE = 4;
 export const STEM_ADVANCE = 5, STEM_INK = 4;
 export const LINE_WIDTH = 90;     // the widest line a sign accepts
 export const LINE_PITCH = 10;     // from the top of one line to the top of the next
+// The kinds of sign: the widest line each accepts, the distance from the top of
+// one line to the top of the next, and the size of its face, all in text pixels.
+// A hanging sign is smaller but its text is drawn larger, so less fits on it.
+export const SIGNS = {
+  standing: { width: LINE_WIDTH, pitch: LINE_PITCH, face: [96, 48] },
+  hanging: { width: 60, pitch: 9, face: [56, 40] },
+};
 export const MAX_COLUMNS = Math.floor(LINE_WIDTH / BLOCK_ADVANCE);
 
 // Letters as rows of "#" (filled) and "." separated by "/", top row first.
@@ -102,6 +109,26 @@ const SHAPES = {
   "_": "...../...../...../...../...../...../...../#####",
   "\\": "#..../#..../.#.../.#.../..#../..#../...#./...#.",
   "|": "#/#/#/#/#/#/#/#",
+  "#": ".#.#./.#.#./#####/.#.#./.#.#./#####/.#.#./.#.#.",
+  "%": "##..#/##..#/...#./..#../..#../.#.../#..##/#..##",
+  "*": "...../..#../#.#.#/.###./.###./#.#.#/..#../.....",
+  "&": ".##../#..#./#..#./.##../.#..#/#.#.#/#..#./.##.#",
+  "@": ".###./#...#/#.###/#.#.#/#.###/#..../#...#/.###.",
+  "№": "#..#../##.#.#/##.#.#/#.##../#.##.#/#..#../#..#../#..#..",
+  "$": "..#../.####/#.#../.###./..#.#/..#.#/####./..#..",
+  "\"": "#.#/#.#/#.#/.../.../.../.../...",
+  "'": "#/#/#/././././.",
+  ";": "../##/##/../../.#/.#/#.",
+  "<": "...#/..#./.#../#.../#.../.#../..#./...#",
+  ">": "#.../.#../..#./...#/...#/..#./.#../#...",
+  "[": "##/#./#./#./#./#./#./##",
+  "]": "##/.#/.#/.#/.#/.#/.#/##",
+  "~": "...../...../.#..#/#.#.#/#..#./...../...../.....",
+  "^": "..#../.#.#./#...#/...../...../...../...../.....",
+  "°": ".#./#.#/.#./.../.../.../.../...",
+  "{": "..#/.#./.#./#../#../.#./.#./..#",
+  "}": "#../.#./.#./..#/..#/.#./.#./#..",
+  "₽": ".###./.#..#/.#..#/.###./.#.../###../.#.../.#...",
   " ": ".../.../.../.../.../.../.../...",
 };
 // Cyrillic letters that look like Latin ones.
@@ -171,6 +198,13 @@ const NARROW = {
   "=": ".../.../###/.../.../###/.../...",
   "_": ".../.../.../.../.../.../.../###",
   "\\": "#../#../#../.#./.#./..#/..#/..#",
+  "#": ".../#.#/###/#.#/#.#/###/#.#/...",
+  "%": "#..#/#..#/...#/..#./.#../#.../#..#/#..#",
+  "*": ".../#.#/.#./###/.#./#.#/.../...",
+  "$": ".#./###/#../###/..#/..#/###/.#.",
+  "~": "..../..../.#.#/#.#./..../..../..../....",
+  "^": ".#./#.#/.../.../.../.../.../...",
+  "₽": ".##./.#.#/.#.#/.##./.#../###./.#../.#..",
   " ": "../../../../../../../..",
 };
 
@@ -257,6 +291,15 @@ const THIN = {
   "_": ["", "", "", "__"],
   "\\": ["|", ";,|", ":;|", "::|"],
   "|": ["|", "|", "|", "|"],
+  "*": ["","_|_","^|^",""],
+  "\"": ["|;|","","",""],
+  "'": ["|","","",""],
+  ";": ["","_","","|"],
+  "<": [":|","|","|",":|"],
+  ">": ["|",":|",":|","|"],
+  "[": ["|^","|","|","|_"],
+  "]": ["^|",":|",":|","_|"],
+  "~": ["","^_","",""],
   " ": [":.", "", "", ""],
 };
 // Large and narrow letters with thin strokes mixed in: stems stay a whole block
@@ -376,6 +419,15 @@ const TINY = {
   "=": ["", "^", "_", ""],
   "_": ["", "", "", "__"],
   "|": ["|", "|", "|", "|"],
+  "*": ["","_|_","^|^",""],
+  "\"": ["|;|","","",""],
+  "'": ["|","","",""],
+  ";": ["","_","","|"],
+  "<": [":|","|","|",":|"],
+  ">": ["|",":|",":|","|"],
+  "[": ["|^","|","|","|_"],
+  "]": ["^|",":|",":|","_|"],
+  "~": ["","^_","",""],
   " ": [":", "", "", ""],
 };
 
@@ -541,8 +593,9 @@ function stencil(grid) {
  * {cell, at} — a character and where its left edge belongs, in text pixels
  * from the left of the letter. null when the font has no such letter.
  * style: one of STYLES.
+ * compact: draw from the narrow shapes whatever the style, for a sign too small for the large ones.
  */
-export function letter(character, style = "large") {
+export function letter(character, style = "large", compact = false) {
   const upper = character.toUpperCase(), name = SAME[upper] || upper;
   if (style === "box" && Object.hasOwn(BOX, name)) {
     // One cell per character, whatever its own width.
@@ -565,7 +618,7 @@ export function letter(character, style = "large") {
     });
     return { width, lines };
   }
-  const grid = gridOf(name, NARROW_BASED.has(style));
+  const grid = gridOf(name, compact || NARROW_BASED.has(style));
   if (!grid) return null;
   return style === "stencil" && name !== " " ? stencil(grid) : gridLetter(grid);
 }
@@ -580,11 +633,13 @@ export const CHARACTERS = [...Object.keys(SHAPES), ...Object.keys(SAME)];
  *         where the left edge belongs, in text pixels from the left edge of
  *         the picture.
  * span:   the width of the whole picture, which is centred on the sign.
+ * limit:  the widest line the sign accepts.
  * Returns {text, blocks: [{x, cell}], width, error}: the text to type, where
  * the game then draws each character (x in text pixels from the middle of the
- * sign), the width of the line, and how far the worst one is from its place.
+ * sign), the width of the line, and how far the worst one is from its place;
+ * the error is Infinity when the line cannot be made narrow enough.
  */
-export function layoutLine(wanted, span) {
+export function layoutLine(wanted, span, limit = LINE_WIDTH) {
   const target = (at) => -Math.floor(span / 2) + at;
   // Runs of characters standing side by side, and the empty stretches between
   // them. A pixel of slack keeps cells together whose character is a pixel short.
@@ -607,7 +662,7 @@ export function layoutLine(wanted, span) {
     for (let leading = 0; leading <= most; leading++) {
       for (let trailing = 0; trailing <= most; trailing++) {
         const width = inked + (leading + middle + trailing) * SPACE_ADVANCE;
-        if (width > LINE_WIDTH) break;
+        if (width > limit) break;
         // The game draws a line starting half its width left of the middle.
         let x = -Math.floor(width / 2) + leading * SPACE_ADVANCE, worst = 0, total = 0;
         const blocks = [];
@@ -648,6 +703,8 @@ export function layoutLine(wanted, span) {
 const LETTER_GAP = SPACE_ADVANCE;
 // Characters further than this from their place make a letter look broken.
 const MAX_ERROR = 2;
+// The plate of a stencil is two columns wider than its letter, five as a rule.
+const STENCIL_WIDTH = 7 * BLOCK_ADVANCE;
 // Italic: every line stands this far to the right of the one below it.
 const SLANT = 3;
 
@@ -657,7 +714,7 @@ function spanOf(letters, italic) {
 }
 
 /** The four lines of a sign showing these letters (see `letter`) side by side, upright or slanted. */
-export function signLines(letters, italic = false) {
+export function signLines(letters, italic = false, limit = LINE_WIDTH) {
   const span = spanOf(letters, italic);
   return Array.from({ length: LINES }, (_, line) => {
     const wanted = [];
@@ -666,37 +723,44 @@ export function signLines(letters, italic = false) {
       for (const { cell, at } of one.lines[line]) wanted.push({ cell, at: left + at });
       left += one.width + LETTER_GAP;
     }
-    return layoutLine(wanted, span);
+    return layoutLine(wanted, span, limit);
   });
 }
 
 /**
- * Text -> signs: [{characters, lines}]; lines is null for a character the font
- * does not have. Where the style allows several letters to a sign, as many
- * neighbouring letters share one as fit and come out straight.
+ * Text -> signs: [{characters, lines, tooWide}]; lines is null for a character
+ * the font does not have, and for one too wide for the sign (tooWide). Where
+ * the style allows several letters to a sign, as many neighbouring letters
+ * share one as fit and come out straight.
+ * limit: the widest line the sign accepts, see SIGNS.
  */
-export function signsFor(text, style = "large", italic = false) {
+export function signsFor(text, style = "large", italic = false, limit = LINE_WIDTH) {
   const characters = [...text].filter((character) => character !== "\n" && character !== "\r");
   const signs = [];
+  // A stencil of a large letter, with its frame, is wider than a hanging sign.
+  const compact = style === "stencil" && limit < STENCIL_WIDTH;
   for (let i = 0; i < characters.length;) {
-    const first = letter(characters[i], style);
+    const first = letter(characters[i], style, compact);
     if (!first) { signs.push({ characters: characters[i], lines: null }); i++; continue; }
     // A space stays a sign of its own, so every word starts on a fresh sign.
     const group = [first];
     while (characters[i] !== " " && group.length < PER_SIGN[style]) {
       const next = characters[i + group.length];
-      const one = next === undefined || next === " " ? null : letter(next, style);
+      const one = next === undefined || next === " " ? null : letter(next, style, compact);
       if (!one) break;
       group.push(one);
     }
     // The longest run that fits and is not crooked; a single letter always goes on.
     let lines = null;
     for (; group.length > 1; group.pop()) {
-      if (spanOf(group, italic) > LINE_WIDTH) continue;
-      const tried = signLines(group, italic);
+      if (spanOf(group, italic) > limit) continue;
+      const tried = signLines(group, italic, limit);
       if (tried.every((line) => line.error <= MAX_ERROR)) { lines = tried; break; }
     }
-    signs.push({ characters: characters.slice(i, i + group.length).join(""), lines: lines || signLines(group, italic) });
+    lines ||= signLines(group, italic, limit);
+    // A single letter wider than the sign cannot be written at all.
+    const tooWide = lines.some((line) => line.error === Infinity);
+    signs.push({ characters: characters.slice(i, i + group.length).join(""), lines: tooWide ? null : lines, tooWide });
     i += group.length;
   }
   return signs;

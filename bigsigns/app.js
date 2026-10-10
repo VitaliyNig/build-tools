@@ -1,12 +1,13 @@
 // Big Signs: type a word, get the four lines to paste into each sign.
 import "../shared/tooltip.js";
 import { bindLanguageSelect, getLang } from "../shared/i18n.js";
-import { BLOCK_INK, INK, LINE_PITCH, LINES, signsFor, STYLES } from "./core.js";
+import { BLOCK_INK, INK, LINES, SIGNS, signsFor, STYLES } from "./core.js";
 import { STRINGS } from "./strings.js";
 
 const TEXT_KEY = "bigsigns.text", STYLE_KEY = "bigsigns.style", ITALIC_KEY = "bigsigns.italic";
-// The face of a sign in text pixels, and how much each is enlarged on the page.
-const FACE_W = 96, FACE_H = 48, SCALE = 3;
+const SIGN_KEY = "bigsigns.sign";
+// How much a text pixel is enlarged in the pictures.
+const SCALE = 3;
 const BOARD = "#a8825a", GRAIN = "#9a7650", TEXT_COLOUR = "#000000";
 
 const $ = (id) => document.getElementById(id);
@@ -40,17 +41,23 @@ function retranslate() {
 }
 
 // ---------- signs ----------
+/** The kind of sign being written on. */
+const signKind = () => SIGNS[$("sign").value];
+
 /** The sign as the game draws it: every block where the font puts it. */
 function picture(lines) {
+  const { pitch, face: [boardW, FACE_H] } = signKind();
+  // Text may reach a little past the edges of a hanging sign's board.
+  const FACE_W = Math.max(boardW, signKind().width + 4), LINE_PITCH = pitch;
   const canvas = document.createElement("canvas");
   canvas.width = FACE_W * SCALE; canvas.height = FACE_H * SCALE;
   const context = canvas.getContext("2d");
   context.fillStyle = BOARD;
-  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillRect((FACE_W - boardW) / 2 * SCALE, 0, boardW * SCALE, canvas.height);
   context.fillStyle = GRAIN;
-  for (let y = 12; y < FACE_H; y += 12) context.fillRect(0, y * SCALE, canvas.width, SCALE);
+  for (let y = 12; y < FACE_H; y += 12) context.fillRect((FACE_W - boardW) / 2 * SCALE, y * SCALE, boardW * SCALE, SCALE);
   context.fillStyle = TEXT_COLOUR;
-  const top = (FACE_H - LINES * LINE_PITCH) / 2 + 1;
+  const top = Math.round((FACE_H - LINES * LINE_PITCH) / 2) + 1;
   (lines || []).forEach((line, index) => {
     for (const { x, cell } of line.blocks) {
       // Pixel by pixel, as the font has the character.
@@ -105,7 +112,7 @@ function card(sign, index) {
   const name = sign.characters.toUpperCase().replace(/ /g, "␣");
   caption.append(Object.assign(document.createElement("b"), { textContent: name }));
   if (!sign.lines || blank) {
-    caption.append(Object.assign(document.createElement("span"), { textContent: t(sign.lines ? "blank" : "noGlyph") }));
+    caption.append(Object.assign(document.createElement("span"), { textContent: t(sign.lines ? "blank" : sign.tooWide ? "tooWide" : "noGlyph") }));
   }
   item.append(picture(sign.lines), caption);
   if (!sign.lines || blank) return item;
@@ -141,9 +148,12 @@ function renderFonts() {
     button.setAttribute("role", "radio");
     button.setAttribute("aria-checked", style === state.style);
     // The first sign of the sample: as many letters as the font puts on one.
-    const first = signsFor(sample, style, italic)[0];
+    const first = signsFor(sample, style, italic, signKind().width)[0];
     const [name, note] = t(`style_${style}`).split(" — ");
-    button.append(picture(first && first.lines),
+    const preview = picture(first && first.lines);
+    // Two screen pixels to a text pixel, whatever the size of the sign.
+    preview.style.width = `${preview.width / SCALE * 2}px`;
+    button.append(preview,
       Object.assign(document.createElement("b"), { textContent: name }),
       Object.assign(document.createElement("span"), { textContent: note }));
     button.addEventListener("click", () => { state.style = style; textChanged(); });
@@ -153,9 +163,13 @@ function renderFonts() {
 
 function render() {
   renderFonts();
-  const signs = signsFor($("text").value, state.style, $("italic").checked);
+  const signs = signsFor($("text").value, state.style, $("italic").checked, signKind().width);
   $("signs").replaceChildren(...signs.map(card));
-  const unknown = [...new Set(signs.filter((sign) => !sign.lines).map((sign) => sign.characters))];
+  const unknown = [...new Set(signs.filter((sign) => !sign.lines && !sign.tooWide).map((sign) => sign.characters))];
+  const wide = [...new Set(signs.filter((sign) => sign.tooWide).map((sign) => sign.characters.toUpperCase()))];
+  $("tooWide").hidden = !wide.length;
+  $("tooWide").textContent = t("tooWideList", wide.join(" "));
+  $("signHint").hidden = $("sign").value !== "hanging";
   $("styleHint").textContent = t(`styleHint_${state.style}`);
   $("unknown").hidden = !unknown.length;
   $("unknown").textContent = t("unknown", unknown.join(" "));
@@ -167,6 +181,7 @@ function textChanged() {
     localStorage.setItem(TEXT_KEY, $("text").value);
     localStorage.setItem(STYLE_KEY, state.style);
     localStorage.setItem(ITALIC_KEY, $("italic").checked ? "1" : "");
+    localStorage.setItem(SIGN_KEY, $("sign").value);
   } catch { /* storage unavailable */ }
   render();
   const count = $("signs").children.length;
@@ -179,9 +194,11 @@ function start() {
     const saved = localStorage.getItem(STYLE_KEY);
     if (STYLES.includes(saved)) state.style = saved;
     $("italic").checked = localStorage.getItem(ITALIC_KEY) === "1";
+    if (localStorage.getItem(SIGN_KEY) in SIGNS) $("sign").value = localStorage.getItem(SIGN_KEY);
   } catch { /* storage unavailable */ }
   $("text").addEventListener("input", textChanged);
   $("italic").addEventListener("change", textChanged);
+  $("sign").addEventListener("change", textChanged);
   $("clear").addEventListener("click", () => { $("text").value = ""; textChanged(); $("text").focus(); });
   bindLanguageSelect($("lang"), (lang) => { state.lang = lang; retranslate(); });
   retranslate();

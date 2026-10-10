@@ -270,6 +270,8 @@ This tool is written from scratch around it:
   letters to a sign. And **slanted**, for any style: every line stands 3 px to
   the right of the one below it.
 - **Pixel-exact preview**, drawn from the widths of the game's default font.
+- **Hanging signs** too: their lines hold 60 px instead of 90 and stand closer
+  together, so fewer letters fit and the widest do not fit at all.
 
 ```
 bigsigns/

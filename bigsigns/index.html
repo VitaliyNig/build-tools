@@ -21,6 +21,13 @@
       <input type="text" id="text" maxlength="64" spellcheck="false" autocomplete="off">
       <button id="clear" data-i18n="clear"></button>
     </div>
+    <div class="option"><label for="sign" data-i18n="sign"></label>
+      <select id="sign">
+        <option value="standing" data-i18n="sign_standing"></option>
+        <option value="hanging" data-i18n="sign_hanging"></option>
+      </select>
+    </div>
+    <p class="hint" id="signHint" data-i18n="signHint" hidden></p>
     <div class="option"><b id="fontsLabel" data-i18n="style"></b>
       <label class="check" data-i18n-title="italicTip"><input type="checkbox" id="italic"><span data-i18n="italic"></span></label>
     </div>
@@ -28,6 +35,7 @@
     <p class="hint" data-i18n="howTo"></p>
     <p class="hint" id="styleHint"></p>
     <p class="hint" id="unknown" hidden></p>
+    <p class="hint" id="tooWide" hidden></p>
 
     <div class="signs" id="signs"></div>
 
