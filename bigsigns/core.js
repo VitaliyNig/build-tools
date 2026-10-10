@@ -9,8 +9,9 @@
 // so the columns of different lines only meet if each line is padded with the
 // right number of spaces. layoutLine works that out from the font's widths.
 //
-// There are three styles: large letters, one to a sign; narrow ones of the same
-// kind, two to a sign; and thin ones, whose stems are the half-wide ▌.
+// There are five styles: large letters, one to a sign; narrow ones of the same
+// kind, two to a sign; either of these with thin strokes mixed in; and thin
+// ones, whose stems are all the half-wide ▌.
 
 export const ROWS = 8, LINES = 4;
 // Widths in the default Minecraft font, in text pixels: what a character
@@ -96,6 +97,9 @@ const SHAPES = {
   "(": ".#/#./#./#./#./#./#./.#",
   ")": "#./.#/.#/.#/.#/.#/.#/#.",
   "=": "...../...../#####/...../...../#####/...../.....",
+  "_": "...../...../...../...../...../...../...../#####",
+  "\\": "#..../#..../.#.../.#.../..#../..#../...#./...#.",
+  "|": "#/#/#/#/#/#/#/#",
   " ": ".../.../.../.../.../.../.../...",
 };
 // Cyrillic letters that look like Latin ones.
@@ -163,6 +167,8 @@ const NARROW = {
   "+": ".../.#./.#./###/###/.#./.#./...",
   "/": "..#/..#/..#/.#./.#./#../#../#..",
   "=": ".../.../###/.../.../###/.../...",
+  "_": ".../.../.../.../.../.../.../###",
+  "\\": "#../#../#../.#./.#./..#/..#/..#",
   " ": "../../../../../../../..",
 };
 
@@ -246,27 +252,75 @@ const THIN = {
   "(": [";|", "|", "|", ";|"],
   ")": ["|", ";|", ";|", "|"],
   "=": ["", "^^", "__", ""],
+  "_": ["", "", "", "__"],
+  "\\": ["|", ";,|", ":;|", "::|"],
+  "|": ["|", "|", "|", "|"],
   " ": [":.", "", "", ""],
 };
+// Large and narrow letters with thin strokes mixed in: stems stay a whole block
+// thick, while slanted strokes and inner stems are the half-wide ▌. Written
+// with the same marks; letters not listed here keep their plain shape.
+const LARGE_MIXED = {
+  K: ["#::|", "#_^", "#^_", "#::|"],
+  M: ["#|:;;|#", "#;,|.|;,#", "#:,|:,#", "#:::#"],
+  N: ["#|::;#", "#;,|:.,#", "#;;;|..#", "#::|;#"],
+  R: ["#^^^_", "#:::#", "#^^^", "#::.,|"],
+  V: ["#:::#", ";#:..#", ";;;|;;;|", "::||"],
+  W: ["#:::#", "#:,|:,#", "#;,|.|;,#", "#|:;;|#"],
+  X: ["#:::#", ":,|,_,|", ":,|,^,|", "#:::#"],
+  Y: ["#:::#", ";;;|;;;|", "::#", "::#"],
+  Z: ["^^^^^", "::.,|", ":,|", "_____"],
+  7: ["^^^^^", ":::|", "::,|", ":.|"],
+  "И": ["#::|;#", "#;;;|..#", "#;,|:.,#", "#|::;#"],
+  "Й": ["#:^:#", "#::|;#", "#:|:;#", "#|::;#"],
+  "Я": ["_^^^#", "#:::#", ":^^^#", ";|:::#"],
+  "/": [":::;|", "::,|", ":,|", "|"],
+  "\\": ["|", ":,|", "::,|", ":::;|"],
+};
+const NARROW_MIXED = {
+  K: ["#:;|", "#_", "#^", "#:;|"],
+  M: ["#|;;|#", "#.,|;,#", "#::#", "#::#"],
+  N: ["#|:;#", "#.|;;#", "#:|;#", "#:;|#"],
+  R: ["#^^_", "#::#", "#^^", "#:.,|"],
+  W: ["#::#", "#::#", "#.,|;,#", "#|;;|#"],
+  X: ["#::#", ".,|,_,|", ".,|,^,|", "#::#"],
+  Z: ["^^^^", "::;|", ".,|", "____"],
+  7: ["^^^^", "::;|", ":.|", ":|"],
+  "Ж": ["|:#:|", "._#_", ".^#^", "|:#:|"],
+  "И": ["#:;|#", "#:|;#", "#.|;;#", "#|:;#"],
+  "Й": ["#;^.#", "#:;|#", "#.,|;,#", "#|:;#"],
+  "Ф": ["#^|^#", "#_|_#", "::|", "::|"],
+  "Ш": ["#.,|;,#", "#.,|;,#", "#.,|;,#", "#__#"],
+  "Щ": ["#.,|;,#", "#.,|;,#", "#.,|;,#", "#__#|"],
+  "Ы": ["#::;|", "#__;|", "#:#;|", "#_#;|"],
+  "Ю": ["|;#^#", "||#:#", "|;#:#", "|;#_#"],
+  "Я": ["_^^#", "#::#", ":^^#", ";|::#"],
+};
+// Styles whose letters are written with marks, and the grid font each falls back on.
+const MARKED = { thin: THIN, largeMixed: LARGE_MIXED, narrowMixed: NARROW_MIXED };
+
 const MARKS = { "|": "▌", "^": "▀", "_": "▄", "#": "█" };
 const EMPTY = { ".": 5, ":": 9, ";": 4, ",": 2 };
 
 /** How far a character moves the pen. */
 const advanceOf = (cell) => (cell === "▌" ? STEM_ADVANCE : BLOCK_ADVANCE);
 
-export const STYLES = ["large", "narrow", "thin"];
+export const STYLES = ["large", "largeMixed", "narrow", "narrowMixed", "thin"];
+// One letter to a sign in these; two in the others.
+const SINGLE = new Set(["large", "largeMixed"]);
 
 /**
  * A letter as the pieces to draw: {width, lines}, lines being four lists of
  * {cell, at} — a character and where its left edge belongs, in text pixels
  * from the left of the letter. null when the font has no such letter.
- * style: "large" (one to a sign), "narrow" or "thin" (two to a sign).
+ * style: one of STYLES.
  */
 export function letter(character, style = "large") {
   const upper = character.toUpperCase(), name = SAME[upper] || upper;
-  if (style === "thin" && THIN[name]) {
+  const marked = (MARKED[style] || {})[name];
+  if (marked) {
     let width = 0;
-    const lines = THIN[name].map((marks) => {
+    const lines = marked.map((marks) => {
       const pieces = [];
       let at = 0;
       for (const mark of marks) {
@@ -279,7 +333,7 @@ export function letter(character, style = "large") {
     });
     return { width, lines };
   }
-  const shape = (style !== "large" && NARROW[name]) || SHAPES[name];
+  const shape = (!SINGLE.has(style) && NARROW[name]) || SHAPES[name];
   if (!shape) return null;
   const grid = shape.split("/").map((row) => [...row].map((cell) => cell === "#"));
   const lines = Array.from({ length: LINES }, (_, line) => {
@@ -392,12 +446,12 @@ export function signLines(letters) {
 
 /**
  * Text -> signs: [{characters, lines}]; lines is null for a character the font
- * does not have. In the "narrow" and "thin" styles neighbouring letters share a
- * sign wherever the pair fits and comes out straight.
+ * does not have. Outside the large styles neighbouring letters share a sign
+ * wherever the pair fits and comes out straight.
  */
 export function signsFor(text, style = "large") {
   const characters = [...text].filter((character) => character !== "\n" && character !== "\r");
-  const pairs = style !== "large", signs = [];
+  const pairs = !SINGLE.has(style), signs = [];
   for (let i = 0; i < characters.length; i++) {
     const first = letter(characters[i], style);
     if (!first) { signs.push({ characters: characters[i], lines: null }); continue; }

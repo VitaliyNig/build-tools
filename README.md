@@ -262,7 +262,8 @@ This tool is written from scratch around it:
   allows; a sign line holds 90 px, so two wide letters (Ж, Ш, Ы…) in a row
   still get a sign each. *Thin* draws stems with the half-wide `▌` (4 px, the
   thickness of the bars), which makes letters lighter and narrow enough for
-  any two to share a sign.
+  any two to share a sign. The large and the narrow style also come *with thin
+  strokes*: stems stay a block thick, slanted strokes and inner stems are `▌`.
 - **Pixel-exact preview**, drawn from the widths of the game's default font.
 
 ```

@@ -6,11 +6,21 @@ export const STRINGS = {
   clear: ["Clear", "Очистить"],
   style: ["Letters:", "Буквы:"],
   style_large: ["large — one to a sign", "крупные — одна на табличку"],
+  style_largeMixed: ["large with thin strokes — one to a sign", "крупные с тонкими штрихами — одна на табличку"],
   style_narrow: ["narrow — two to a sign", "узкие — две на табличку"],
+  style_narrowMixed: ["narrow with thin strokes — two to a sign", "узкие с тонкими штрихами — две на табличку"],
   style_thin: ["thin — two to a sign", "тонкие — две на табличку"],
   styleHint_large: [
     "One big letter fills the sign.",
     "Одна большая буква на всю табличку.",
+  ],
+  styleHint_largeMixed: [
+    "Large letters whose slanted strokes are the half-wide ▌: И, Й, К, М, Я, N, R, V, W, X, Y, Z. The rest are as in the large style.",
+    "Крупные буквы, у которых наклонные штрихи сделаны половинным ▌: И, Й, К, М, Я, N, R, V, W, X, Y, Z. Остальные — как в крупном стиле.",
+  ],
+  styleHint_narrowMixed: [
+    "Narrow letters with the half-wide ▌ for slanted strokes and inner stems. This also makes Ж, М, Ш, Ы, Ю, Ф and W narrow enough to share a sign.",
+    "Узкие буквы с половинным ▌ для наклонных штрихов и внутренних палок. Заодно Ж, М, Ш, Ы, Ю, Ф и W становятся достаточно узкими, чтобы делить табличку.",
   ],
   styleHint_thin: [
     "Stems are drawn with the half-wide ▌, as thick as the bars, so letters are lighter and any two fit on a sign.",
