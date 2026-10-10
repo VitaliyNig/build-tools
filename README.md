@@ -312,6 +312,17 @@ search is English only and hard to browse.
   translated are tried in Latin letters, and a query typed in the wrong
   keyboard layout («cnek») is read in the other one («стул»). A number finds
   the head with that id.
+- **City selections** for BuildTheEarth streets, one tap each: road signs,
+  traffic lights, road and pavement (cones, hydrants, parking meters,
+  crossings), street lamps, bins, post, boxes and crates, things on walls
+  (air conditioners, cameras, vents, pipes, clocks), street furniture, potted
+  plants, vehicles, birds and flags. They are lists of name phrases with
+  exclusions in `heads/themes.js`; a search narrows the selection.
+- **Ranking for builders**: among equally good matches, decoration comes
+  before characters and letters. A Russian word that the dictionary has in
+  exactly that form keeps to its own translations («голубь» is a pigeon, not
+  «голубой»), and English phrases are translated whole («светофор» → traffic
+  light, «мусорка» → trash can, recycling bin…).
 - **Filters**: the catalogue's categories and collections, named in Russian
   too.
 - **Commands**: `/hdb give <id>` for the plugin, or vanilla `/give` with the
@@ -359,6 +370,7 @@ heads/
   catalog.js              downloads, checks, caches and decompresses the catalogue
   search.js               index, Russian stemmer, keyboard layout, transliteration
   dictionary.js           Russian words for the catalogue's English words
+  themes.js               city selections for BuildTheEarth
   commands.js             /hdb give and /give for each game version
   render.js               a head as a cube, from its skin
   standards.json          the project's collections
@@ -367,7 +379,8 @@ heads/
 
 To add Russian words, add them to the line of the English word in
 `dictionary.js` (`english русское русское`); any form of a word will do, since
-both sides are stemmed.
+both sides are stemmed. An English phrase is written with `_`
+(`traffic_light светофор`).
 
 ## Image2Banners
 Converts an image into banner art: for every banner slot (1 block wide, 2 blocks

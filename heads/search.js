@@ -130,23 +130,31 @@ const TRANSLIT = {
 export const transliterate = (word) => [...word].map((c) => TRANSLIT[c] ?? c).join("");
 
 // ---------- dictionary ----------
-/** Russian stem → the English words it translates, from lines "english русское русское". */
+/**
+ * Lines "english русское русское" into lookups: the exact Russian word form
+ * and its stem, each → the English words it translates. An English phrase is
+ * written with "_" ("traffic_light"): a head's name must have all its words.
+ */
 export function parseDictionary(text) {
-  const map = new Map();
+  const map = new Map(), forms = new Map();
+  const add = (table, key, english) => {
+    if (!table.has(key)) table.set(key, new Set());
+    table.get(key).add(english);
+  };
   for (const line of text.split("\n")) {
-    const [english, ...russian] = line.trim().toLowerCase().split(/\s+/);
-    if (!english || !russian.length) continue;
+    const [entry, ...russian] = line.trim().toLowerCase().split(/\s+/);
+    if (!entry || !russian.length) continue;
+    const english = entry.replace(/_/g, " ");
     for (const ru of russian) {
       for (const part of ru.replace(/ё/g, "е").split("-")) {
         if (part.length < 2) continue;
-        const stem = stemRu(part);
-        if (!map.has(stem)) map.set(stem, new Set());
-        map.get(stem).add(english);
+        add(forms, part, english);
+        add(map, stemRu(part), english);
       }
     }
   }
   const stems = [...map.keys()].sort();
-  return { map, stems };
+  return { map, forms, stems };
 }
 
 // ---------- sorted word lists ----------
@@ -200,64 +208,105 @@ export function buildIndex(heads, labels = {}) {
 }
 
 // ---------- queries ----------
+// How a word of the query meets the words of the index: only itself, itself
+// or its plural ("car", "cars" but not "cart"), or every word it starts.
+const EXACT = "exact", PLURAL = "plural", PREFIX = "prefix";
+
+/** How an English word from the dictionary is matched: short words are too often the start of others. */
+const englishMode = (word) => (word.length >= 5 ? PREFIX : PLURAL);
+
 /**
- * The alternatives a query word stands for: [word, weight, prefix allowed].
+ * The alternatives a query word stands for: [word or phrase, weight, mode].
  * `last` is true for the word being typed, which may be unfinished.
  */
 export function alternatives(token, dictionary, last) {
   const out = new Map();
-  const put = (word, weight, prefix) => {
+  const put = (word, weight, mode) => {
     if (!word) return;
-    const key = `${word}|${prefix}`;
-    if ((out.get(key)?.[1] ?? 0) < weight) out.set(key, [word, weight, prefix]);
+    const key = `${word}|${mode}`;
+    if ((out.get(key)?.[1] ?? 0) < weight) out.set(key, [word, weight, mode]);
   };
   if (CYRILLIC.test(token)) {
     const stem = stemRu(token);
     // Names written in Russian in the catalogue itself.
-    put(stem, 1, true);
-    for (const english of dictionary.map.get(stem) || []) put(english, 1, true);
+    put(stem, 1, PREFIX);
+    // The word exactly as the dictionary has it decides between words with one stem: «голубь» is not «голубой».
+    const exact = dictionary.forms.get(token);
+    for (const english of exact || dictionary.map.get(stem) || []) put(english, 1, englishMode(english));
     // A word still being typed, or a form the stemmer leaves longer: stems that start with it.
-    if (stem.length >= 3) {
+    if (!exact && stem.length >= 3) {
       for (const longer of withPrefix(dictionary.stems, stem, 60)) {
         if (longer === stem) continue;
-        for (const english of dictionary.map.get(longer)) put(english, last ? 0.7 : 0.5, true);
+        for (const english of dictionary.map.get(longer)) put(english, last ? 0.7 : 0.5, englishMode(english));
       }
     }
     // Names nobody translated: try them in Latin letters.
-    if (token.length >= 4) put(transliterate(stem), 0.4, true);
+    if (token.length >= 4) put(transliterate(stem), 0.4, PREFIX);
   } else {
-    put(token, 1, true);
+    put(token, 1, PREFIX);
     const stem = stemEn(token);
-    if (stem !== token) put(stem, 0.9, true);
+    if (stem !== token) put(stem, 0.9, PREFIX);
   }
   return [...out.values()];
+}
+
+/** The index words a query word meets, each with whether it is the word itself. */
+function wordsFor(index, word, mode) {
+  if (mode === PREFIX && word.length >= 2) return withPrefix(index.vocabulary, word).map((w) => [w, w === word]);
+  const found = [];
+  for (const w of mode === PLURAL ? [word, `${word}s`, `${word}es`] : [word]) if (index.postings.has(w)) found.push([w, true]);
+  return found;
+}
+
+/** Heads whose names have every word of the phrase: a Set of head numbers. */
+function namesWith(index, phrase, mode = null) {
+  let heads = null;
+  for (const word of phrase.split(" ")) {
+    const here = new Set();
+    for (const [w] of wordsFor(index, word, mode || englishMode(word))) for (const n of index.postings.get(w)[WHERE.name]) here.add(n);
+    heads = heads ? new Set([...heads].filter((n) => here.has(n))) : here;
+    if (!heads.size) break;
+  }
+  return heads || new Set();
 }
 
 /** Score of every head that matches one query word: head number → score. */
 function matchToken(index, alts) {
   const scores = new Map();
-  for (const [word, weight, prefix] of alts) {
-    const found = prefix && word.length >= 2 ? withPrefix(index.vocabulary, word) : index.postings.has(word) ? [word] : [];
-    for (const w of found) {
-      const kind = w === word ? "exact" : "prefix";
+  const raise = (n, score) => { if ((scores.get(n) ?? 0) < score) scores.set(n, score); };
+  for (const [word, weight, mode] of alts) {
+    if (word.includes(" ")) {
+      // A phrase counts as a whole word of the name.
+      for (const n of namesWith(index, word)) raise(n, SCORE.exact[WHERE.name] * weight);
+      continue;
+    }
+    for (const [w, itself] of wordsFor(index, word, mode)) {
+      const kind = itself || mode === PLURAL ? "exact" : "prefix";
       const [inName, inMeta] = index.postings.get(w);
       for (const [list, where] of [[inName, WHERE.name], [inMeta, WHERE.meta]]) {
         const score = SCORE[kind][where] * weight;
-        for (const n of list) if ((scores.get(n) ?? 0) < score) scores.set(n, score);
+        for (const n of list) raise(n, score);
       }
     }
   }
   return scores;
 }
 
+// Builders look for objects more often than for characters: among equally
+// good matches, decoration comes first and people and letters last.
+const CATEGORY_WEIGHT = {
+  decoration: 1.2, blocks: 1.1, plants: 1.1, "food-and-drinks": 1.05, animals: 1.05, flags: 1.05,
+  alphabet: 0.85, humans: 0.85, humanoid: 0.85, monsters: 0.9, emojis: 0.9,
+};
+
 /**
- * Find heads. Returns the head numbers, best first. `filter(head)` narrows
- * the result (category, collection). A number alone also finds the head
- * with that id.
+ * Find heads. Returns the head numbers, best first. `filter(head number)`
+ * narrows the result (category, collection, selection). A number alone also
+ * finds the head with that id.
  */
 export function search(index, dictionary, query, filter = null) {
   const tokens = words(query);
-  const keep = (n) => !filter || filter(index.heads[n]);
+  const keep = (n) => !filter || filter(n);
   if (!tokens.length) {
     const all = [];
     for (let n = 0; n < index.heads.length; n++) if (keep(n)) all.push(n);
@@ -274,11 +323,44 @@ export function search(index, dictionary, query, filter = null) {
       total = next;
     }
   });
-  const found = [];
-  for (const [n, score] of total) if (keep(n)) found.push([n, score]);
   const heads = index.heads;
+  const found = [];
+  for (const [n, score] of total) if (keep(n)) found.push([n, score * (CATEGORY_WEIGHT[heads[n].category] ?? 1)]);
   found.sort((a, b) => b[1] - a[1] || heads[a[0]].name.length - heads[b[0]].name.length || heads[a[0]].id - heads[b[0]].id);
   return found.map(([n]) => n);
+}
+
+/** Heads named exactly so, the part in brackets aside. */
+function named(index, name) {
+  if (!index.byBareName) {
+    index.byBareName = new Map();
+    index.heads.forEach((head, n) => {
+      const bare = normalize(head.name.replace(/\(.*?\)/g, ""));
+      if (!index.byBareName.has(bare)) index.byBareName.set(bare, []);
+      index.byBareName.get(bare).push(n);
+    });
+  }
+  return index.byBareName.get(name) || [];
+}
+
+/** The heads of a selection from themes.js, in the order of its terms. */
+export function themeHeads(index, theme) {
+  const heads = index.heads;
+  const allowed = (n) => !theme.categories || theme.categories.includes(heads[n].category);
+  const exclude = (theme.exclude || []).map((phrase) => ` ${normalize(phrase)} `);
+  const clean = (n) => !exclude.length || !exclude.some((phrase) => ` ${normalize(heads[n].name)} `.includes(phrase));
+  const byName = (a, b) => heads[a].name.length - heads[b].name.length || heads[a].id - heads[b].id;
+  const seen = new Set(), out = [];
+  const groups = theme.terms.length
+    ? theme.terms.map((term) => (term.startsWith("=") ? named(index, normalize(term)) : [...namesWith(index, normalize(term))]))
+    : [heads.map((_, n) => n)];
+  for (const group of groups) {
+    for (const n of group.filter((n) => !seen.has(n) && allowed(n) && clean(n)).sort(byName)) {
+      seen.add(n);
+      out.push(n);
+    }
+  }
+  return out;
 }
 
 /** A number: the head with that id first, then names that contain the number. */

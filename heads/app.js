@@ -4,6 +4,7 @@ import { bindLanguageSelect, getLang } from "../shared/i18n.js";
 import { CHAT_LIMIT, command, FORMATS, textureValue } from "./commands.js";
 import { drawHead, loadSkin } from "./render.js";
 import { NAMES, STRINGS } from "./strings.js";
+import { THEMES } from "./themes.js";
 
 const COLLECTIONS_KEY = "heads.collections", TARGET_KEY = "heads.target", FORMAT_KEY = "heads.format";
 // Cards shown at a time; "show more" adds as many again.
@@ -18,6 +19,7 @@ const state = {
   status: null,
   meta: null,                  // the catalogue: revision, categories, collections, tags
   tagNames: new Map(),         // tag id → name
+  theme: "",                   // the selection from themes.js being shown
   query: "", results: [], total: 0, corrected: null,
   heads: new Map(),            // head id → record, for every head seen
   collections: loadCollections(),
@@ -53,6 +55,7 @@ function retranslate() {
   fillFormats();
   fillFilters();
   fillTargets();
+  renderThemes();
   renderSource();
   renderResults();
   renderCollections();
@@ -94,6 +97,7 @@ async function loadCatalog() {
     state.tagNames = new Map(state.meta.tags.map((tag) => [tag.id, tag.name]));
     $("loading").hidden = true;
     fillFilters();
+    renderThemes();
     renderSource();
     await runSearch();
     renderCollections();
@@ -273,7 +277,8 @@ async function runSearch(append = false) {
   const seq = ++searchSeq;
   const offset = append ? state.results.length : 0;
   const answer = await ask({
-    type: "search", query: $("query").value, category: $("category").value, collection: $("collection").value, offset, limit: PAGE,
+    type: "search", query: $("query").value, category: $("category").value, collection: $("collection").value, theme: state.theme,
+    offset, limit: PAGE,
   });
   if (seq !== searchSeq) return;
   remember(answer.items);
@@ -288,14 +293,35 @@ function renderResults(from = 0) {
   const grid = $("grid");
   if (!from) grid.replaceChildren();
   grid.append(...state.results.slice(from).map(card));
-  const filtered = $("query").value.trim() || $("category").value || $("collection").value;
+  const filtered = $("query").value.trim() || $("category").value || $("collection").value || state.theme;
+  const theme = THEMES.find((item) => item.id === state.theme);
   $("info").textContent = [
+    theme ? t("inTheme", theme.name[state.lang === "ru" ? 1 : 0]) : "",
     state.corrected ? t("corrected", state.corrected) : "",
     state.total ? t(filtered ? "found" : "all", state.total) : t("nothing"),
   ].filter(Boolean).join(" ");
   const left = state.total - state.results.length;
   $("more").hidden = left <= 0;
   $("more").textContent = t("more", left);
+}
+
+// ---------- city selections ----------
+function renderThemes() {
+  const counts = new Map((state.meta?.themes || []).map((item) => [item.id, item.count]));
+  const chips = THEMES.map((theme) => {
+    const chip = Object.assign(document.createElement("button"), { type: "button", className: "theme", title: t("themeTip") });
+    chip.append(theme.name[state.lang === "ru" ? 1 : 0]);
+    if (counts.has(theme.id)) chip.append(Object.assign(document.createElement("span"), { className: "count", textContent: ` ${counts.get(theme.id)}` }));
+    chip.setAttribute("aria-pressed", state.theme === theme.id);
+    chip.addEventListener("click", () => {
+      state.theme = state.theme === theme.id ? "" : theme.id;
+      renderThemes();
+      showTab("catalog");
+      runSearch();
+    });
+    return chip;
+  });
+  $("themes").replaceChildren($("themesLabel"), ...chips);
 }
 
 function renderSource() {

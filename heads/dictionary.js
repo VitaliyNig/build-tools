@@ -6,7 +6,7 @@ aang аанг
 abandoned заброшенный
 abomination мерзость
 abyss бездна
-ac кондиционер
+ac кондиционер кондей
 acacia акация
 academia академия
 accessories аксессуары
@@ -26,6 +26,7 @@ agent агент
 ahsoka асока
 aid помощь аптечка
 air воздух
+air_conditioner кондиционер кондей
 airbender аватар
 airplane самолёт
 airport аэропорт
@@ -71,6 +72,7 @@ animatronic аниматроник
 anniversary годовщина юбилей
 annoyed раздражённый
 ant муравей
+antenna антенна
 anthropomorphism антропоморфный
 antique антикварный
 antiquity античность
@@ -121,6 +123,7 @@ asian азиатский
 assassin ассасин убийца
 asterix астерикс
 astronaut астронавт космонавт
+atm банкомат
 atomic атомный
 attack атака
 attention внимание
@@ -178,6 +181,7 @@ barn амбар сарай
 barney барни
 baron барон
 barrel бочка
+barricade баррикада ограждение
 barrier барьер ограждение
 bars бары
 bart барт
@@ -247,13 +251,16 @@ bill счёт купюра
 billboard билборд
 billiard бильярд
 billy билли
-bin корзина урна
+bin корзина урна мусорка контейнер
 binary двоичный
 bingo бинго
 biome биом
 bionicle бионикл
 birch берёза берёзовый
 bird птица
+bird_feeder кормушка
+bird_house скворечник кормушка
+birdcage клетка
 birds птицы
 birthday день рождения
 biscuit печенье
@@ -300,6 +307,7 @@ bocchi бочи
 body тело
 bogged болотник
 boiled варёный
+bollard столбик
 bolt болт
 bomb бомба
 bone кость
@@ -382,6 +390,7 @@ burned сгоревший
 burning горящий
 burnt сгоревший
 bus автобус
+bus_stop остановка
 bush куст
 bust бюст
 butcher мясник
@@ -426,6 +435,7 @@ caramel карамель
 carbon углерод
 card карта карточка
 cardboard картон картонный
+cardboard_box коробка картонная
 cards карты
 care уход
 cargo груз
@@ -601,11 +611,11 @@ companion компаньон
 company компания
 compass компас
 compost компост
+compost_bin компост
 composter компостер
 compressed сжатый
 computer компьютер
 concrete бетон
-conditioner кондиционер
 conductor проводник дирижёр
 conduit проводник
 cone конус рожок
@@ -669,7 +679,7 @@ cross крест
 crossing переход
 crossroads перекрёсток
 crosswalk пешеходный переход зебра
-crow ворона
+crow ворона вороны
 crown корона
 crowned коронованный
 crusader крестоносец
@@ -827,6 +837,7 @@ duck утка
 ducky уточка
 dummy манекен чучело
 dumpling пельмень
+dumpster мусорка контейнер бак
 dune дюна
 dungeon подземелье
 dungeons подземелья
@@ -865,6 +876,7 @@ egyptian египетский
 elbow локоть
 elder древний старейшина
 electric электрический
+electric_meter счётчик электросчётчик
 element элемент
 elemental элементаль
 elements элементы
@@ -986,6 +998,9 @@ final финальный
 fingers пальцы
 finn финн
 fire огонь пламя
+fire_extinguisher огнетушитель
+fire_hydrant гидрант пожарный
+fire_truck пожарная
 fireball огненный шар
 firefighter пожарный
 firefly светлячок
@@ -1014,7 +1029,7 @@ floral цветочный
 flour мука
 flower цветок
 flowering цветущий
-flowerpot горшок
+flowerpot горшок кашпо
 flowers цветы
 fly муха
 flying летающий
@@ -1076,6 +1091,7 @@ fur мех
 furby фёрби
 furnace печь печка
 furniture мебель
+fuse_box щиток электрощиток
 futurama футурама
 future будущее
 futuristic футуристический
@@ -1087,12 +1103,15 @@ gameboy геймбой
 gamer геймер
 gamers геймеры
 garbage мусор
+garbage_bag мешок пакет мусорный
+garbage_can мусорка мусорный бак
 garden сад огород
 garfield гарфилд
 gargoyle горгулья
 garlic чеснок
 garnet гранат
 gas газ
+gas_meter счётчик газовый
 gasmask противогаз
 gate ворота
 gator аллигатор
@@ -1362,6 +1381,7 @@ ink чернила
 inner внутренний
 insect насекомое
 inspector инспектор
+intercom домофон
 intersection перекрёсток
 inu ину
 inuit инуит
@@ -1472,7 +1492,8 @@ ladder лестница стремянка
 lady леди
 ladybug божья коровка
 lamb ягнёнок барашек
-lamp лампа
+lamp лампа фонарь светильник
+lamp_post фонарь столб
 lamppost фонарь
 lampshade абажур
 land земля
@@ -1517,6 +1538,7 @@ leopard леопард
 leprechaun лепрекон
 lesbian лесбийский
 letter буква письмо
+letterbox почтовый ящик
 lettuce салат латук
 lever рычаг
 leviathan левиафан
@@ -1525,7 +1547,7 @@ librarian библиотекарь
 lich лич
 lichen лишайник
 life жизнь
-light свет светлый лампа
+light свет светлый
 lightbulb лампочка
 lightning молния
 lights огни свет
@@ -1576,7 +1598,7 @@ lunch обед
 lynx рысь
 mac мак
 macaron макарон
-machine машина механизм
+machine механизм аппарат
 mad безумный
 madness безумие
 madoka мадока
@@ -1594,6 +1616,7 @@ mahogany красное дерево
 maid горничная
 maiden дева
 mail почта
+mail_package посылка
 mailbox почтовый ящик
 makeup макияж
 malachite малахит
@@ -1607,6 +1630,7 @@ mandalorian мандалорец
 mangle мангл
 mango манго
 mangrove мангровый
+manhole люк канализационный
 mania мания
 mannequin манекен
 mansion особняк
@@ -1616,7 +1640,7 @@ maple клён кленовый
 marble мрамор
 marine морской
 mario марио
-mark знак
+mark метка
 marker маркер
 market рынок
 maroon бордовый
@@ -1804,6 +1828,7 @@ netherite незерит
 netherrack незерак
 neutral нейтральный
 new новый
+newspaper газета
 newspapers газеты
 nezuko нэдзуко
 nick ник
@@ -1923,6 +1948,7 @@ paradise рай
 parakeet попугайчик
 park парк
 parking парковка
+parking_meter паркомат
 parrot попугай
 part часть
 particle частица
@@ -1937,6 +1963,7 @@ pattern узор
 pause пауза
 paw лапа
 pawn пешка
+payphone таксофон телефон-автомат
 pc пк компьютер
 pea горох
 peach персик
@@ -1979,6 +2006,7 @@ phase фаза
 phineas финес
 phoenix феникс
 phone телефон
+phone_booth будка телефонная
 phosphorus фосфор
 pi пи
 pickaxe кирка
@@ -1990,7 +2018,7 @@ pie пирог
 piece кусок часть
 pieces куски
 pig свинья
-pigeon голубь
+pigeon голубь голуби голубка
 piggy свинка
 piglin пиглин
 pigman свинозомби
@@ -2028,6 +2056,7 @@ plank доска
 planks доски
 plankton планктон
 plant растение
+planter кашпо клумба
 plants растения
 plasma плазма
 plastic пластик пластиковый
@@ -2056,6 +2085,7 @@ polar полярный белый
 polaroid полароид
 pole столб
 police полиция полицейский
+police_car полиция полицейская
 polished полированный
 pollen пыльца
 pomegranate гранат
@@ -2072,12 +2102,13 @@ portal портал
 poseidon посейдон
 possessed одержимый
 post столб почта
+postbox почтовый ящик
 poster плакат постер
 pot горшок кастрюля
 potato картофель картошка
 potatoes картофель
 potion зелье
-potted горшок
+potted горшок горшечный
 potter поттер
 pouch мешочек
 pound фунт
@@ -2154,6 +2185,7 @@ raider рейдер
 rail рельс
 railroad железная дорога
 railway железная дорога рельсы
+railway_crossing переезд
 rain дождь
 rainbow радуга радужный
 raisin изюм
@@ -2178,6 +2210,7 @@ realm царство
 reaper жнец
 rebel повстанец
 recycling переработка
+recycling_bin мусорка урна раздельный переработка
 red красный
 redstone редстоун
 redwood секвойя
@@ -2210,7 +2243,8 @@ rin рин
 ring кольцо
 rings кольца
 river река
-road дорога
+road дорога дорожный
+road_sign дорожный знак
 roads дороги
 roast жареный
 roasted жареный
@@ -2298,6 +2332,7 @@ sapphire сапфир
 sasuke саске
 satan сатана
 satellite спутник
+satellite_dish тарелка спутниковая
 saturn сатурн
 satyr сатир
 sauce соус
@@ -2334,13 +2369,14 @@ sculk скалк
 sculpture скульптура
 sea море
 seafarer моряк
-seagull чайка
+seagull чайка чайки
 seal тюлень печать
 season сезон
 seaweed водоросли
 second второй
 secret секрет
 security охрана
+security_camera камера видеонаблюдение
 seed семя семечко
 seeds семена
 sensor датчик сенсор
@@ -2488,7 +2524,7 @@ spain испания
 spamton спамтон
 spark искра
 sparkle блеск
-sparrow воробей
+sparrow воробей воробьи
 spartan спартанец
 spawn спавн яйцо
 spawner спавнер
@@ -2566,6 +2602,7 @@ stone камень каменный
 stonecutter камнерез
 stool табурет
 stop стоп
+stop_sign стоп
 storage хранилище склад
 store магазин
 storm буря шторм
@@ -2578,7 +2615,9 @@ straw солома
 strawberries клубника
 strawberry клубника
 stray зимогор бродяга
-street улица
+street улица уличный
+street_lamp фонарь фонарный столб
+street_sign уличный указатель табличка
 streetlight фонарь
 strider лавомерка страйдер
 string нить верёвка
@@ -2697,6 +2736,7 @@ three три
 throne трон
 thunder гром
 ticket билет
+ticket_machine билетный автомат
 tie галстук
 tiefling тифлинг
 tiger тигр
@@ -2749,11 +2789,18 @@ toys игрушки
 track трасса
 trader торговец
 traditional традиционный
-traffic светофор движение
+traffic движение трафик
+traffic_cone конус
+traffic_lamp светофор
+traffic_light светофор светофоры
+traffic_sign дорожный знак
+traffic_signal светофор
 trails тропы
 train поезд
+train_crossing переезд
 trainer тренер
 tram трамвай
+tram_stop остановка
 transformers трансформеры
 transgender трансгендер
 transparent прозрачный
@@ -2761,7 +2808,9 @@ transport транспорт
 trap ловушка
 trapdoor люк
 trash мусор
-trashcan мусорка урна
+trash_bin мусорка урна
+trash_can мусорка мусорный бак урна
+trashcan мусорка урна мусорный
 travel путешествие
 traveler путешественник
 tray поднос
@@ -2861,6 +2910,7 @@ vehicles транспорт
 velvet бархат
 vendetta вендетта
 vending торговый
+vending_machine автомат торговый
 venom веном
 vent вентиляция
 venus венера
@@ -2908,12 +2958,14 @@ wario варио
 warlock чернокнижник
 warm тёплый
 warning предупреждение внимание
+warning_lamp мигалка
 warped искажённый
 warrior воин
 wars войны
 wart нарост
 washer стиралка
 washing стиральная
+washing_machine стиральная
 wasp оса
 waste отходы
 watch часы

@@ -2,12 +2,15 @@
 // searches. Messages carry an `id` that the answer repeats.
 import { loadCatalog } from "./catalog.js";
 import { DICTIONARY } from "./dictionary.js";
-import { buildIndex, layoutFix, parseDictionary, search } from "./search.js";
+import { buildIndex, layoutFix, parseDictionary, search, themeHeads } from "./search.js";
 import { NAMES } from "./strings.js";
+import { THEMES } from "./themes.js";
 
 let catalog = null, index = null, dictionary = null;
 // The head numbers of the last search, so that "show more" does not search again.
 let last = { key: null, found: [] };
+// Head numbers of each selection from themes.js, made once.
+const themes = new Map();
 
 const answer = (id, data) => self.postMessage({ id, ...data });
 
@@ -32,17 +35,33 @@ async function load(id) {
     total: catalog.heads.length,
     categories: catalog.categories,
     collections: catalog.collections.map((c) => ({ ...c, count: counts[c.id] || 0 })).filter((c) => c.count),
+    themes: THEMES.map((theme) => ({ id: theme.id, count: selection(theme.id).list.length })),
     tags: catalog.tags,
   });
 }
 
-function find({ query, category, collection, offset, limit }) {
-  const key = JSON.stringify([query, category, collection]);
+/** A selection from themes.js: its heads in order, and as a set. */
+function selection(id) {
+  if (!themes.has(id)) {
+    const theme = THEMES.find((t) => t.id === id);
+    const list = theme ? themeHeads(index, theme) : [];
+    themes.set(id, { list, set: new Set(list) });
+  }
+  return themes.get(id);
+}
+
+function find({ query, category, collection, theme, offset, limit }) {
+  const key = JSON.stringify([query, category, collection, theme]);
   if (last.key !== key) {
-    const filter = category || collection
-      ? (head) => (!category || head.category === category) && (!collection || head.collections.includes(collection))
+    const chosen = theme ? selection(theme) : null;
+    const filter = category || collection || chosen
+      ? (n) => {
+        const head = catalog.heads[n];
+        return (!category || head.category === category) && (!collection || head.collections.includes(collection)) && (!chosen || chosen.set.has(n));
+      }
       : null;
-    let found = search(index, dictionary, query, filter);
+    // A selection without a query keeps its own order.
+    let found = chosen && !query.trim() ? chosen.list.filter(filter) : search(index, dictionary, query, filter);
     let corrected = null;
     // Typed in the wrong keyboard layout: "cnek" for "стул".
     if (!found.length && query.trim()) {

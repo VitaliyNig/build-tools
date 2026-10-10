@@ -2,11 +2,14 @@
 export const STRINGS = {
   back: ["← Build Tools", "← Build Tools"],
   subtitle: ["Minecraft heads: search, collections, commands", "Головы Minecraft: поиск, коллекции, команды"],
-  placeholder: ["Search heads: chair, red flower, сундук…", "Поиск голов: сундук, красный цветок, chest…"],
+  placeholder: ["Search heads: mailbox, traffic light, голубь…", "Поиск голов: урна, светофор, голубь, mailbox…"],
   searchHint: [
     "Search in Russian or English. A word typed in the wrong keyboard layout is understood too. A number finds the head with that id.",
     "Ищите по-русски или по-английски, раскладку можно не переключать. Число находит голову с таким ID.",
   ],
+  themesLabel: ["City:", "Город:"],
+  themeTip: ["A ready selection for street building; press again to leave it. Search narrows it.", "Готовая подборка для улиц; нажмите ещё раз, чтобы выйти. Поиск ищет внутри неё."],
+  inTheme: [(name) => `${name}.`, (name) => `${name}.`],
   category: ["Category", "Категория"],
   collection: ["Collection", "Подборка"],
   any: ["all", "все"],
