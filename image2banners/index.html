@@ -27,6 +27,7 @@
               <div id="selection" hidden></div>
             </div>
             <div class="empty" id="dropHint" data-i18n="dropHint"></div>
+            <div class="tooltip" id="tooltip" hidden></div>
           </div>
           <div class="zoombar">
             <button id="zoomIn" aria-label="Zoom in">＋</button>
@@ -72,6 +73,16 @@
       <input type="file" id="file" accept="image/*,.json,application/json" hidden>
 
       <fieldset>
+        <legend data-i18n="version"></legend>
+        <div class="buttons">
+          <select id="paletteVersion" aria-label="Minecraft version"></select>
+          <button id="addJar" data-i18n="addJar"></button>
+          <input type="file" id="jarFile" accept=".jar" hidden>
+        </div>
+        <p class="hint" data-i18n="versionHint"></p>
+      </fieldset>
+
+      <fieldset>
         <legend data-i18n="size"></legend>
         <label class="row"><span data-i18n="width"></span><input type="number" id="width" min="1" max="128" value="8"></label>
         <label class="row"><span data-i18n="height"></span><input type="number" id="height" min="1" max="128" value="8"></label>
@@ -101,6 +112,7 @@
         <button id="savePng" data-i18n="savePng" disabled></button>
         <button id="saveJson" data-i18n="saveJson" data-i18n-title="saveJsonTip" disabled></button>
         <button id="saveNbt" data-i18n="saveNbt" disabled></button>
+        <p class="hint" id="saveNbtOld" data-i18n="saveNbtOld" hidden></p>
         <p class="hint" data-i18n="saveNbtTip"></p>
       </fieldset>
 

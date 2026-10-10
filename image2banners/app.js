@@ -1,24 +1,29 @@
 // Image2Banners: controls, preview, banner recipes, export.
 import "../shared/tooltip.js";
 import { bindLanguageSelect, getLang } from "../shared/i18n.js";
+import { importJarFile, listPalettes, loadPalette } from "../shared/mc/palettes.js";
 import { PanZoom } from "../shared/panzoom.js";
-import { loadAssets } from "./assets.js";
-import { BANNER_H, BANNER_W, CELL, DEFAULT_BLOCK, patternTile } from "./core/generate.js";
+import { blockSetOf, loadAssets } from "./assets.js";
+import { BANNER_H, BANNER_W, CELL, patternTile } from "./core/generate.js";
 import {
-  applyCell, bannerSteps, cellAt, createModel, fromJson, giveCommand, missingPatterns, renderModel, toJson,
+  applyCell, bannerSteps, cellAt, commandFormat, createModel, fromJson, giveCommand, missingPatterns, remapBlocks,
+  renderModel, toJson, unavailablePatterns,
 } from "./core/model.js";
 import { buildStructure } from "./core/nbt.js";
 import { DYE_NAMES, PATTERN_ITEMS, PATTERN_NAMES, STRINGS } from "./strings.js";
 
 const MAX_SIZE = 128;   // blocks per side
 const SLOT_H = CELL * 2;
-const COMMAND_VERSION_KEY = "image2banners.commandVersion";
+const VERSION_KEY = "image2banners.version";
 
 const $ = (id) => document.getElementById(id);
 
 const state = {
   lang: getLang(),
-  assets: null,
+  palette: null,      // blocks of the chosen Minecraft version (shared/mc/palette.js)
+  blockSet: null,     // those of them that can back a banner, as sent to the workers
+  assets: null,       // banner patterns plus the block set, ready for drawing
+  busy: false,        // a JAR is being imported
   image: null,        // ImageBitmap of the loaded picture
   name: "banners",    // file name stem for downloads
   model: null,        // generated or loaded art
@@ -52,6 +57,7 @@ function retranslate() {
   for (const el of document.querySelectorAll("[data-i18n]")) el.textContent = t(el.dataset.i18n);
   for (const el of document.querySelectorAll("[data-i18n-title]")) el.title = t(el.dataset.i18nTitle);
   document.title = `Image2Banners — ${t("subtitle")}`;
+  renderVersionOptions();
   renderStatus();
   updateActions();
   showDetails();
@@ -147,12 +153,66 @@ function showSource() {
   art.getContext("2d").putImageData(image, 0, 0);
 }
 
+// ---------- Minecraft version ----------
+let paletteEntries = [];
+
+function renderVersionOptions() {
+  const select = $("paletteVersion");
+  select.replaceChildren(...paletteEntries.map((entry) =>
+    new Option(entry.imported ? `${entry.version} (${t("imported")})` : entry.version, entry.key)));
+  if (state.palette) select.value = state.palette.key;
+}
+
+/** Switch to the blocks, patterns and command format of a Minecraft version. */
+async function selectVersion(key) {
+  try {
+    const palette = await loadPalette(key), blockSet = blockSetOf(palette);
+    state.assets = await loadAssets(blockSet);
+    state.palette = palette;
+    state.blockSet = blockSet;
+  } catch (error) {
+    setStatus("errAssets", error.message);
+    if (state.palette) $("paletteVersion").value = state.palette.key;
+    return false;
+  }
+  $("paletteVersion").value = key;
+  try { localStorage.setItem(VERSION_KEY, key); } catch { /* storage unavailable */ }
+  $("commandVersion").value = commandFormat(state.palette.dataVersion);
+  // Art made for another version keeps its banners; blocks this one lacks are replaced.
+  if (state.model) {
+    remapBlocks(state.model, state.assets);
+    if (!state.run) drawModel();
+  }
+  showDetails();
+  updateActions();
+  return true;
+}
+
+async function addJar(file) {
+  state.busy = true;
+  updateActions();
+  try {
+    const { key, record } = await importJarFile(file, (value) => setStatus("statusJar", `${Math.round(value * 100)} %`));
+    paletteEntries = (await listPalettes()).entries;
+    renderVersionOptions();
+    if (await selectVersion(key)) setStatus("statusJarDone", record.version, state.blockSet.names.length);
+  } catch (error) {
+    if (error.message === "no-blocks") setStatus("errJarNoBlocks");
+    else if (error.message === "bad-metadata") setStatus("errJarMetadata");
+    else setStatus("errJar", error.message);
+  } finally {
+    state.busy = false;
+    updateActions();
+  }
+}
+
 // ---------- generation ----------
 function options() {
   return {
     blocks: $("optBlocks").checked, layering: $("optLayering").checked,
     big: $("optBig").checked, patternItems: $("optItems").checked,
     compare: $("compare").valueAsNumber / 100,
+    skip: unavailablePatterns(state.palette.dataVersion),
   };
 }
 
@@ -176,7 +236,7 @@ function generate() {
   const width = clampSize($("width")), height = clampSize($("height")), opts = options();
   const image = scaledImage(width, height), rows = Math.ceil(height / 2), total = width * rows;
   const model = createModel(width, height);
-  for (const cell of model.cells) cell.block = DEFAULT_BLOCK;
+  for (const cell of model.cells) cell.block = state.assets.defaultBlock;
   setModel(null);
   resizeArt(image.width, image.height);
   const context = art.getContext("2d");
@@ -235,6 +295,7 @@ function generate() {
       setStatus("errGenerate", event.message || "worker");
     };
     run.workers.push(worker);
+    worker.postMessage({ blockSet: state.blockSet });
     feed(worker);
   }
   setStatus("statusProgress", 0, total);
@@ -285,9 +346,10 @@ function showDetails() {
   box.width = `${CELL}px`; box.height = `${Math.min(cell.banner ? SLOT_H : CELL, art.height - y * CELL)}px`;
 
   $("detailsTitle").textContent = t(cell.banner ? "detailsBanner" : "detailsBlock", x, y);
-  const block = cell.block || DEFAULT_BLOCK;
-  putImage($("blockIcon"), assets.blocks[assets.blockIndex.get(block)], CELL, CELL);
-  $("blockName").textContent = titleCase(block);
+  const block = assets.blockIndex.get(cell.block) ?? assets.blockIndex.get(assets.defaultBlock);
+  putImage($("blockIcon"), assets.blocks[block], CELL, CELL);
+  $("blockName").textContent = assets.blockLabels[block];
+  $("blockName").title = assets.blockNames[block];
 
   const steps = cell.banner ? bannerSteps(assets, cell.banner) : [];
   $("bannerResult").hidden = $("commandBox").hidden = !cell.banner;
@@ -309,6 +371,21 @@ function showDetails() {
   }));
 }
 
+/** With the banners hidden, name the block under the pointer. */
+function hoverBlock(e) {
+  const tip = $("tooltip");
+  tip.hidden = true;
+  if (state.banners || !state.model || state.run || e.buttons) return;
+  const [x, y] = view.toContent(e.clientX, e.clientY);
+  const cell = cellAt(state.model, Math.floor(x / CELL), Math.floor(y / CELL)), { assets } = state;
+  if (!cell) return;
+  tip.textContent = assets.blockLabels[assets.blockIndex.get(cell.block) ?? assets.blockIndex.get(assets.defaultBlock)];
+  const box = $("view").getBoundingClientRect();
+  tip.style.left = `${e.clientX - box.left + 14}px`;
+  tip.style.top = `${e.clientY - box.top + 14}px`;
+  tip.hidden = false;
+}
+
 // ---------- export ----------
 function fileName(extension) {
   const size = `${state.model.width}x${state.model.height}`;
@@ -328,27 +405,42 @@ function savePng() {
 }
 
 function saveJson() {
-  download(new Blob([JSON.stringify(toJson(state.model), null, 4)], { type: "application/json" }), fileName("json"));
+  download(new Blob([JSON.stringify(toJson(state.model, state.assets), null, 4)], { type: "application/json" }), fileName("json"));
 }
 
 async function saveNbt() {
-  const gzip = new Blob([buildStructure(state.model)]).stream().pipeThrough(new CompressionStream("gzip"));
+  const gzip = new Blob([buildStructure(state.model, state.assets, state.palette.dataVersion)]).stream().pipeThrough(new CompressionStream("gzip"));
   download(await new Response(gzip).blob(), fileName("nbt"));
 }
 
 // ---------- wiring ----------
 function updateActions() {
-  const busy = Boolean(state.run), ready = Boolean(state.model) && !busy;
-  $("generate").textContent = t(busy ? "cancel" : "generate");
-  $("generate").disabled = !busy && !(state.image && state.assets);
-  $("savePng").disabled = $("saveJson").disabled = $("saveNbt").disabled = !ready;
+  const running = Boolean(state.run), busy = running || state.busy, ready = Boolean(state.model) && !busy;
+  // Structure files name blocks the way versions from 1.13 on do.
+  const old = Boolean(state.palette) && commandFormat(state.palette.dataVersion) === "old";
+  $("generate").textContent = t(running ? "cancel" : "generate");
+  $("generate").disabled = !running && (state.busy || !(state.image && state.assets));
+  $("savePng").disabled = $("saveJson").disabled = !ready;
+  $("saveNbt").disabled = !ready || old;
+  $("saveNbtOld").hidden = !old;
   $("load").disabled = busy || !state.assets;
+  $("paletteVersion").disabled = $("addJar").disabled = busy;
   $("toggleBanners").textContent = t(state.banners ? "hideBanners" : "showBanners");
   $("toggleBanners").disabled = !state.model;
 }
 
 function wire() {
   $("load").addEventListener("click", () => $("file").click());
+  $("paletteVersion").addEventListener("change", async (e) => {
+    if (await selectVersion(e.target.value)) {
+      setStatus(state.model ? "statusVersionArt" : "statusVersion", state.palette.version, state.blockSet.names.length);
+    }
+  });
+  $("addJar").addEventListener("click", () => $("jarFile").click());
+  $("jarFile").addEventListener("change", (e) => {
+    if (e.target.files[0]) addJar(e.target.files[0]);
+    e.target.value = "";
+  });
   $("file").addEventListener("change", (e) => {
     if (e.target.files[0]) loadFile(e.target.files[0]);
     e.target.value = "";
@@ -359,7 +451,7 @@ function wire() {
   drop.addEventListener("drop", (e) => {
     e.preventDefault();
     drop.classList.remove("drop");
-    if (e.dataTransfer.files[0] && state.assets && !state.run) loadFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files[0] && state.assets && !state.run && !state.busy) loadFile(e.dataTransfer.files[0]);
   });
 
   // A press that does not move is a click on a cell; a drag pans the view.
@@ -370,6 +462,9 @@ function wire() {
     const [x, y] = view.toContent(e.clientX, e.clientY);
     select(Math.floor(x / CELL), Math.floor(y / CELL));
   });
+
+  drop.addEventListener("pointermove", hoverBlock);
+  drop.addEventListener("pointerleave", () => { $("tooltip").hidden = true; });
 
   for (const id of ["width", "height"]) {
     $(id).addEventListener("change", () => {
@@ -389,11 +484,8 @@ function wire() {
   $("savePng").addEventListener("click", savePng);
   $("saveJson").addEventListener("click", saveJson);
   $("saveNbt").addEventListener("click", saveNbt);
-  try { $("commandVersion").value = localStorage.getItem(COMMAND_VERSION_KEY) || "modern"; } catch { /* storage unavailable */ }
-  $("commandVersion").addEventListener("change", () => {
-    try { localStorage.setItem(COMMAND_VERSION_KEY, $("commandVersion").value); } catch { /* storage unavailable */ }
-    showDetails();
-  });
+  // Follows the Minecraft version; changing it by hand lasts until the version changes.
+  $("commandVersion").addEventListener("change", showDetails);
   $("copyCommand").addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText($("command").value);
@@ -406,6 +498,7 @@ function wire() {
 
   $("toggleBanners").addEventListener("click", () => {
     state.banners = !state.banners;
+    $("tooltip").hidden = true;
     drawModel();
     updateActions();
   });
@@ -419,8 +512,13 @@ async function start() {
   bindLanguageSelect($("lang"), (lang) => { state.lang = lang; retranslate(); });
   retranslate();
   try {
-    state.assets = await loadAssets();
-    setStatus("statusStart");
+    const { entries, defaultKey } = await listPalettes();
+    paletteEntries = entries;
+    renderVersionOptions();
+    let saved = null;
+    try { saved = localStorage.getItem(VERSION_KEY); } catch { /* storage unavailable */ }
+    const key = entries.some((entry) => entry.key === saved) ? saved : defaultKey;
+    if (await selectVersion(key)) setStatus("statusStart");
   } catch (error) {
     setStatus("errAssets", error.message);
   }

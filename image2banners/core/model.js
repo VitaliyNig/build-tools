@@ -3,13 +3,27 @@
 //
 // The JSON form is the one Image2Banners by MARSTeamMC reads and writes, so
 // files are interchangeable with the desktop app.
-import { BANNER_H, BANNER_W, CELL, DEFAULT_BLOCK, patternTile } from "./generate.js";
+import { BANNER_H, BANNER_W, CELL, patternTile, resolveBlock } from "./generate.js";
 
 // Block textures renamed since older Image2Banners versions.
 const RENAMED_BLOCKS = {
   dried_kelp: "dried_kelp_block", powder_snow: "snow_block",
   magma: "magma_block", pale_moss_carpet: "pale_moss_block",
 };
+
+// First data versions: item components for banners (1.20.5), flattened block names (1.13).
+const COMPONENTS_DATA_VERSION = 3837, FLATTENING_DATA_VERSION = 1451;
+
+/** The command format of a Minecraft version: "modern", "legacy" or "old". */
+export function commandFormat(dataVersion) {
+  return dataVersion >= COMPONENTS_DATA_VERSION ? "modern" : dataVersion >= FLATTENING_DATA_VERSION ? "legacy" : "old";
+}
+
+/** Patterns of the bundled set that a Minecraft version does not have yet. */
+export function unavailablePatterns(dataVersion) {
+  // Globe came in 1.15, Snout in 1.16.
+  return [["globe", 2225], ["piglin", 2566]].filter(([, since]) => dataVersion < since).map(([name]) => name);
+}
 
 export function createModel(width, height) {
   return { width, height, cells: Array.from({ length: width * height }, () => ({})) };
@@ -30,16 +44,21 @@ export function applyCell(model, column, slotRow, result) {
   if (result.upperBanner) cellAt(model, column, y - 1).banner = result.upperBanner;
 }
 
-export function toJson(model) {
+export function toJson(model, assets) {
   const out = {};
   model.cells.forEach((cell, i) => {
     const entry = {};
     if (cell.banner) entry.banner = cell.banner;
-    entry.block = cell.block || DEFAULT_BLOCK;
+    entry.block = cell.block || assets.defaultBlock;
     out[`(${i % model.width},${Math.floor(i / model.width)})`] = entry;
   });
   out.resolution = [String(model.width), String(model.height)];
   return out;
+}
+
+/** Make every block of the art one that this version has. */
+export function remapBlocks(model, assets) {
+  for (const cell of model.cells) cell.block = resolveBlock(assets, cell.block);
 }
 
 /** Parse an Image2Banners JSON object; unknown blocks and patterns are dropped. */
@@ -51,8 +70,7 @@ export function fromJson(data, assets) {
     const match = /^\((\d+),(\d+)\)$/.exec(key);
     const cell = match && cellAt(model, Number(match[1]), Number(match[2]));
     if (!cell || !entry || typeof entry !== "object") continue;
-    const block = RENAMED_BLOCKS[entry.block] || entry.block;
-    cell.block = assets.blockIndex.has(block) ? block : DEFAULT_BLOCK;
+    cell.block = resolveBlock(assets, RENAMED_BLOCKS[entry.block] || entry.block);
     if (Array.isArray(entry.banner) && entry.banner.length) {
       const known = entry.banner.filter((name) => typeof name === "string" && patternTile(assets, name));
       if (known.length && known[0].endsWith("#wall_banner")) cell.banner = known;
@@ -85,7 +103,7 @@ export function renderModel(model, assets, banners = true) {
   const data = new Uint8ClampedArray(w * h * 4);
   for (let p = 3; p < data.length; p += 4) data[p] = 255;
   model.cells.forEach((cell, i) => {
-    const block = assets.blocks[assets.blockIndex.get(cell.block) ?? assets.blockIndex.get(DEFAULT_BLOCK)];
+    const block = assets.blocks[assets.blockIndex.get(cell.block) ?? assets.blockIndex.get(assets.defaultBlock)];
     const ox = (i % model.width) * CELL, oy = Math.floor(i / model.width) * CELL;
     for (let y = 0; y < CELL; y++) {
       for (let x = 0; x < CELL; x++) blend(data, ((oy + y) * w + ox + x) * 4, block, (y * CELL + x) * 4);

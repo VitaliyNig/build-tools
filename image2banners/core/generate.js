@@ -7,7 +7,8 @@ import { describe, describePixel, Target } from "./similarity.js";
 
 export const CELL = 22;              // pixels per block in the working image
 export const BANNER_W = 20, BANNER_H = 39;
-export const DEFAULT_BLOCK = "polished_andesite";
+// The block behind a cell that has no better match, by its name in each era of block names.
+const DEFAULT_BLOCKS = ["polished_andesite", "smooth_andesite", "stone"];
 
 // Dye colours as CIE-Lab, in the order used to break ties.
 export const DYES = {
@@ -82,11 +83,13 @@ function over(dst, d, src, s) {
 const NEAREST_16_TO_22 = [0, 1, 1, 2, 3, 4, 4, 5, 6, 6, 7, 8, 9, 9, 10, 11, 11, 12, 13, 14, 14, 15];
 
 /**
- * meta: {colors, patterns, blocks, blocksByColor}; patternAtlas / blockAtlas:
- * decoded PNGs. Pattern tiles are 20x39, one row per colour and one column per
- * pattern; block tiles are 16x16, 32 per row.
+ * meta: {colors, patterns}; patternAtlas: decoded PNG of 20x39 tiles, one row
+ * per colour and one column per pattern.
+ * blockSet: the blocks of one Minecraft version, {names, labels, tiles}: ids
+ * without namespace ("acacia_log[axis=y]"), display names, and 16x16 RGB
+ * tiles packed one after another.
  */
-export function prepareAssets(meta, patternAtlas, blockAtlas) {
+export function prepareAssets(meta, patternAtlas, blockSet) {
   const patternCount = meta.patterns.length;
   const tiles = [], opaque = [];
   for (let c = 0; c < meta.colors.length; c++) {
@@ -100,27 +103,47 @@ export function prepareAssets(meta, patternAtlas, blockAtlas) {
     }
   }
   // Blocks are compared and drawn at 22 px, nearest-neighbour from 16 px.
-  const blocks = meta.blocks.map((_, i) => {
-    const ox = (i % 32) * 16, oy = Math.floor(i / 32) * 16, out = new Uint8ClampedArray(CELL * CELL * 4);
+  const blocks = blockSet.names.map((_, i) => {
+    const out = new Uint8ClampedArray(CELL * CELL * 4);
     for (let y = 0; y < CELL; y++) {
-      const sy = oy + NEAREST_16_TO_22[y];
       for (let x = 0; x < CELL; x++) {
-        const s = (sy * blockAtlas.w + ox + NEAREST_16_TO_22[x]) * 4, d = (y * CELL + x) * 4;
-        out[d] = blockAtlas.data[s]; out[d + 1] = blockAtlas.data[s + 1];
-        out[d + 2] = blockAtlas.data[s + 2]; out[d + 3] = blockAtlas.data[s + 3];
+        const s = (i * 256 + NEAREST_16_TO_22[y] * 16 + NEAREST_16_TO_22[x]) * 3, d = (y * CELL + x) * 4;
+        out[d] = blockSet.tiles[s]; out[d + 1] = blockSet.tiles[s + 1];
+        out[d + 2] = blockSet.tiles[s + 2]; out[d + 3] = 255;
       }
     }
     return out;
   });
+  // A block is a candidate for cells where one of its two main dye colours leads.
+  const blocksByColor = Object.fromEntries(DYE_NAMES.map((name) => [name, []]));
+  blocks.forEach((image, i) => {
+    for (const dye of topDyes(dyeCounts(image), 2)) blocksByColor[DYE_NAMES[dye]].push(i);
+  });
+  const blockIndex = new Map(blockSet.names.map((name, i) => [name, i]));
+  // Names from other versions and from the desktop app: "barrel" for
+  // "barrel[facing=up,open=false]", "acacia_log-top" for "acacia_log[axis=y]".
+  const bareIndex = new Map();
+  blockSet.names.forEach((name, i) => {
+    const bare = name.replace(/\[.*$/, "");
+    if (!bareIndex.has(bare)) bareIndex.set(bare, i);
+  });
   return {
-    colors: meta.colors, patterns: meta.patterns, blockNames: meta.blocks,
-    blocksByColor: meta.blocksByColor, tiles, opaque, blocks,
+    colors: meta.colors, patterns: meta.patterns, blockNames: blockSet.names, blockLabels: blockSet.labels,
+    blocksByColor, tiles, opaque, blocks, blockIndex, bareIndex,
+    defaultBlock: blockSet.names[DEFAULT_BLOCKS.map((name) => bareIndex.get(name)).find((i) => i !== undefined) ?? 0],
     patternIndex: new Map(meta.patterns.map((name, i) => [name, i])),
     colorIndex: new Map(meta.colors.map((name, i) => [name, i])),
-    blockIndex: new Map(meta.blocks.map((name, i) => [name, i])),
     // Candidates are tried colour by colour in alphabetical order.
     colorOrder: meta.colors.map((_, i) => i).sort((a, b) => (meta.colors[a] < meta.colors[b] ? -1 : 1)),
   };
+}
+
+/** The block of this version that a name stands for; the default block when there is none. */
+export function resolveBlock(assets, name) {
+  if (assets.blockIndex.has(name)) return name;
+  const bare = String(name ?? "").replace(/\[.*$/, "").replace(/-.*$/, "");
+  const index = assets.bareIndex.get(bare);
+  return index === undefined ? assets.defaultBlock : assets.blockNames[index];
 }
 
 /** RGBA tile of "colour#pattern". */
@@ -190,6 +213,7 @@ function generateBanner(rgba, assets, options) {
       for (let p = 0; p < patternCount; p++) {
         const pattern = assets.patterns[p];
         if (pattern === "wall_banner" || (!options.patternItems && PATTERN_ITEMS.has(pattern))) continue;
+        if (options.skip && options.skip.includes(pattern)) continue;
         const tile = assets.tiles[c * patternCount + p];
         trial.set(base); trialLab.set(baseLab); trialGrey.set(baseGrey);
         // Only pixels the pattern touches need new Lab / grey values.
@@ -214,9 +238,8 @@ function generateBanner(rgba, assets, options) {
 }
 
 function generateBlock(rgba, part, assets, options) {
-  if (!rgba) {
-    return { name: DEFAULT_BLOCK, image: assets.blocks[assets.blockIndex.get(DEFAULT_BLOCK)] };
-  }
+  const fallback = assets.blocks[assets.blockIndex.get(assets.defaultBlock)];
+  if (!rgba) return { name: assets.defaultBlock, image: fallback };
   const target = new Target(rgba, CELL, CELL);
   // The masked area counts as black, so black blocks are always candidates.
   const candidates = new Set();
@@ -224,7 +247,7 @@ function generateBlock(rgba, part, assets, options) {
     for (const index of assets.blocksByColor[DYE_NAMES[dye]] || []) candidates.add(index);
   }
   const lab = new Float64Array(CELL * CELL * 3), grey = new Float64Array(CELL * CELL);
-  let best = 0, name = DEFAULT_BLOCK, image = Uint8ClampedArray.from(assets.blocks[assets.blockIndex.get(DEFAULT_BLOCK)]);
+  let best = 0, name = assets.defaultBlock, image = Uint8ClampedArray.from(fallback);
   for (const index of candidates) {
     const trial = Uint8ClampedArray.from(assets.blocks[index]);
     maskBlock(trial, part);
@@ -245,8 +268,9 @@ function scoreAgainst(target, rgba, compare) {
  * Process one banner slot.
  *
  * strip:   22 x 66 RGBA: the block above the slot followed by the slot itself.
- * options: {blocks, layering, big, patternItems, compare (0..1)}; `layering`
- *          must be false for the top row, which has nothing above it.
+ * options: {blocks, layering, big, patternItems, compare (0..1), skip}; `layering`
+ *          must be false for the top row, which has nothing above it; `skip`
+ *          lists patterns the Minecraft version does not have.
  * Returns {preview, banner, blockUp, blockDown, upperBanner}:
  *   preview      22 x 47 RGBA, the slot with 3 px of overhang above it;
  *   banner       pattern list of the slot's banner ("colour#pattern", base first);

@@ -3,11 +3,9 @@
 // Ported from Image2Banners by MARSTeamMC (banners_to_nbt.py), BSD 2-Clause.
 // Layout: blocks at z = 1, wall banners (facing north) on their front at z = 0;
 // x and y are mirrored so the art reads correctly when viewed from the north.
-import { DEFAULT_BLOCK } from "./generate.js";
-import { legacyLayers } from "./model.js";
+import { commandFormat, legacyLayers } from "./model.js";
 
 const TAG = { END: 0, INT: 3, STRING: 8, LIST: 9, COMPOUND: 10 };
-const DATA_VERSION = 4440;      // Minecraft 1.21.7
 const MAX_DECLARED_SIZE = 32;   // larger sizes are not shown by structure blocks
 const encoder = new TextEncoder();
 
@@ -29,29 +27,22 @@ class Writer {
   end() { this.u8(TAG.END); }
 }
 
-/** Block-state properties that make the texture named "<block>-<face>" face north. */
-function faceProperties(block, face) {
-  if (block.includes("crafter")) {
-    const orientation = { east: "west_up", bottom: "up_south", south: "south_up", top: "down_north", west: "east_up" }[face];
-    return orientation ? { orientation } : {};
-  }
-  return {
-    top: { axis: "z" }, side: { facing: "east" }, front: { facing: "north" },
-    up: { facing: "up" }, lit: { lit: "true" }, inside: { north: "false" },
-  }[face] || {};
+/** "barrel[facing=up,open=false]" -> ["barrel", {facing: "up", open: "false"}]. */
+function parseBlock(id) {
+  const match = /^([^[]+)(?:\[(.*)\])?$/.exec(id);
+  const pairs = (match[2] || "").split(",").filter((pair) => pair.includes("=")).map((pair) => pair.split("="));
+  return [match[1], Object.fromEntries(pairs)];
 }
 
-function blockProperties(block) {
-  if (block.includes("trapdoor")) return { facing: "south", open: "true" };
-  if (block.includes("shulker")) return { facing: "north" };
-  if (block.includes("smooth_stone_slab")) return { type: "double" };
-  return {};
-}
-
-/** model: see model.js. Returns the uncompressed NBT bytes. */
-export function buildStructure(model) {
+/**
+ * model: see model.js; its blocks are ids of a flattened version (1.13+).
+ * dataVersion: the Minecraft version the structure is for.
+ * Returns the uncompressed NBT bytes.
+ */
+export function buildStructure(model, assets, dataVersion) {
   const { width, height } = model;
-  const cells = model.cells.map((cell) => ({ block: cell.block || DEFAULT_BLOCK, banner: cell.banner }));
+  const modern = commandFormat(dataVersion) === "modern";
+  const cells = model.cells.map((cell) => ({ block: cell.block || assets.defaultBlock, banner: cell.banner }));
   const blocks = [...new Set(cells.map((cell) => cell.block))];
   const banners = [...new Set(cells.filter((cell) => cell.banner).map((cell) => cell.banner[0].replace("#", "_")))];
   const position = (i, z) => [width - (i % width) - 1, height - Math.floor(i / width) - 1, z];
@@ -70,20 +61,23 @@ export function buildStructure(model) {
   cells.forEach((cell, i) => {
     if (cell.banner) {
       w.header(TAG.COMPOUND, "nbt");
-      w.list("patterns", TAG.COMPOUND, cell.banner.length - 1);
-      for (const name of cell.banner.slice(1)) {
-        const [colour, pattern] = name.split("#");
-        w.string("color", colour);
-        w.string("pattern", `minecraft:${pattern}`);
-        w.end();
-      }
-      // The same patterns as versions before 1.20.5 read them; each version ignores the other list.
-      const legacy = legacyLayers(cell.banner);
-      w.list("Patterns", TAG.COMPOUND, legacy.length);
-      for (const layer of legacy) {
-        w.string("Pattern", layer.pattern);
-        w.int("Color", layer.colour);
-        w.end();
+      if (modern) {
+        w.list("patterns", TAG.COMPOUND, cell.banner.length - 1);
+        for (const name of cell.banner.slice(1)) {
+          const [colour, pattern] = name.split("#");
+          w.string("color", colour);
+          w.string("pattern", `minecraft:${pattern}`);
+          w.end();
+        }
+      } else {
+        // Before 1.20.5: short pattern codes and colour numbers.
+        const legacy = legacyLayers(cell.banner);
+        w.list("Patterns", TAG.COMPOUND, legacy.length);
+        for (const layer of legacy) {
+          w.string("Pattern", layer.pattern);
+          w.int("Color", layer.colour);
+          w.end();
+        }
       }
       w.string("id", "minecraft:banner");
       w.end();
@@ -104,14 +98,10 @@ export function buildStructure(model) {
     w.string("Name", `minecraft:${name}`);
     w.end();
   };
-  for (const block of blocks) {
-    const dash = block.indexOf("-");
-    if (dash < 0) state(block, blockProperties(block));
-    else state(block.slice(0, dash), faceProperties(block.slice(0, dash), block.slice(dash + 1)));
-  }
+  for (const block of blocks) state(...parseBlock(block));
   for (const banner of banners) state(banner, { facing: "north" });
 
-  w.int("DataVersion", DATA_VERSION);
+  w.int("DataVersion", dataVersion);
   w.end();
   return new Uint8Array(w.bytes);
 }

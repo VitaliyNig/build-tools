@@ -11,12 +11,19 @@ export const STRINGS = {
   hideBanners: ["Hide banners", "Скрыть баннеры"],
   showBanners: ["Show banners", "Показать баннеры"],
   toggleBannersTip: [
-    "Show only the blocks behind the banners. The saved image is the same as the view.",
-    "Показать только блоки позади баннеров. Изображение сохраняется таким же, как на экране.",
+    "Show only the blocks behind the banners; point at a block to see its name. The saved image is the same as the view.",
+    "Показать только блоки позади баннеров; наведите на блок, чтобы увидеть название. Изображение сохраняется таким же, как на экране.",
   ],
   zoomHint: ["scroll = zoom, drag = pan, click = banner recipe", "колесо — масштаб, перетаскивание — сдвиг, клик — рецепт баннера"],
   load: ["Select Image / JSON…", "Выбрать изображение / JSON…"],
 
+  version: ["Minecraft version", "Версия Minecraft"],
+  addJar: ["Add JAR…", "Добавить JAR…"],
+  imported: ["imported", "из JAR"],
+  versionHint: [
+    "Blocks, patterns and the command are chosen for this version. Add a client JAR for any other version.",
+    "Блоки, узоры и команда подбираются под эту версию. Для другой версии добавьте клиентский JAR.",
+  ],
   size: ["Art size (blocks)", "Размер арта (блоки)"],
   width: ["Width", "Ширина"],
   height: ["Height", "Высота"],
@@ -72,6 +79,10 @@ export const STRINGS = {
     "For a structure block: put the file in saves/<world>/generated/i2b/structures/ and load i2b:<file name> (without .nbt). Structure blocks do not show the real size of art larger than 32×32.",
     "Для структурного блока: положите файл в saves/<мир>/generated/i2b/structures/ и загрузите i2b:<имя файла> (без .nbt). Структурный блок не показывает реальный размер арта больше 32×32.",
   ],
+  saveNbtOld: [
+    "Structure files are for Minecraft 1.13 and newer. For this version use the image and the banner commands.",
+    "Файл структуры — для Minecraft 1.13 и новее. Для этой версии используйте изображение и команды баннеров.",
+  ],
   credit: ["Web port of", "Веб-порт"],
   creditBy: ["by MARSTeamMC, licensed under", "от MARSTeamMC, лицензия"],
 
@@ -110,6 +121,22 @@ export const STRINGS = {
     (w, h, banners, s) => `Готово: ${w}×${h} блоков, ${banners} баннеров, ${s} с.`,
   ],
   statusCancelled: ["Cancelled.", "Отменено."],
+  statusVersion: [(v, n) => `Minecraft ${v}: ${n} blocks.`, (v, n) => `Minecraft ${v}: ${n} блоков.`],
+  statusVersionArt: [
+    (v, n) => `Minecraft ${v}: ${n} blocks. Blocks missing in this version were replaced; generate again for the best match.`,
+    (v, n) => `Minecraft ${v}: ${n} блоков. Блоки, которых нет в этой версии, заменены; сгенерируйте заново для лучшего результата.`,
+  ],
+  statusJar: [(p) => `Reading JAR… ${p}`, (p) => `Чтение JAR… ${p}`],
+  statusJarDone: [(v, n) => `Minecraft ${v} added: ${n} blocks.`, (v, n) => `Minecraft ${v} добавлен: ${n} блоков.`],
+  errJar: [(m) => `JAR import failed: ${m}`, (m) => `Ошибка импорта JAR: ${m}`],
+  errJarNoBlocks: [
+    "No supported full blocks found in the JAR. A client JAR is required.",
+    "В JAR не найдено поддерживаемых полных блоков. Нужен клиентский JAR.",
+  ],
+  errJarMetadata: [
+    "A Minecraft client JAR with valid version metadata is required.",
+    "Нужен клиентский Minecraft JAR с корректными метаданными версии.",
+  ],
   statusSaved: [(name) => `Saved ${name}.`, (name) => `Сохранено: ${name}.`],
   errFile: ["Could not read this file.", "Не удалось прочитать файл."],
   errJson: [

@@ -243,19 +243,24 @@ picture, and for the blocks behind it. Everything runs in the browser.
 
 This is a web port of [Image2Banners](https://github.com/MARSTeamMC/Image2Banners)
 by **MARSTeamMC**, which is an Electron + Python desktop app. The matching
-algorithm, the JSON format and the structure export are theirs; the textures in
-`image2banners/assets/` come from their repository. Their code is licensed under
+algorithm, the JSON format and the structure export are theirs; the banner
+pattern textures in `image2banners/assets/` come from their repository. Their code is licensed under
 the BSD 2-Clause License, reproduced in `image2banners/LICENSE-Image2Banners.txt`.
 
 ### Features
+- **Minecraft version** — the bundled versions or your own client JAR, as in
+  Graffiti. It decides which blocks and patterns are used, the syntax of the
+  `/give` command and the format of the structure file.
 - **Banner matching** — up to 6 patterns per banner (what a loom allows), or more
   with **More than 6 patterns** for banners obtained by command.
 - **Blocks behind banners**, chosen by colour, and **layered banners** (a banner
   one block higher overlapping the one below).
 - **Banner recipes** — click a banner to see the crafting steps, the block behind
-  it and a `/give` command (1.20.5+ syntax).
+  it and a `/give` command: item components (1.20.5+), item NBT (1.13 – 1.20.4)
+  or the numeric form of 1.8 – 1.12.
+- **Hide banners** to look at the blocks alone.
 - **Save** as PNG, as JSON (reload it later instead of regenerating) or as a
-  structure `.nbt` for a structure block.
+  structure `.nbt` for a structure block (Minecraft 1.13 and newer).
 - Multi-threaded: one worker per CPU thread.
 
 Following the usual advice for creative-mode building, all options are on by
@@ -266,19 +271,25 @@ banners you want to craft in survival.
 Put the `.nbt` file in `saves/<world>/generated/i2b/structures/`, then in a
 structure block (Load mode) enter `i2b:<file name>` without `.nbt`. Structure
 blocks do not display the real size of art larger than 32×32 blocks. The file
-is written for Minecraft 1.21.7 (data version 4440).
+is written for the chosen Minecraft version: its data version, its block names
+and its way of storing banner patterns (changed in 1.20.5).
 
 ### Fidelity to the original
-The port was checked against a reference built from the same libraries the
-original uses (scikit-image, OpenCV, Pillow): identical patterns and blocks on
-the test image, and a byte-identical structure file. Intentional differences:
+The banner matching was checked against a reference built from the same
+libraries the original uses (scikit-image, OpenCV, Pillow): identical patterns
+on the test image. Intentional differences:
+- Blocks come from the palette of the chosen Minecraft version (full cubes with
+  that version's textures) instead of the original's fixed list, so the blocks
+  behind banners differ from the desktop app's. Other sides of a block are used
+  where the block can be turned to show them: the end of a log, the top of a
+  barrel, the back of a furnace.
 - The original appends the last pattern once more when a layer brings no
   improvement; the port does not, so the saved list matches the preview.
-- Block-state properties for crafter faces are applied (in the original the
-  generic `top` rule shadowed them).
 - The saved PNG is drawn from the final data (crisp blocks, banners placed as in
   game) rather than from the progressive preview.
-- JSON files are interchangeable with the desktop app.
+- JSON files of the desktop app open here; blocks this version lacks are
+  replaced. Files saved here name blocks with their states
+  (`barrel[facing=up,open=false]`), which the desktop app may not know.
 
 ### Layout
 ```
@@ -286,15 +297,14 @@ image2banners/
   index.html, style.css   page; layout from ../shared/tool.css
   app.js                  UI: controls, preview, recipes, export, worker pool
   worker.js               processes banner slots off the UI thread
-  assets.js               loads the texture atlases
+  assets.js               loads the pattern atlas, joins it with a version's blocks
   strings.js              UI strings (en/ru), dye and pattern names
-  assets/                 patterns.png (41 patterns x 16 dyes, 20x39 tiles),
-                          blocks.png (16x16 tiles, 32 per row), meta.json
+  assets/                 patterns.png (41 patterns x 16 dyes, 20x39 tiles), meta.json
   core/
     generate.js           banner and block matching for one slot
     similarity.js         CIEDE2000 + SSIM hybrid score
     color.js              sRGB -> CIE-Lab, CIEDE2000
-    model.js              art data, JSON import/export, rendering, /give command
+    model.js              art data, JSON import/export, rendering, /give commands
     nbt.js                structure file writer
     png.js                exact PNG decoder for the atlases
 ```
