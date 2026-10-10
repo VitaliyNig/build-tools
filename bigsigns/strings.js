@@ -4,10 +4,19 @@ export const STRINGS = {
   subtitle: ["Big letters for Minecraft signs", "Большие буквы для табличек Minecraft"],
   placeholder: ["Type a word…", "Введите слово…"],
   clear: ["Clear", "Очистить"],
-  perSign: ["Letters on a sign:", "Букв на табличке:"],
-  perSign1: ["one, large", "одна, крупная"],
-  perSign2: ["two, narrow", "две, узкие"],
-  pairsHint: [
+  style: ["Letters:", "Буквы:"],
+  style_large: ["large — one to a sign", "крупные — одна на табличку"],
+  style_narrow: ["narrow — two to a sign", "узкие — две на табличку"],
+  style_thin: ["thin — two to a sign", "тонкие — две на табличку"],
+  styleHint_large: [
+    "One big letter fills the sign.",
+    "Одна большая буква на всю табличку.",
+  ],
+  styleHint_thin: [
+    "Stems are drawn with the half-wide ▌, as thick as the bars, so letters are lighter and any two fit on a sign.",
+    "Вертикальные палки рисуются половинным ▌ той же толщины, что перекладины: буквы легче, и на табличку помещаются любые две.",
+  ],
+  styleHint_narrow: [
     "Letters are narrower here so that two fit. Wide ones (Ж, Ш, Щ, Ы, Ю, Ф, Д, М, W) only pair with a narrow neighbour; two wide letters in a row get a sign each.",
     "Здесь буквы более узкие, чтобы помещались две. Широкие (Ж, Ш, Щ, Ы, Ю, Ф, Д, М, W) встают в пару только с узкой соседкой; две широкие подряд получают по табличке.",
   ],

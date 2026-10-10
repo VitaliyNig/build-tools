@@ -8,11 +8,16 @@
 // The game centres every line on its own and a space is narrower than a block,
 // so the columns of different lines only meet if each line is padded with the
 // right number of spaces. layoutLine works that out from the font's widths.
+//
+// There are three styles: large letters, one to a sign; narrow ones of the same
+// kind, two to a sign; and thin ones, whose stems are the half-wide ▌.
 
 export const ROWS = 8, LINES = 4;
 // Widths in the default Minecraft font, in text pixels: what a character
 // advances the pen by, and how much of that is drawn.
 export const BLOCK_ADVANCE = 9, BLOCK_INK = 8, SPACE_ADVANCE = 4;
+// ▌ is the left half of a block: half the ink, and the pen moves on just past it.
+export const STEM_ADVANCE = 5, STEM_INK = 4;
 export const LINE_WIDTH = 90;     // the widest line a sign accepts
 export const LINE_PITCH = 10;     // from the top of one line to the top of the next
 export const MAX_COLUMNS = Math.floor(LINE_WIDTH / BLOCK_ADVANCE);
@@ -161,14 +166,131 @@ const NARROW = {
   " ": "../../../../../../../..",
 };
 
+// Thin letters mix all the characters: stems are the half-wide ▌, as thick as the
+// bars made of ▀ and ▄, and stems set a little inwards from one line to the next
+// stand for slanted strokes. A letter is about half as wide as a large one. There is no
+// half-wide character half a line tall, so these are written line by line, not
+// as a grid. One string per sign line, one mark per character or empty stretch:
+//   |  ▌ thin stem          ^  ▀ upper bar     _  ▄ lower bar     #  █ block
+//   .  empty, wide as |     :  empty, wide as a bar     ;  empty 4 px     ,  empty 2 px
+const THIN = {
+  A: [".|^|", "|__|", "|::|", "|::|"],
+  B: ["|^^", "|__|", "|::|", "|__|"],
+  C: ["|^^", "|", "|", "|__"],
+  D: ["|^^", "|::|", "|::|", "|__"],
+  E: ["|^^", "|__", "|", "|__"],
+  F: ["|^^", "|__", "|", "|"],
+  G: ["|^^", "|", "|:^|", "|__|"],
+  H: ["|::|", "|__|", "|::|", "|::|"],
+  I: ["^^^", ":,|", ":,|", "___"],
+  J: [".::|", ".::|", "|::|", "|__|"],
+  K: ["|:|", "|_", "|^", "|:|"],
+  L: ["|", "|", "|", "|__"],
+  M: ["||;;||", "|;,|.,|", "|::|", "|::|"],
+  N: ["|::|", "|_:|", "|:^|", "|::|"],
+  O: ["|^^|", "|::|", "|::|", "|__|"],
+  P: ["|^^|", "|__|", "|", "|"],
+  Q: ["|^^|", "|::|", "|:_|", "|__|_"],
+  R: ["|^^|", "|__|", "|^", "|:|"],
+  S: ["|^^|", "|__", ".::|", "|__|"],
+  T: ["^^^", ":,|", ":,|", ":,|"],
+  U: ["|::|", "|::|", "|::|", "|__|"],
+  V: ["|::|", "|::|", ".|;;|", ":,|"],
+  W: ["|::|", "|::|", "|;,|.,|", "||;;||"],
+  X: ["|::|", ".|_|", ".|^|", "|::|"],
+  Y: ["|::|", ".|;;|", ":,|", ":,|"],
+  Z: ["^^^", "::_", ":^", "___"],
+
+  0: ["|^^|", "|:_|", "|^:|", "|__|"],
+  1: ["^|", ":|", ":|", "_|_"],
+  2: [".^^|", ".__|", "|", "|__"],
+  3: ["^^|", "__|", "::|", "__|"],
+  4: ["|::|", "|__|", ".::|", ".::|"],
+  5: ["|^^", "|__", ".::|", ".__|"],
+  6: ["|^^", "|__", "|::|", "|__|"],
+  7: ["|^^|", ".::|", ".::|", ".::|"],
+  8: ["|^^|", "|__|", "|^^|", "|__|"],
+  9: ["|^^|", "|__|", ".::|", ".__|"],
+
+  "Б": ["|^^", "|__", "|::|", "|__|"],
+  "Г": ["|^^", "|", "|", "|"],
+  "Д": [".|^|", "|::|", "|::|", "|__|"],
+  "Ё": ["^:^", "|^^", "|^", "|__"],
+  "Ж": ["|:|:|", "._|_", ".^|^", "|:|:|"],
+  "З": ["^^|", ":_|", "::|", "__|"],
+  "И": ["|::|", "|:_|", "|^:|", "|::|"],
+  "Й": [":^", "|:_|", "|^:|", "|::|"],
+  "Л": [".|^|", "|::|", "|::|", "|::|"],
+  "П": ["|^^|", "|::|", "|::|", "|::|"],
+  "У": ["|::|", ".|_|", ":.|", "._"],
+  "Ф": ["|^|^|", "|_|_|", ":.|", ":.|"],
+  "Ц": ["|::|", "|::|", "|::|", "|__|_"],
+  "Ч": ["|::|", "|__|", ".::|", ".::|"],
+  "Ш": ["|:|:|", "|:|:|", "|:|:|", "|_|_|"],
+  "Щ": ["|:|:|", "|:|:|", "|:|:|", "|_|_|_"],
+  "Ъ": ["^|", ":|__", ":|::|", ":|__|"],
+  "Ы": ["|:::|", "|__:|", "|::|;|", "|__|;|"],
+  "Ь": ["|", "|__", "|::|", "|__|"],
+  "Э": ["|^^|", ".:_|", ".::|", "|__|"],
+  "Ю": ["|:|^|", "|_|:|", "|:|:|", "|:|_|"],
+  "Я": ["|^^|", "|__|", ".^:|", "|::|"],
+
+  ".": ["", "", "", "_"],
+  ",": ["", "", "", "|"],
+  "!": ["|", "|", "", "|"],
+  "?": ["^^|", ":_|", ":|", ":_"],
+  "-": ["", "__", "", ""],
+  "+": ["", "_|_", ":|", ""],
+  ":": ["", "_", "", "_"],
+  "/": ["::|", ":;|", ";,|", "|"],
+  "(": [";|", "|", "|", ";|"],
+  ")": ["|", ";|", ";|", "|"],
+  "=": ["", "^^", "__", ""],
+  " ": [":.", "", "", ""],
+};
+const MARKS = { "|": "▌", "^": "▀", "_": "▄", "#": "█" };
+const EMPTY = { ".": 5, ":": 9, ";": 4, ",": 2 };
+
+/** How far a character moves the pen. */
+const advanceOf = (cell) => (cell === "▌" ? STEM_ADVANCE : BLOCK_ADVANCE);
+
+export const STYLES = ["large", "narrow", "thin"];
+
 /**
- * The letter's grid: 8 rows of booleans, or null when the font has no such
- * letter. With `narrow`, the letter's narrower shape where it has one.
+ * A letter as the pieces to draw: {width, lines}, lines being four lists of
+ * {cell, at} — a character and where its left edge belongs, in text pixels
+ * from the left of the letter. null when the font has no such letter.
+ * style: "large" (one to a sign), "narrow" or "thin" (two to a sign).
  */
-export function glyph(character, narrow = false) {
+export function letter(character, style = "large") {
   const upper = character.toUpperCase(), name = SAME[upper] || upper;
-  const shape = (narrow && NARROW[name]) || SHAPES[name];
-  return shape ? shape.split("/").map((row) => [...row].map((cell) => cell === "#")) : null;
+  if (style === "thin" && THIN[name]) {
+    let width = 0;
+    const lines = THIN[name].map((marks) => {
+      const pieces = [];
+      let at = 0;
+      for (const mark of marks) {
+        if (mark in EMPTY) { at += EMPTY[mark]; continue; }
+        pieces.push({ cell: MARKS[mark], at });
+        at += advanceOf(MARKS[mark]);
+      }
+      width = Math.max(width, at);
+      return pieces;
+    });
+    return { width, lines };
+  }
+  const shape = (style !== "large" && NARROW[name]) || SHAPES[name];
+  if (!shape) return null;
+  const grid = shape.split("/").map((row) => [...row].map((cell) => cell === "#"));
+  const lines = Array.from({ length: LINES }, (_, line) => {
+    const upper2 = grid[line * 2], lower = grid[line * 2 + 1], pieces = [];
+    upper2.forEach((on, column) => {
+      const cell = on ? (lower[column] ? "█" : "▀") : lower[column] ? "▄" : null;
+      if (cell) pieces.push({ cell, at: column * BLOCK_ADVANCE });
+    });
+    return pieces;
+  });
+  return { width: grid[0].length * BLOCK_ADVANCE, lines };
 }
 
 /** Every character the font can draw, for the help text. */
@@ -177,29 +299,29 @@ export const CHARACTERS = [...Object.keys(SHAPES), ...Object.keys(SAME)];
 /**
  * One sign line.
  *
- * wanted: the blocks of the line, left to right: [{cell, at}], cell being "█",
- *         "▀" or "▄" and `at` where its left edge should be, in text pixels
- *         from the left edge of the picture.
+ * wanted: the characters of the line, left to right: [{cell, at}], `at` being
+ *         where the left edge belongs, in text pixels from the left edge of
+ *         the picture.
  * span:   the width of the whole picture, which is centred on the sign.
  * Returns {text, blocks: [{x, cell}], width, error}: the text to type, where
- * the game then draws each block (x in text pixels from the middle of the
- * sign), the width of the line, and how far the worst block is from its place.
+ * the game then draws each character (x in text pixels from the middle of the
+ * sign), the width of the line, and how far the worst one is from its place.
  */
 export function layoutLine(wanted, span) {
   const target = (at) => -Math.floor(span / 2) + at;
-  // Runs of blocks standing side by side, and the empty stretches between them.
+  // Runs of characters standing side by side, and the empty stretches between them.
   const runs = [];
   for (const { cell, at } of wanted) {
     const last = runs.at(-1);
-    if (last && last.start + last.cells.length * BLOCK_ADVANCE === at) last.cells.push(cell);
-    else runs.push({ start: at, cells: [cell] });
+    if (last && last.end === at) { last.cells.push({ cell, at }); last.end = at + advanceOf(cell); }
+    else runs.push({ start: at, end: at + advanceOf(cell), cells: [{ cell, at }] });
   }
   if (!runs.length) return { text: "", blocks: [], width: 0, error: 0 };
-  const gaps = runs.slice(1).map((run, i) => run.start - runs[i].start - runs[i].cells.length * BLOCK_ADVANCE);
+  const gaps = runs.slice(1).map((run, i) => run.start - runs[i].end);
   // A stretch is rarely a whole number of spaces: try the count on either side.
-  const choices = gaps.map((gap) => [Math.max(1, Math.floor(gap / SPACE_ADVANCE)), Math.ceil(gap / SPACE_ADVANCE)]);
+  const choices = gaps.map((gap) => [Math.max(1, Math.floor(gap / SPACE_ADVANCE)), Math.max(1, Math.ceil(gap / SPACE_ADVANCE))]);
   const most = Math.ceil(span / SPACE_ADVANCE) + 2;
-  const inked = runs.reduce((sum, run) => sum + run.cells.length, 0) * BLOCK_ADVANCE;
+  const inked = runs.reduce((sum, run) => sum + run.end - run.start, 0);
 
   let best = null;
   const tryWith = (between) => {
@@ -212,12 +334,12 @@ export function layoutLine(wanted, span) {
         let x = -Math.floor(width / 2) + leading * SPACE_ADVANCE, worst = 0, total = 0;
         const blocks = [];
         runs.forEach((run, r) => {
-          run.cells.forEach((cell, i) => {
-            const off = Math.abs(x - target(run.start + i * BLOCK_ADVANCE));
+          for (const { cell, at } of run.cells) {
+            const off = Math.abs(x - target(at));
             worst = Math.max(worst, off); total += off;
             blocks.push({ x, cell });
-            x += BLOCK_ADVANCE;
-          });
+            x += advanceOf(cell);
+          }
           if (r < between.length) x += between[r] * SPACE_ADVANCE;
         });
         const spaces = leading + middle + trailing;
@@ -237,7 +359,7 @@ export function layoutLine(wanted, span) {
 
   let text = " ".repeat(best.leading);
   runs.forEach((run, r) => {
-    text += run.cells.join("");
+    text += run.cells.map((piece) => piece.cell).join("");
     if (r < best.between.length) text += " ".repeat(best.between[r]);
   });
   text += " ".repeat(best.trailing);
@@ -246,27 +368,23 @@ export function layoutLine(wanted, span) {
 
 // Two letters on a sign stand one space apart: a whole empty column would not fit.
 const LETTER_GAP = SPACE_ADVANCE;
-// Blocks further than this from their place make a letter look broken.
+// Characters further than this from their place make a letter look broken.
 const MAX_ERROR = 2;
 
-/** Width in text pixels of letters (grids) standing side by side on one sign. */
-function spanOf(grids) {
-  return grids.reduce((sum, grid) => sum + grid[0].length * BLOCK_ADVANCE, 0) + (grids.length - 1) * LETTER_GAP;
+/** Width in text pixels of letters standing side by side on one sign. */
+function spanOf(letters) {
+  return letters.reduce((sum, one) => sum + one.width, 0) + (letters.length - 1) * LETTER_GAP;
 }
 
-/** The four lines of a sign showing these letters (grids of 8 rows of booleans) side by side. */
-export function signLines(grids) {
-  const span = spanOf(grids);
+/** The four lines of a sign showing these letters (see `letter`) side by side. */
+export function signLines(letters) {
+  const span = spanOf(letters);
   return Array.from({ length: LINES }, (_, line) => {
     const wanted = [];
     let left = 0;
-    for (const grid of grids) {
-      const upper = grid[line * 2], lower = grid[line * 2 + 1];
-      upper.forEach((on, column) => {
-        const cell = on ? (lower[column] ? "█" : "▀") : lower[column] ? "▄" : null;
-        if (cell) wanted.push({ cell, at: left + column * BLOCK_ADVANCE });
-      });
-      left += grid[0].length * BLOCK_ADVANCE + LETTER_GAP;
+    for (const one of letters) {
+      for (const { cell, at } of one.lines[line]) wanted.push({ cell, at: left + at });
+      left += one.width + LETTER_GAP;
     }
     return layoutLine(wanted, span);
   });
@@ -274,18 +392,18 @@ export function signLines(grids) {
 
 /**
  * Text -> signs: [{characters, lines}]; lines is null for a character the font
- * does not have. perSign is 1 or 2: with 2, neighbouring letters share a sign
- * in their narrow shapes wherever the pair fits and comes out straight.
+ * does not have. In the "narrow" and "thin" styles neighbouring letters share a
+ * sign wherever the pair fits and comes out straight.
  */
-export function signsFor(text, perSign = 1) {
+export function signsFor(text, style = "large") {
   const characters = [...text].filter((character) => character !== "\n" && character !== "\r");
-  const narrow = perSign > 1, signs = [];
+  const pairs = style !== "large", signs = [];
   for (let i = 0; i < characters.length; i++) {
-    const first = glyph(characters[i], narrow);
+    const first = letter(characters[i], style);
     if (!first) { signs.push({ characters: characters[i], lines: null }); continue; }
     // A space stays a sign of its own, so every word starts on a fresh sign.
-    const pairable = narrow && i + 1 < characters.length && characters[i] !== " " && characters[i + 1] !== " ";
-    const second = pairable ? glyph(characters[i + 1], narrow) : null;
+    const pairable = pairs && i + 1 < characters.length && characters[i] !== " " && characters[i + 1] !== " ";
+    const second = pairable ? letter(characters[i + 1], style) : null;
     if (second && spanOf([first, second]) <= LINE_WIDTH) {
       const lines = signLines([first, second]);
       if (lines.every((line) => line.error <= MAX_ERROR)) {

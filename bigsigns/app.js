@@ -1,10 +1,10 @@
 // Big Signs: type a word, get the four lines to paste into each sign.
 import "../shared/tooltip.js";
 import { bindLanguageSelect, getLang } from "../shared/i18n.js";
-import { BLOCK_INK, LINE_PITCH, LINES, signsFor } from "./core.js";
+import { BLOCK_INK, LINE_PITCH, LINES, signsFor, STEM_INK, STYLES } from "./core.js";
 import { STRINGS } from "./strings.js";
 
-const TEXT_KEY = "bigsigns.text", PER_SIGN_KEY = "bigsigns.perSign";
+const TEXT_KEY = "bigsigns.text", STYLE_KEY = "bigsigns.style";
 // The face of a sign in text pixels, and how much each is enlarged on the page.
 const FACE_W = 96, FACE_H = 48, SCALE = 3;
 const BOARD = "#a8825a", GRAIN = "#9a7650", INK = "#000000";
@@ -51,8 +51,10 @@ function picture(lines) {
   const top = (FACE_H - LINES * LINE_PITCH) / 2 + 1, half = BLOCK_INK / 2;
   (lines || []).forEach((line, index) => {
     for (const { x, cell } of line.blocks) {
-      const y = top + index * LINE_PITCH + (cell === "▄" ? half : 0), height = cell === "█" ? BLOCK_INK : half;
-      context.fillRect((FACE_W / 2 + x) * SCALE, y * SCALE, BLOCK_INK * SCALE, height * SCALE);
+      // █ and the thin ▌ are a whole line tall, ▀ and ▄ half of it.
+      const tall = cell === "█" || cell === "▌";
+      const y = top + index * LINE_PITCH + (cell === "▄" ? half : 0);
+      context.fillRect((FACE_W / 2 + x) * SCALE, y * SCALE, (cell === "▌" ? STEM_INK : BLOCK_INK) * SCALE, (tall ? BLOCK_INK : half) * SCALE);
     }
   });
   return canvas;
@@ -101,10 +103,10 @@ function card(sign, index) {
 }
 
 function render() {
-  const signs = signsFor($("text").value, Number($("perSign").value));
+  const signs = signsFor($("text").value, $("style").value);
   $("signs").replaceChildren(...signs.map(card));
   const unknown = [...new Set(signs.filter((sign) => !sign.lines).map((sign) => sign.characters))];
-  $("pairsHint").hidden = $("perSign").value !== "2";
+  $("styleHint").textContent = t(`styleHint_${$("style").value}`);
   $("unknown").hidden = !unknown.length;
   $("unknown").textContent = t("unknown", unknown.join(" "));
 }
@@ -113,7 +115,7 @@ function textChanged() {
   state.copied.clear();
   try {
     localStorage.setItem(TEXT_KEY, $("text").value);
-    localStorage.setItem(PER_SIGN_KEY, $("perSign").value);
+    localStorage.setItem(STYLE_KEY, $("style").value);
   } catch { /* storage unavailable */ }
   render();
   const count = $("signs").children.length;
@@ -123,10 +125,11 @@ function textChanged() {
 function start() {
   try {
     $("text").value = localStorage.getItem(TEXT_KEY) || "";
-    $("perSign").value = localStorage.getItem(PER_SIGN_KEY) === "2" ? "2" : "1";
+    const saved = localStorage.getItem(STYLE_KEY);
+    if (STYLES.includes(saved)) $("style").value = saved;
   } catch { /* storage unavailable */ }
   $("text").addEventListener("input", textChanged);
-  $("perSign").addEventListener("change", textChanged);
+  $("style").addEventListener("change", textChanged);
   $("clear").addEventListener("click", () => { $("text").value = ""; textChanged(); $("text").focus(); });
   bindLanguageSelect($("lang"), (lang) => { state.lang = lang; retranslate(); });
   retranslate();

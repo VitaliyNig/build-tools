@@ -243,7 +243,7 @@ palette/
 ## Big Signs
 Turns a word into Minecraft signs with one big letter each. A sign line of the
 block characters `█ ▀ ▄` gives two rows of "pixels", so the four lines of a sign
-hold a letter 8 rows tall. For every sign the tool shows the four lines to copy
+hold a letter 8 rows tall. `▌`, the left half of a block, gives thin stems. For every sign the tool shows the four lines to copy
 and paste into it.
 
 The idea, and the trick itself, come from
@@ -257,9 +257,12 @@ This tool is written from scratch around it:
   every line is padded with the right number of spaces. The tool tries the
   paddings and keeps the one that puts the blocks closest to their columns;
   no block ends up more than 2 px off.
-- **Two letters on a sign**, as an option: a second, narrower font (four columns
-  where the letter allows it) and a single space between the letters. A sign
-  line holds 90 px, so two wide letters (Ж, Ш, Ы…) in a row still get a sign each.
+- **Two letters on a sign**, in two more styles, with a single space between
+  the letters. *Narrow* is the same kind of letter in four columns where it
+  allows; a sign line holds 90 px, so two wide letters (Ж, Ш, Ы…) in a row
+  still get a sign each. *Thin* draws stems with the half-wide `▌` (4 px, the
+  thickness of the bars), which makes letters lighter and narrow enough for
+  any two to share a sign.
 - **Pixel-exact preview**, drawn from the widths of the game's default font.
 
 ```
