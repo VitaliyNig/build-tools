@@ -60,10 +60,31 @@ function picture(lines) {
   return canvas;
 }
 
-async function copyLine(text, key, sign, line, button) {
+/** Copy through a selection: the old way, which works where the clipboard API refuses. */
+function copyBySelection(text) {
+  const area = Object.assign(document.createElement("textarea"), { value: text, readOnly: true });
+  area.style.cssText = "position: fixed; left: -1000px; top: 0; white-space: pre;";
+  document.body.append(area);
+  area.select();
+  let copied = false;
+  try { copied = document.execCommand("copy"); } catch { /* not allowed */ }
+  area.remove();
+  return copied;
+}
+
+async function writeClipboard(text) {
   try {
     await navigator.clipboard.writeText(text);
+    return true;
   } catch {
+    // Refused while the window is only just getting focus, as on the first
+    // click after switching back from the game.
+    return copyBySelection(text);
+  }
+}
+
+async function copyLine(text, key, sign, line, button) {
+  if (!await writeClipboard(text)) {
     setStatus("errCopy");
     return;
   }
