@@ -312,12 +312,14 @@ search is English only and hard to browse.
   translated are tried in Latin letters, and a query typed in the wrong
   keyboard layout («cnek») is read in the other one («стул»). A number finds
   the head with that id.
-- **City selections** for BuildTheEarth streets, one tap each: road signs,
-  traffic lights, road and pavement (cones, hydrants, parking meters,
-  crossings), street lamps, bins, post, boxes and crates, things on walls
-  (air conditioners, cameras, vents, pipes, clocks), street furniture, potted
-  plants, vehicles, birds and flags. They are lists of name phrases with
-  exclusions in `heads/themes.js`; a search narrows the selection.
+- **City selections** for BuildTheEarth streets, in the Collections tab next
+  to the project standards: road signs, traffic lights, road and pavement
+  (cones, hydrants, parking meters, crossings), street lamps, bins, post,
+  boxes and crates, things on walls (air conditioners, cameras, vents, pipes,
+  clocks), street furniture, potted plants, vehicles, birds and flags. They
+  are read-only like the standards: copy all their commands, share or export
+  them, or save one to your collections to add and drop heads. Each is a
+  list of name phrases with exclusions in `heads/themes.js`.
 - **Ranking for builders**: among equally good matches, decoration comes
   before characters and letters. A Russian word that the dictionary has in
   exactly that form keeps to its own translations («голубь» is a pigeon, not

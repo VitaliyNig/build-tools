@@ -7,9 +7,6 @@ export const STRINGS = {
     "Search in Russian or English. A word typed in the wrong keyboard layout is understood too. A number finds the head with that id.",
     "Ищите по-русски или по-английски, раскладку можно не переключать. Число находит голову с таким ID.",
   ],
-  themesLabel: ["City:", "Город:"],
-  themeTip: ["A ready selection for street building; press again to leave it. Search narrows it.", "Готовая подборка для улиц; нажмите ещё раз, чтобы выйти. Поиск ищет внутри неё."],
-  inTheme: [(name) => `${name}.`, (name) => `${name}.`],
   category: ["Category", "Категория"],
   collection: ["Collection", "Подборка"],
   any: ["all", "все"],
@@ -60,6 +57,11 @@ export const STRINGS = {
   // Collections
   standards: ["Project standards", "Стандарты проекта"],
   standardsHint: ["Kept in the repository (heads/standards.json); read-only here.", "Хранятся в репозитории (heads/standards.json), здесь только для чтения."],
+  city: ["City (BuildTheEarth)", "Город (BuildTheEarth)"],
+  cityHint: [
+    "Ready selections of street things from the catalogue. Save one to your collections to add or drop heads.",
+    "Готовые подборки городских вещей из каталога. Сохраните подборку в свои коллекции, чтобы добавлять и убирать головы.",
+  ],
   mine: ["My collections", "Мои коллекции"],
   mineHint: ["Kept in this browser. Export them or share by link to move them elsewhere.", "Хранятся в этом браузере. Чтобы перенести, экспортируйте или отправьте ссылкой."],
   newCollection: ["+ New", "+ Новая"],

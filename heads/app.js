@@ -19,13 +19,13 @@ const state = {
   status: null,
   meta: null,                  // the catalogue: revision, categories, collections, tags
   tagNames: new Map(),         // tag id → name
-  theme: "",                   // the selection from themes.js being shown
   query: "", results: [], total: 0, corrected: null,
   heads: new Map(),            // head id → record, for every head seen
   collections: loadCollections(),
   standards: [],               // from standards.json
   shared: null,                // a collection opened from a link
-  selected: null,              // { kind: "mine" | "standard" | "shared", index }
+  selected: null,              // { kind: "mine" | "standard" | "city" | "shared", index }
+  shown: 0, shownOf: "",       // cards of the selected collection on the page, and which collection that is
   detailsHead: null,
 };
 
@@ -55,7 +55,6 @@ function retranslate() {
   fillFormats();
   fillFilters();
   fillTargets();
-  renderThemes();
   renderSource();
   renderResults();
   renderCollections();
@@ -97,7 +96,6 @@ async function loadCatalog() {
     state.tagNames = new Map(state.meta.tags.map((tag) => [tag.id, tag.name]));
     $("loading").hidden = true;
     fillFilters();
-    renderThemes();
     renderSource();
     await runSearch();
     renderCollections();
@@ -277,7 +275,7 @@ async function runSearch(append = false) {
   const seq = ++searchSeq;
   const offset = append ? state.results.length : 0;
   const answer = await ask({
-    type: "search", query: $("query").value, category: $("category").value, collection: $("collection").value, theme: state.theme,
+    type: "search", query: $("query").value, category: $("category").value, collection: $("collection").value,
     offset, limit: PAGE,
   });
   if (seq !== searchSeq) return;
@@ -293,11 +291,8 @@ function renderResults(from = 0) {
   const grid = $("grid");
   if (!from) grid.replaceChildren();
   grid.append(...state.results.slice(from).map(card));
-  const filtered = $("query").value.trim() || $("category").value || $("collection").value || state.theme;
-  const theme = THEMES.find((item) => item.id === state.theme);
-  $("info").textContent = [
-    theme ? t("inTheme", theme.name[state.lang === "ru" ? 1 : 0]) : "",
-    state.corrected ? t("corrected", state.corrected) : "",
+  const filtered = $("query").value.trim() || $("category").value || $("collection").value;
+  $("info").textContent = [    state.corrected ? t("corrected", state.corrected) : "",
     state.total ? t(filtered ? "found" : "all", state.total) : t("nothing"),
   ].filter(Boolean).join(" ");
   const left = state.total - state.results.length;
@@ -306,22 +301,11 @@ function renderResults(from = 0) {
 }
 
 // ---------- city selections ----------
-function renderThemes() {
-  const counts = new Map((state.meta?.themes || []).map((item) => [item.id, item.count]));
-  const chips = THEMES.map((theme) => {
-    const chip = Object.assign(document.createElement("button"), { type: "button", className: "theme", title: t("themeTip") });
-    chip.append(theme.name[state.lang === "ru" ? 1 : 0]);
-    if (counts.has(theme.id)) chip.append(Object.assign(document.createElement("span"), { className: "count", textContent: ` ${counts.get(theme.id)}` }));
-    chip.setAttribute("aria-pressed", state.theme === theme.id);
-    chip.addEventListener("click", () => {
-      state.theme = state.theme === theme.id ? "" : theme.id;
-      renderThemes();
-      showTab("catalog");
-      runSearch();
-    });
-    return chip;
-  });
-  $("themes").replaceChildren($("themesLabel"), ...chips);
+/** The selections from themes.js as read-only collections, named in the page's language. */
+function city() {
+  const heads = new Map((state.meta?.themes || []).map((item) => [item.id, item.heads]));
+  return THEMES.filter((theme) => heads.get(theme.id)?.length)
+    .map((theme) => ({ name: theme.name[state.lang === "ru" ? 1 : 0], heads: heads.get(theme.id) }));
 }
 
 function renderSource() {
@@ -422,6 +406,7 @@ function selected() {
   if (!s) return null;
   if (s.kind === "mine") return state.collections[s.index] || null;
   if (s.kind === "standard") return state.standards[s.index] || null;
+  if (s.kind === "city") return city()[s.index] || null;
   return state.shared;
 }
 
@@ -442,8 +427,11 @@ function listButton(collection, kind, index) {
 function renderCollections() {
   $("collectionsCount").textContent = state.collections.length || "";
   if (!selected()) {
-    state.selected = state.standards.length ? { kind: "standard", index: 0 } : state.collections.length ? { kind: "mine", index: 0 } : null;
+    state.selected = state.standards.length ? { kind: "standard", index: 0 }
+      : state.collections.length ? { kind: "mine", index: 0 } : city().length ? { kind: "city", index: 0 } : null;
   }
+  $("cityBox").hidden = !city().length;
+  $("cityList").replaceChildren(...city().map((c, i) => listButton(c, "city", i)));
   $("standardsBox").hidden = !state.standards.length;
   $("standardsList").replaceChildren(...state.standards.map((c, i) => listButton(c, "standard", i)));
   $("sharedBox").hidden = !state.shared;
@@ -513,9 +501,16 @@ async function renderCollection() {
   const heads = await headsOf(collection.heads);
   if (seq !== collectionSeq) return;
   const missing = collection.heads.length - heads.length;
-  const grid = heads.map(card);
+  // Big selections are shown a page at a time, as the catalogue is.
+  const which = `${kind}:${state.selected.index}`;
+  if (state.shownOf !== which) { state.shownOf = which; state.shown = 0; }
+  state.shown = Math.min(heads.length, Math.max(state.shown, PAGE * 2));
+  const grid = heads.slice(0, state.shown).map(card);
   if (missing > 0 && state.meta) grid.push(Object.assign(document.createElement("p"), { className: "hint missing", textContent: t("missing", missing) }));
   $("collectionGrid").replaceChildren(...grid);
+  const left = heads.length - state.shown;
+  $("collectionMore").hidden = left <= 0;
+  $("collectionMore").textContent = t("more", left);
 }
 
 /** The records of these heads, in this order; heads the catalogue lacks are left out. */
@@ -613,6 +608,7 @@ for (const id of ["category", "collection"]) $(id).addEventListener("change", ()
 $("format").addEventListener("change", () => store(FORMAT_KEY, format()));
 $("target").addEventListener("change", () => { store(TARGET_KEY, $("target").value); refreshMarks(); });
 $("more").addEventListener("click", () => runSearch(true));
+$("collectionMore").addEventListener("click", () => { state.shown += PAGE * 2; renderCollection(); });
 $("retry").addEventListener("click", loadCatalog);
 $("tabCatalog").addEventListener("click", () => showTab("catalog"));
 $("tabCollections").addEventListener("click", () => showTab("collections"));

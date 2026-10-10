@@ -10,12 +10,6 @@ main { flex: 1; display: flex; flex-direction: column; gap: 14px; width: 100%; m
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
 }
 .search input[type="search"] { width: 100%; font-size: 18px; padding: 10px 12px; }
-/* Selections for street building: one tap shows them all. */
-.themes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.themes-label { font-weight: 600; margin-right: 2px; }
-.theme { padding: 4px 12px; border-radius: 999px; }
-.theme[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
-.theme[aria-pressed="true"] .count { color: inherit; opacity: 0.8; }
 .options { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
 .field { display: inline-flex; align-items: center; gap: 6px; }
 .field select { max-width: 260px; }
@@ -110,8 +104,6 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
   .topbar .subtitle { display: none; }
   .grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
   .field { width: 100%; justify-content: space-between; }
-  .themes { flex-wrap: nowrap; overflow-x: auto; margin: 0 -14px; padding: 2px 14px 4px; }
-  .theme { flex: none; }
   .field select { flex: 1; max-width: none; min-width: 0; }
   #collectionsView:not([hidden]) { grid-template-columns: 1fr; }
   .head-view { flex-direction: column; align-items: center; text-align: center; padding-right: 0; }

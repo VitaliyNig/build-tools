@@ -20,9 +20,6 @@
     <section class="panel search">
       <input type="search" id="query" spellcheck="false" autocomplete="off" enterkeyhint="search">
       <p class="hint" data-i18n="searchHint"></p>
-      <div class="themes" id="themes" role="group" aria-labelledby="themesLabel">
-        <span class="themes-label" id="themesLabel" data-i18n="themesLabel"></span>
-      </div>
       <div class="options">
         <label class="field"><span data-i18n="category"></span> <select id="category"></select></label>
         <label class="field"><span data-i18n="collection"></span> <select id="collection"></select></label>
@@ -54,6 +51,11 @@
           <p class="hint" data-i18n="standardsHint"></p>
           <div class="list" id="standardsList"></div>
         </div>
+        <div id="cityBox" hidden>
+          <h2 data-i18n="city"></h2>
+          <p class="hint" data-i18n="cityHint"></p>
+          <div class="list" id="cityList"></div>
+        </div>
         <div id="sharedBox" hidden>
           <h2 data-i18n="shared"></h2>
           <div class="list" id="sharedList"></div>
@@ -78,6 +80,7 @@
         </header>
         <p class="empty" id="collectionEmpty"></p>
         <div class="grid" id="collectionGrid"></div>
+        <button type="button" class="more" id="collectionMore" hidden></button>
       </div>
     </section>
 
