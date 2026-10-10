@@ -264,6 +264,11 @@ This tool is written from scratch around it:
   thickness of the bars), which makes letters lighter and narrow enough for
   any two to share a sign. The large and the narrow style also come *with thin
   strokes*: stems stay a block thick, slanted strokes and inner stems are `▌`.
+- **More styles.** *Tiny*: thin stems one bar apart, three or four letters to a
+  sign. *Stencil*: a plate of blocks with the letter cut out of it. *Frames*:
+  thin double lines made of the box characters `═ ║ ╔ ╗ ╚ ╝`, up to three
+  letters to a sign. And **slanted**, for any style: every line stands 3 px to
+  the right of the one below it.
 - **Pixel-exact preview**, drawn from the widths of the game's default font.
 
 ```

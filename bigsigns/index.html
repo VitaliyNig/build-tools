@@ -21,15 +21,10 @@
       <input type="text" id="text" maxlength="64" spellcheck="false" autocomplete="off">
       <button id="clear" data-i18n="clear"></button>
     </div>
-    <label class="option"><span data-i18n="style"></span>
-      <select id="style">
-        <option value="large" data-i18n="style_large"></option>
-        <option value="largeMixed" data-i18n="style_largeMixed"></option>
-        <option value="narrow" data-i18n="style_narrow"></option>
-        <option value="narrowMixed" data-i18n="style_narrowMixed"></option>
-        <option value="thin" data-i18n="style_thin"></option>
-      </select>
-    </label>
+    <div class="option"><b id="fontsLabel" data-i18n="style"></b>
+      <label class="check" data-i18n-title="italicTip"><input type="checkbox" id="italic"><span data-i18n="italic"></span></label>
+    </div>
+    <div class="fonts" id="fonts" role="radiogroup" aria-labelledby="fontsLabel"></div>
     <p class="hint" data-i18n="howTo"></p>
     <p class="hint" id="styleHint"></p>
     <p class="hint" id="unknown" hidden></p>

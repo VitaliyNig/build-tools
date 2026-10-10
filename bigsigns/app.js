@@ -1,18 +1,19 @@
 // Big Signs: type a word, get the four lines to paste into each sign.
 import "../shared/tooltip.js";
 import { bindLanguageSelect, getLang } from "../shared/i18n.js";
-import { BLOCK_INK, LINE_PITCH, LINES, signsFor, STEM_INK, STYLES } from "./core.js";
+import { BLOCK_INK, INK, LINE_PITCH, LINES, signsFor, STYLES } from "./core.js";
 import { STRINGS } from "./strings.js";
 
-const TEXT_KEY = "bigsigns.text", STYLE_KEY = "bigsigns.style";
+const TEXT_KEY = "bigsigns.text", STYLE_KEY = "bigsigns.style", ITALIC_KEY = "bigsigns.italic";
 // The face of a sign in text pixels, and how much each is enlarged on the page.
 const FACE_W = 96, FACE_H = 48, SCALE = 3;
-const BOARD = "#a8825a", GRAIN = "#9a7650", INK = "#000000";
+const BOARD = "#a8825a", GRAIN = "#9a7650", TEXT_COLOUR = "#000000";
 
 const $ = (id) => document.getElementById(id);
 
 const state = {
   lang: getLang(),
+  style: STYLES[0],    // the font
   copied: new Set(),   // "sign index:line" of the lines already copied, to keep one's place
   status: ["statusStart"],
 };
@@ -31,6 +32,7 @@ function setStatus(key, ...args) {
 
 function retranslate() {
   for (const el of document.querySelectorAll("[data-i18n]")) el.textContent = t(el.dataset.i18n);
+  for (const el of document.querySelectorAll("[data-i18n-title]")) el.title = t(el.dataset.i18nTitle);
   document.title = `Big Signs — ${t("subtitle")}`;
   $("text").placeholder = t("placeholder");
   $("status").textContent = t(...state.status);
@@ -47,14 +49,16 @@ function picture(lines) {
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.fillStyle = GRAIN;
   for (let y = 12; y < FACE_H; y += 12) context.fillRect(0, y * SCALE, canvas.width, SCALE);
-  context.fillStyle = INK;
-  const top = (FACE_H - LINES * LINE_PITCH) / 2 + 1, half = BLOCK_INK / 2;
+  context.fillStyle = TEXT_COLOUR;
+  const top = (FACE_H - LINES * LINE_PITCH) / 2 + 1;
   (lines || []).forEach((line, index) => {
     for (const { x, cell } of line.blocks) {
-      // █ and the thin ▌ are a whole line tall, ▀ and ▄ half of it.
-      const tall = cell === "█" || cell === "▌";
-      const y = top + index * LINE_PITCH + (cell === "▄" ? half : 0);
-      context.fillRect((FACE_W / 2 + x) * SCALE, y * SCALE, (cell === "▌" ? STEM_INK : BLOCK_INK) * SCALE, (tall ? BLOCK_INK : half) * SCALE);
+      // Pixel by pixel, as the font has the character.
+      INK[cell].forEach((row, r) => {
+        for (let column = 0; column < BLOCK_INK; column++) {
+          if (row & (0x80 >> column)) context.fillRect((FACE_W / 2 + x + column) * SCALE, (top + index * LINE_PITCH + r) * SCALE, SCALE, SCALE);
+        }
+      });
     }
   });
   return canvas;
@@ -123,11 +127,36 @@ function card(sign, index) {
   return item;
 }
 
+/** What the font cards show: the start of the typed word, or a few letters of the alphabet. */
+function sampleText() {
+  const typed = [...$("text").value].filter((character) => character.trim()).slice(0, 4).join("");
+  return typed || t("sample");
+}
+
+/** One card per font, each with a sign written in it. */
+function renderFonts() {
+  const sample = sampleText(), italic = $("italic").checked;
+  $("fonts").replaceChildren(...STYLES.map((style) => {
+    const button = Object.assign(document.createElement("button"), { type: "button", className: "font" });
+    button.setAttribute("role", "radio");
+    button.setAttribute("aria-checked", style === state.style);
+    // The first sign of the sample: as many letters as the font puts on one.
+    const first = signsFor(sample, style, italic)[0];
+    const [name, note] = t(`style_${style}`).split(" — ");
+    button.append(picture(first && first.lines),
+      Object.assign(document.createElement("b"), { textContent: name }),
+      Object.assign(document.createElement("span"), { textContent: note }));
+    button.addEventListener("click", () => { state.style = style; textChanged(); });
+    return button;
+  }));
+}
+
 function render() {
-  const signs = signsFor($("text").value, $("style").value);
+  renderFonts();
+  const signs = signsFor($("text").value, state.style, $("italic").checked);
   $("signs").replaceChildren(...signs.map(card));
   const unknown = [...new Set(signs.filter((sign) => !sign.lines).map((sign) => sign.characters))];
-  $("styleHint").textContent = t(`styleHint_${$("style").value}`);
+  $("styleHint").textContent = t(`styleHint_${state.style}`);
   $("unknown").hidden = !unknown.length;
   $("unknown").textContent = t("unknown", unknown.join(" "));
 }
@@ -136,7 +165,8 @@ function textChanged() {
   state.copied.clear();
   try {
     localStorage.setItem(TEXT_KEY, $("text").value);
-    localStorage.setItem(STYLE_KEY, $("style").value);
+    localStorage.setItem(STYLE_KEY, state.style);
+    localStorage.setItem(ITALIC_KEY, $("italic").checked ? "1" : "");
   } catch { /* storage unavailable */ }
   render();
   const count = $("signs").children.length;
@@ -147,10 +177,11 @@ function start() {
   try {
     $("text").value = localStorage.getItem(TEXT_KEY) || "";
     const saved = localStorage.getItem(STYLE_KEY);
-    if (STYLES.includes(saved)) $("style").value = saved;
+    if (STYLES.includes(saved)) state.style = saved;
+    $("italic").checked = localStorage.getItem(ITALIC_KEY) === "1";
   } catch { /* storage unavailable */ }
   $("text").addEventListener("input", textChanged);
-  $("style").addEventListener("change", textChanged);
+  $("italic").addEventListener("change", textChanged);
   $("clear").addEventListener("click", () => { $("text").value = ""; textChanged(); $("text").focus(); });
   bindLanguageSelect($("lang"), (lang) => { state.lang = lang; retranslate(); });
   retranslate();
