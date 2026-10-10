@@ -57,6 +57,7 @@ const TABLE = {
   purpur_block: [201, 0], purpur_pillar: [202, 0], purpur_double_slab: [204, 0],
   end_bricks: [206, 0], repeating_command_block: [210, 2], chain_command_block: [211, 2],
   magma: [213, 0], nether_wart_block: [214, 0], red_nether_brick: [215, 0], bone_block: [216, 0],
+  observer: [218, 2],
   structure_block: [255, 2],
 };
 COLOURS.forEach((colour, i) => {

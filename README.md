@@ -137,7 +137,9 @@ It writes `<version>.json` (blocks, their other sides, fronts and decorations,
 with average colours), `<version>.png` (block tiles, north side),
 `<version>.faces.png` (the other sides that look different),
 `<version>.fronts.png` (blocks that are not cubes but fill the square seen from
-the north: shulker boxes, open trapdoors without holes, the composter) and
+the north: shulker boxes, open trapdoors without holes, the composter; and
+other looks of a cube: the filled chiseled bookshelf, the inside of a mushroom
+block) and
 `<version>.deco.png` (decoration tiles, 32×32, with transparency) into `shared/mc/palettes/` and adds the version to `index.json`.
 Atlases hold 32 tiles per row, in list order; block tiles are 16×16.
 

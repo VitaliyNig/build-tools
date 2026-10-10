@@ -4,26 +4,26 @@
     {
       "version": "26.3",
       "data_version": 5023,
-      "blocks": 484,
-      "faces": 139,
-      "fronts": 22,
-      "decorations": 520
+      "blocks": 491,
+      "faces": 145,
+      "fronts": 24,
+      "decorations": 518
     },
     {
       "version": "1.21.4",
       "data_version": 4189,
-      "blocks": 429,
-      "faces": 137,
-      "fronts": 22,
-      "decorations": 401
+      "blocks": 436,
+      "faces": 143,
+      "fronts": 24,
+      "decorations": 399
     },
     {
       "version": "1.12.2",
       "data_version": 1343,
-      "blocks": 208,
-      "faces": 49,
+      "blocks": 209,
+      "faces": 52,
       "fronts": 0,
-      "decorations": 155
+      "decorations": 154
     }
   ]
 }

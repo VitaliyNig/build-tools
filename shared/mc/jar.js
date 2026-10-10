@@ -208,13 +208,10 @@ class JarAssets {
     const tiles = {};
     for (const [direction, face] of Object.entries(faces)) {
       if ("tintindex" in face) return null;
-      const image = await this.texture(face.texture, model.textures || {});
-      const uv = face.uv || [0, 0, 16, 16];
-      const box = uv.map((v, i) => Math.round(v / 16 * (i % 2 === 0 ? image.w : image.h)));
-      const part = crop(image, ...box);
+      // Mirrored faces (mud bricks, the dried kelp block) are read like any other.
+      const part = faceImage(await this.texture(face.texture, model.textures || {}), face);
       for (let i = 3; i < part.data.length; i += 4) if (part.data[i] !== 255) return null;
-      if (!part.w || !part.h) throw new Error("Empty face");
-      tiles[direction] = toTile(rotateClockwise(part, (face.rotation || 0) / 90));
+      tiles[direction] = toTile(part);
     }
     return tiles;
   }
@@ -264,14 +261,49 @@ class JarAssets {
   }
 
   /**
+   * A full opaque cube that the game puts together from parts, which wallTile
+   * cannot read: {properties, tile, sides} like a wall block, else null.
+   *
+   * state: the block's blockstate file.
+   */
+  async builtCube(block, state) {
+    const parts = state.multipart || [];
+    const opaque = (image) => {
+      for (let i = 3; i < image.data.length; i += 4) if (image.data[i] !== 255) return null;
+      return toTile(image);
+    };
+    if (block === "chiseled_bookshelf") {
+      // The front is drawn slot by slot from one picture; with no books it is the "empty" one.
+      const picture = async (name) => opaque(await this.texture(`minecraft:block/chiseled_bookshelf_${name}`, {}));
+      const front = await picture("empty"), side = await picture("side"), top = await picture("top");
+      if (!front || !side || !top) return null;
+      return { properties: "facing=north", tile: front, sides: { north: front, south: side, east: side, west: side, up: top, down: top } };
+    }
+    // One flat face per side that is switched on, as mushroom blocks have: all six on is the default.
+    const sides = {};
+    for (const direction of FACES) {
+      const part = parts.find((item) => item.when && item.when[direction] === "true" && Object.keys(item.when).length === 1);
+      if (!part) return null;
+      const model = await this.model(part.apply.model), flat = (model.elements || [])[0];
+      const same = (a, b) => Array.isArray(a) && a.every((v, i) => v === b[i]);
+      const face = flat && (flat.faces || {}).north;
+      if (model.elements.length !== 1 || !face || !same(flat.from, [0, 0, 0]) || !same(flat.to, [16, 16, 0])) return null;
+      sides[direction] = opaque(faceImage(await this.texture(face.texture, model.textures || {}), face));
+      if (!sides[direction]) return null;
+    }
+    return { properties: "", tile: sides.north, sides };
+  }
+
+  /**
    * The picture of a block that is not a full cube but, in the right state,
-   * fills the whole square for someone looking at it from the north:
-   * {properties, tile}, else null. Pictures with holes do not count.
+   * fills the whole square for someone looking at it from the north, or another
+   * look of a cube that takes more than turning it: {properties, note, tile}, else
+   * null; `note` tells such a look apart in the name. Pictures with holes do not count.
    *
    * state: the block's blockstate file.
    */
   async frontTile(block, state) {
-    let image = null, properties = "";
+    let image = null, properties = "", note = "";
     if (/(^|_)shulker_box$/.test(block)) {
       // Drawn by code from the shulker's texture; lying on its side it shows the top of its lid.
       const colour = block.replace(/_?shulker_box$/, "");
@@ -291,6 +323,19 @@ class JarAssets {
       const face = door && (door.faces || {})[side];
       if (!face) return null;
       image = faceImage(await this.texture(face.texture, model.textures || {}), face);
+    } else if (block === "brown_mushroom_block") {
+      // A side that is switched off shows the pores inside, the same in all three mushroom blocks.
+      const part = (state.multipart || []).find((item) => item.when && item.when.north === "false");
+      if (!part) return null;
+      const model = await this.model(part.apply.model), face = ((model.elements || [])[0].faces || {}).north;
+      image = faceImage(await this.texture(face.texture, model.textures || {}), face);
+      note = "inside";
+      properties = "north=false";
+    } else if (block === "chiseled_bookshelf") {
+      // A second look of a cube that is already a block: every shelf filled.
+      image = await this.texture("minecraft:block/chiseled_bookshelf_occupied", {});
+      note = "filled";
+      properties = `facing=north,${[0, 1, 2, 3, 4, 5].map((slot) => `slot_${slot}_occupied=true`).join(",")}`;
     } else if (block === "composter") {
       const part = (state.multipart || []).find((item) => !item.when);
       if (!part) return null;
@@ -299,7 +344,7 @@ class JarAssets {
     }
     if (!image || !image.w || !image.h) return null;
     for (let i = 3; i < image.data.length; i += 4) if (image.data[i] !== 255) return null;
-    return { properties, tile: toTile(image) };
+    return { properties, note, tile: toTile(image) };
   }
 
   /**
@@ -364,12 +409,13 @@ function isTinted(image, block) {
   return opaque > 0 && spread / opaque < 40 && !UNTINTED.test(block);
 }
 
-/** Whether two packed RGB tiles show the same picture, allowing quarter turns. */
+/** Whether two packed RGB tiles show the same picture, allowing quarter turns and mirroring. */
 function sameTexture(a, b) {
-  const turns = [
+  const quarters = [
     (x, y) => [x, y], (x, y) => [TILE_PX - 1 - y, x],
     (x, y) => [TILE_PX - 1 - x, TILE_PX - 1 - y], (x, y) => [y, TILE_PX - 1 - x],
   ];
+  const turns = [...quarters, ...quarters.map((turn) => (x, y) => turn(TILE_PX - 1 - x, y))];
   return turns.some((turn) => {
     for (let y = 0; y < TILE_PX; y++) {
       for (let x = 0; x < TILE_PX; x++) {
@@ -442,7 +488,7 @@ export async function importJar(buffer, fileName, decodePng, onProgress) {
       if (front) {
         fronts.push({
           id: `minecraft:${block}` + (front.properties ? `[${front.properties}]` : ""),
-          name: titleCase(block), rgb: averageColour(front.tile),
+          name: titleCase(block) + (front.note ? ` (${front.note})` : ""), rgb: averageColour(front.tile),
         });
         frontTiles.push(front.tile);
       }
@@ -455,6 +501,7 @@ export async function importJar(buffer, fileName, decodePng, onProgress) {
           if (sides) { chosen = { properties, tile: sides.north, sides }; break search; }
         }
       }
+      if (!chosen && !isLegacy(dataVersion)) chosen = await assets.builtCube(block, state).catch(() => null);
     } catch { /* unreadable blockstate: skip */ }
     // Pre-1.13 variants without a known numeric id could not be exported.
     if (chosen && isLegacy(dataVersion) && !legacyBlock(`minecraft:${block}`)) { skipped.push(block); continue; }
