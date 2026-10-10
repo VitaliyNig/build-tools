@@ -9,7 +9,7 @@ import {
   applyCell, bannerSteps, cellAt, commandFormat, createModel, fromJson, giveCommand, missingPatterns, remapBlocks,
   renderModel, toJson, unavailablePatterns,
 } from "./core/model.js";
-import { buildSchem, buildStructure } from "./core/nbt.js";
+import { buildLegacySchematic, buildSchem, buildStructure } from "./core/nbt.js";
 import { DYE_NAMES, PATTERN_ITEMS, PATTERN_NAMES, STRINGS } from "./strings.js";
 
 const MAX_SIZE = 128;   // blocks per side
@@ -418,12 +418,15 @@ async function saveWorld(build, extension) {
 // ---------- wiring ----------
 function updateActions() {
   const running = Boolean(state.run), busy = running || state.busy, ready = Boolean(state.model) && !busy;
-  // Structure and schematic files name blocks the way versions from 1.13 on do.
+  // Structure files name blocks the way versions from 1.13 on do; schematics have an older form too.
   const old = Boolean(state.palette) && commandFormat(state.palette.dataVersion) === "old";
   $("generate").textContent = t(running ? "cancel" : "generate");
   $("generate").disabled = !running && (state.busy || !(state.image && state.assets));
   $("savePng").disabled = $("saveJson").disabled = !ready;
-  $("saveNbt").disabled = $("saveSchem").disabled = !ready || old;
+  $("saveNbt").disabled = !ready || old;
+  $("saveSchem").disabled = !ready;
+  $("saveSchem").textContent = t(old ? "saveSchematic" : "saveSchem");
+  $("saveSchem").title = t(old ? "saveSchematicTip" : "saveSchemTip");
   $("saveNbtOld").hidden = !old;
   $("load").disabled = busy || !state.assets;
   $("paletteVersion").disabled = $("addJar").disabled = busy;
@@ -486,7 +489,10 @@ function wire() {
   $("savePng").addEventListener("click", savePng);
   $("saveJson").addEventListener("click", saveJson);
   $("saveNbt").addEventListener("click", () => saveWorld(buildStructure, "nbt"));
-  $("saveSchem").addEventListener("click", () => saveWorld(buildSchem, "schem"));
+  $("saveSchem").addEventListener("click", () => {
+    if (commandFormat(state.palette.dataVersion) === "old") saveWorld(buildLegacySchematic, "schematic");
+    else saveWorld(buildSchem, "schem");
+  });
   // Follows the Minecraft version; changing it by hand lasts until the version changes.
   $("commandVersion").addEventListener("change", showDetails);
   $("copyCommand").addEventListener("click", async () => {

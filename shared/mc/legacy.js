@@ -72,8 +72,26 @@ WOODS.forEach((wood, i) => {
   TABLE[`${wood}_log`] = i < 4 ? [17, 12 + i] : [162, 12 + i - 4];
 });
 
-/** [block id, data] for a palette block id such as "minecraft:oak_log[axis=none]", or null. */
+// Data values of a block turned another way than the table has it.
+const FACING = { down: 0, up: 1, north: 2, south: 3, west: 4, east: 5 };
+const PUMPKIN_FACING = { south: 0, west: 1, north: 2, east: 3 };
+const PUMPKINS = new Set([86, 91]), PILLARS = new Set([170, 202, 216]), QUARTZ = 155;
+
+/**
+ * [block id, data] for a palette block id such as "minecraft:oak_log[axis=none]", or null.
+ * A facing or a lying axis in the id ("furnace[facing=south]", "hay_block[axis=z]") turns the block.
+ */
 export function legacyBlock(id) {
   const name = id.replace(/^minecraft:/, "").replace(/\[.*$/, "");
-  return Object.hasOwn(TABLE, name) ? TABLE[name] : null;
+  if (!Object.hasOwn(TABLE, name)) return null;
+  const [block, data] = TABLE[name];
+  const facing = (/facing=(\w+)/.exec(id) || [])[1], axis = (/axis=([xz])/.exec(id) || [])[1];
+  if (facing && data === 2) {
+    const turned = (PUMPKINS.has(block) ? PUMPKIN_FACING : FACING)[facing];
+    if (turned !== undefined) return [block, turned];
+  }
+  // Pillars: 0 upright, 4 along x, 8 along z; the quartz column has values of its own.
+  if (axis && PILLARS.has(block)) return [block, axis === "x" ? 4 : 8];
+  if (axis && block === QUARTZ && data === 2) return [block, axis === "x" ? 3 : 4];
+  return [block, data];
 }

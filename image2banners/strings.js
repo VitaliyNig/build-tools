@@ -84,9 +84,14 @@ export const STRINGS = {
     "Sponge schematic for WorldEdit, FAWE, Litematica or Axiom: put it in the schematics folder and run //schem load <file name>. The art faces north: banners are on the north side of the wall.",
     "Схема Sponge для WorldEdit, FAWE, Litematica или Axiom: положите файл в папку schematics и выполните //schem load <имя файла>. Арт смотрит на север: баннеры с северной стороны стены.",
   ],
+  saveSchematic: ["Save as SCHEMATIC", "Сохранить как SCHEMATIC"],
+  saveSchematicTip: [
+    "MCEdit schematic for WorldEdit 6, Schematica or MCEdit: put it in the schematics folder and run //schematic load <file name>. The art faces north: banners are on the north side of the wall.",
+    "Схема MCEdit для WorldEdit 6, Schematica или MCEdit: положите файл в папку schematics и выполните //schematic load <имя файла>. Арт смотрит на север: баннеры с северной стороны стены.",
+  ],
   saveNbtOld: [
-    "Structure and schematic files are for Minecraft 1.13 and newer. For this version use the image and the banner commands.",
-    "Файлы структуры и схемы — для Minecraft 1.13 и новее. Для этой версии используйте изображение и команды баннеров.",
+    "Structure files are for Minecraft 1.13 and newer. For this version save a schematic.",
+    "Файл структуры — для Minecraft 1.13 и новее. Для этой версии сохраните схему.",
   ],
   credit: ["Web port of", "Веб-порт"],
   creditBy: ["by MARSTeamMC, licensed under", "от MARSTeamMC, лицензия"],

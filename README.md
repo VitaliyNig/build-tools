@@ -263,7 +263,8 @@ the BSD 2-Clause License, reproduced in `image2banners/LICENSE-Image2Banners.txt
 - **Hide banners** to look at the blocks alone.
 - **Save** as PNG, as JSON (reload it later instead of regenerating), as a
   structure `.nbt` for a structure block or as a Sponge `.schem` for WorldEdit,
-  FAWE, Litematica and Axiom (both for Minecraft 1.13 and newer).
+  FAWE, Litematica and Axiom (both for Minecraft 1.13 and newer). For older
+  versions the schematic is an MCEdit `.schematic` (WorldEdit 6, Schematica).
 - Multi-threaded: one worker per CPU thread.
 
 Following the usual advice for creative-mode building, all options are on by
@@ -309,6 +310,6 @@ image2banners/
     similarity.js         CIEDE2000 + SSIM hybrid score
     color.js              sRGB -> CIE-Lab, CIEDE2000
     model.js              art data, JSON import/export, rendering, /give commands
-    nbt.js                structure (.nbt) and schematic (.schem) writers
+    nbt.js                structure (.nbt) and schematic (.schem, .schematic) writers
     png.js                exact PNG decoder for the atlases
 ```

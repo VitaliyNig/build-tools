@@ -1,10 +1,12 @@
 // Export the art as NBT payloads (not yet gzipped): a Minecraft structure (.nbt)
-// for a structure block, and a Sponge schematic (.schem) for WorldEdit and the like.
+// for a structure block, a Sponge schematic (.schem) for WorldEdit and the like,
+// and for versions before 1.13 an MCEdit .schematic with numeric block ids.
 //
 // The structure writer is ported from Image2Banners by MARSTeamMC
 // (banners_to_nbt.py), BSD 2-Clause.
 // Layout of both: blocks at z = 1, wall banners (facing north) on their front at
 // z = 0; x and y are mirrored so the art reads correctly when viewed from the north.
+import { legacyBlock } from "../../shared/mc/legacy.js";
 import { commandFormat, legacyLayers } from "./model.js";
 
 const TAG = { END: 0, SHORT: 2, INT: 3, BYTE_ARRAY: 7, STRING: 8, LIST: 9, COMPOUND: 10, INT_ARRAY: 11 };
@@ -59,6 +61,65 @@ function writePatterns(w, banner, modern) {
       w.end();
     }
   }
+}
+
+// Before 1.13 every wall banner is one block; its colour is in its block entity.
+const WALL_BANNER = 177, FACING_NORTH = 2;
+const DYES = ["white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray",
+  "light_gray", "cyan", "purple", "blue", "brown", "green", "red", "black"];
+
+/**
+ * MCEdit .schematic for Minecraft 1.8 - 1.12, read by WorldEdit 6, Schematica
+ * and MCEdit: one numeric id byte and one data byte per block.
+ *
+ * model: see model.js; its blocks are names of a version before 1.13.
+ * Returns the uncompressed NBT bytes.
+ */
+export function buildLegacySchematic(model, assets) {
+  const { width, height } = model;
+  const fallback = legacyBlock(assets.defaultBlock) || [1, 0];
+  const blocks = new Uint8Array(width * height * 2), data = new Uint8Array(width * height * 2);
+  const banners = [];
+  // Same order as the Sponge format: (y * Length + z) * Width + x, bottom layer first.
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const cell = model.cells[(height - 1 - y) * width + (width - 1 - x)];
+      const [id, value] = legacyBlock(cell.block || assets.defaultBlock) || fallback;
+      const back = (y * 2 + 1) * width + x, front = y * 2 * width + x;
+      blocks[back] = id; data[back] = value;
+      if (cell.banner) {
+        blocks[front] = WALL_BANNER; data[front] = FACING_NORTH;
+        banners.push({ pos: [x, y, 0], banner: cell.banner });
+      }
+    }
+  }
+
+  const w = new Writer();
+  w.header(TAG.COMPOUND, "Schematic");
+  w.short("Width", width);
+  w.short("Height", height);
+  w.short("Length", 2);
+  w.string("Materials", "Alpha");
+  w.byteArray("Blocks", blocks);
+  w.byteArray("Data", data);
+  w.list("Entities", TAG.COMPOUND, 0);
+  w.list("TileEntities", TAG.COMPOUND, banners.length);
+  for (const { pos, banner } of banners) {
+    // Colours are numbered from black up in these versions.
+    const layers = legacyLayers(banner, "old");
+    w.string("id", "minecraft:banner");
+    w.int("x", pos[0]); w.int("y", pos[1]); w.int("z", pos[2]);
+    w.int("Base", 15 - DYES.indexOf(banner[0].split("#")[0]));
+    w.list("Patterns", TAG.COMPOUND, layers.length);
+    for (const layer of layers) {
+      w.string("Pattern", layer.pattern);
+      w.int("Color", 15 - layer.colour);
+      w.end();
+    }
+    w.end();
+  }
+  w.end();
+  return new Uint8Array(w.bytes);
 }
 
 /**
