@@ -1,7 +1,7 @@
 // Big Signs: type a word, get the four lines to paste into each sign.
 import "../shared/tooltip.js";
 import { bindLanguageSelect, getLang } from "../shared/i18n.js";
-import { BLOCK_INK, INK, LINES, SIGNS, signsFor, STYLES } from "./core.js";
+import { BLOCK_INK, INK, LINE_PITCH, LINES, SIGNS, signsFor, STYLES } from "./core.js";
 import { STRINGS } from "./strings.js";
 
 const TEXT_KEY = "bigsigns.text", STYLE_KEY = "bigsigns.style", ITALIC_KEY = "bigsigns.italic";
@@ -9,6 +9,9 @@ const SIGN_KEY = "bigsigns.sign";
 // How much a text pixel is enlarged in the pictures.
 const SCALE = 3;
 const BOARD = "#a8825a", GRAIN = "#9a7650", TEXT_COLOUR = "#000000";
+
+// Characters a keyboard does not have, offered as buttons.
+const SYMBOLS = [..."←→↑↓↖↗↘↙↔↕♥★☺☻✓✗⌂⚔⛏◆«»—…•№₽°"];
 
 const $ = (id) => document.getElementById(id);
 
@@ -36,6 +39,7 @@ function retranslate() {
   for (const el of document.querySelectorAll("[data-i18n-title]")) el.title = t(el.dataset.i18nTitle);
   document.title = `Big Signs — ${t("subtitle")}`;
   $("text").placeholder = t("placeholder");
+  renderSymbols();
   $("status").textContent = t(...state.status);
   render();
 }
@@ -132,6 +136,46 @@ function card(sign, index) {
     item.append(row);
   });
   return item;
+}
+
+/** A character on its own, in the large font, drawn in the colour of the page's text. */
+function symbolIcon(character) {
+  const lines = signsFor(character, "large")[0].lines;
+  const left = Math.min(...lines.flatMap((line) => line.blocks.map((block) => block.x)));
+  const right = Math.max(...lines.flatMap((line) => line.blocks.map((block) => block.x + BLOCK_INK)));
+  const canvas = document.createElement("canvas");
+  canvas.width = right - left; canvas.height = LINES * LINE_PITCH - 2;
+  const context = canvas.getContext("2d");
+  context.fillStyle = getComputedStyle(document.body).color;
+  lines.forEach((line, index) => {
+    for (const { x, cell } of line.blocks) {
+      INK[cell].forEach((row, r) => {
+        for (let column = 0; column < BLOCK_INK; column++) {
+          if (row & (0x80 >> column)) context.fillRect(x - left + column, index * LINE_PITCH + r, 1, 1);
+        }
+      });
+    }
+  });
+  return canvas;
+}
+
+/** Put a character where the cursor is in the text. */
+function insertSymbol(character) {
+  const input = $("text"), start = input.selectionStart ?? input.value.length, end = input.selectionEnd ?? start;
+  if (input.value.length - (end - start) + character.length > input.maxLength) return;
+  input.setRangeText(character, start, end, "end");
+  input.focus();
+  textChanged();
+}
+
+function renderSymbols() {
+  $("symbols").replaceChildren(...SYMBOLS.map((character) => {
+    const name = STRINGS.symbolNames[character];
+    const button = Object.assign(document.createElement("button"), { type: "button", title: name ? `${character} — ${name[state.lang === "ru" ? 1 : 0]}` : character });
+    button.append(symbolIcon(character));
+    button.addEventListener("click", () => insertSymbol(character));
+    return button;
+  }));
 }
 
 /** What the font cards show: the start of the typed word, or a few letters of the alphabet. */

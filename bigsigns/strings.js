@@ -4,6 +4,15 @@ export const STRINGS = {
   subtitle: ["Big letters for Minecraft signs", "Большие буквы для табличек Minecraft"],
   placeholder: ["Type a word…", "Введите слово…"],
   clear: ["Clear", "Очистить"],
+  symbols: ["Symbols", "Символы"],
+  symbolsHint: ["a click types one where the cursor is", "клик вставляет символ туда, где курсор"],
+  // Names for the buttons whose character does not say what it draws.
+  symbolNames: {
+    "♥": ["heart", "сердце"], "★": ["star", "звезда"], "☺": ["smile", "смайлик"], "☻": ["creeper", "крипер"],
+    "✓": ["tick", "галочка"], "✗": ["cross", "крестик"], "⌂": ["house", "дом"], "⚔": ["sword", "меч"],
+    "⛏": ["pickaxe", "кирка"], "◆": ["diamond", "алмаз"], "—": ["dash", "тире"], "…": ["ellipsis", "многоточие"],
+    "•": ["bullet", "маркер"],
+  },
   sign: ["Sign:", "Табличка:"],
   sign_standing: ["ordinary — lines up to 90 px", "обычная — строка до 90 px"],
   sign_hanging: ["hanging — lines up to 60 px", "подвесная — строка до 60 px"],

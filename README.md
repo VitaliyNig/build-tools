@@ -251,7 +251,9 @@ The idea, and the trick itself, come from
 This tool is written from scratch around it:
 - **Whole words** — type a text and get every sign in order, instead of picking
   letters one at a time.
-- **Latin, Cyrillic, digits and punctuation**, in a font of its own.
+- **Latin, Cyrillic, digits and punctuation**, in a font of its own, with
+  arrows, a few pictograms (heart, star, creeper, house, sword…) and
+  typographic marks, which a row of buttons types for you.
 - **Exact padding.** The game centres each line separately, and a space (4 px)
   is narrower than a block (9 px), so a letter only comes out straight when
   every line is padded with the right number of spaces. The tool tries the

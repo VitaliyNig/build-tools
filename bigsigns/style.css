@@ -9,6 +9,11 @@ main { flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 14px 
 .option { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .check { display: inline-flex; align-items: center; gap: 6px; }
 
+/* Characters a keyboard does not have: a click types one. */
+.symbols { display: flex; flex-wrap: wrap; gap: 4px; }
+.symbols button { display: grid; place-items: center; min-width: 48px; height: 50px; padding: 4px 6px; }
+.symbols canvas { display: block; image-rendering: pixelated; }
+
 /* The fonts to choose from, each shown on a sign. */
 .fonts { display: flex; flex-wrap: wrap; gap: 8px; }
 .font {
