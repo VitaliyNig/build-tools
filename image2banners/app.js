@@ -9,7 +9,7 @@ import {
   applyCell, bannerSteps, cellAt, commandFormat, createModel, fromJson, giveCommand, missingPatterns, remapBlocks,
   renderModel, toJson, unavailablePatterns,
 } from "./core/model.js";
-import { buildStructure } from "./core/nbt.js";
+import { buildSchem, buildStructure } from "./core/nbt.js";
 import { DYE_NAMES, PATTERN_ITEMS, PATTERN_NAMES, STRINGS } from "./strings.js";
 
 const MAX_SIZE = 128;   // blocks per side
@@ -408,20 +408,22 @@ function saveJson() {
   download(new Blob([JSON.stringify(toJson(state.model, state.assets), null, 4)], { type: "application/json" }), fileName("json"));
 }
 
-async function saveNbt() {
-  const gzip = new Blob([buildStructure(state.model, state.assets, state.palette.dataVersion)]).stream().pipeThrough(new CompressionStream("gzip"));
-  download(await new Response(gzip).blob(), fileName("nbt"));
+/** Both world formats are gzipped NBT. */
+async function saveWorld(build, extension) {
+  const bytes = build(state.model, state.assets, state.palette.dataVersion);
+  const gzip = new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip"));
+  download(await new Response(gzip).blob(), fileName(extension));
 }
 
 // ---------- wiring ----------
 function updateActions() {
   const running = Boolean(state.run), busy = running || state.busy, ready = Boolean(state.model) && !busy;
-  // Structure files name blocks the way versions from 1.13 on do.
+  // Structure and schematic files name blocks the way versions from 1.13 on do.
   const old = Boolean(state.palette) && commandFormat(state.palette.dataVersion) === "old";
   $("generate").textContent = t(running ? "cancel" : "generate");
   $("generate").disabled = !running && (state.busy || !(state.image && state.assets));
   $("savePng").disabled = $("saveJson").disabled = !ready;
-  $("saveNbt").disabled = !ready || old;
+  $("saveNbt").disabled = $("saveSchem").disabled = !ready || old;
   $("saveNbtOld").hidden = !old;
   $("load").disabled = busy || !state.assets;
   $("paletteVersion").disabled = $("addJar").disabled = busy;
@@ -483,7 +485,8 @@ function wire() {
   $("generate").addEventListener("click", generate);
   $("savePng").addEventListener("click", savePng);
   $("saveJson").addEventListener("click", saveJson);
-  $("saveNbt").addEventListener("click", saveNbt);
+  $("saveNbt").addEventListener("click", () => saveWorld(buildStructure, "nbt"));
+  $("saveSchem").addEventListener("click", () => saveWorld(buildSchem, "schem"));
   // Follows the Minecraft version; changing it by hand lasts until the version changes.
   $("commandVersion").addEventListener("change", showDetails);
   $("copyCommand").addEventListener("click", async () => {

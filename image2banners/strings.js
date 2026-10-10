@@ -79,9 +79,14 @@ export const STRINGS = {
     "For a structure block: put the file in saves/<world>/generated/i2b/structures/ and load i2b:<file name> (without .nbt). Structure blocks do not show the real size of art larger than 32×32.",
     "Для структурного блока: положите файл в saves/<мир>/generated/i2b/structures/ и загрузите i2b:<имя файла> (без .nbt). Структурный блок не показывает реальный размер арта больше 32×32.",
   ],
+  saveSchem: ["Save as SCHEM", "Сохранить как SCHEM"],
+  saveSchemTip: [
+    "Sponge schematic for WorldEdit, FAWE, Litematica or Axiom: put it in the schematics folder and run //schem load <file name>. The art faces north: banners are on the north side of the wall.",
+    "Схема Sponge для WorldEdit, FAWE, Litematica или Axiom: положите файл в папку schematics и выполните //schem load <имя файла>. Арт смотрит на север: баннеры с северной стороны стены.",
+  ],
   saveNbtOld: [
-    "Structure files are for Minecraft 1.13 and newer. For this version use the image and the banner commands.",
-    "Файл структуры — для Minecraft 1.13 и новее. Для этой версии используйте изображение и команды баннеров.",
+    "Structure and schematic files are for Minecraft 1.13 and newer. For this version use the image and the banner commands.",
+    "Файлы структуры и схемы — для Minecraft 1.13 и новее. Для этой версии используйте изображение и команды баннеров.",
   ],
   credit: ["Web port of", "Веб-порт"],
   creditBy: ["by MARSTeamMC, licensed under", "от MARSTeamMC, лицензия"],

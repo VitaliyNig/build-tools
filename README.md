@@ -261,8 +261,9 @@ the BSD 2-Clause License, reproduced in `image2banners/LICENSE-Image2Banners.txt
   it and a `/give` command: item components (1.20.5+), item NBT (1.13 – 1.20.4)
   or the numeric form of 1.8 – 1.12.
 - **Hide banners** to look at the blocks alone.
-- **Save** as PNG, as JSON (reload it later instead of regenerating) or as a
-  structure `.nbt` for a structure block (Minecraft 1.13 and newer).
+- **Save** as PNG, as JSON (reload it later instead of regenerating), as a
+  structure `.nbt` for a structure block or as a Sponge `.schem` for WorldEdit,
+  FAWE, Litematica and Axiom (both for Minecraft 1.13 and newer).
 - Multi-threaded: one worker per CPU thread.
 
 Following the usual advice for creative-mode building, all options are on by
@@ -308,6 +309,6 @@ image2banners/
     similarity.js         CIEDE2000 + SSIM hybrid score
     color.js              sRGB -> CIE-Lab, CIEDE2000
     model.js              art data, JSON import/export, rendering, /give commands
-    nbt.js                structure file writer
+    nbt.js                structure (.nbt) and schematic (.schem) writers
     png.js                exact PNG decoder for the atlases
 ```

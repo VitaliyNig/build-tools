@@ -1,11 +1,13 @@
-// Export the art as a Minecraft structure (.nbt, not yet gzipped) for a structure block.
+// Export the art as NBT payloads (not yet gzipped): a Minecraft structure (.nbt)
+// for a structure block, and a Sponge schematic (.schem) for WorldEdit and the like.
 //
-// Ported from Image2Banners by MARSTeamMC (banners_to_nbt.py), BSD 2-Clause.
-// Layout: blocks at z = 1, wall banners (facing north) on their front at z = 0;
-// x and y are mirrored so the art reads correctly when viewed from the north.
+// The structure writer is ported from Image2Banners by MARSTeamMC
+// (banners_to_nbt.py), BSD 2-Clause.
+// Layout of both: blocks at z = 1, wall banners (facing north) on their front at
+// z = 0; x and y are mirrored so the art reads correctly when viewed from the north.
 import { commandFormat, legacyLayers } from "./model.js";
 
-const TAG = { END: 0, INT: 3, STRING: 8, LIST: 9, COMPOUND: 10 };
+const TAG = { END: 0, SHORT: 2, INT: 3, BYTE_ARRAY: 7, STRING: 8, LIST: 9, COMPOUND: 10, INT_ARRAY: 11 };
 const MAX_DECLARED_SIZE = 32;   // larger sizes are not shown by structure blocks
 const encoder = new TextEncoder();
 
@@ -20,7 +22,10 @@ class Writer {
     for (const b of utf8) this.bytes.push(b);
   }
   header(tag, name) { this.u8(tag); this.text(name); }
+  short(name, v) { this.header(TAG.SHORT, name); this.i16(v); }
   int(name, v) { this.header(TAG.INT, name); this.i32(v); }
+  byteArray(name, values) { this.header(TAG.BYTE_ARRAY, name); this.i32(values.length); for (const v of values) this.u8(v); }
+  intArray(name, values) { this.header(TAG.INT_ARRAY, name); this.i32(values.length); for (const v of values) this.i32(v); }
   string(name, v) { this.header(TAG.STRING, name); this.text(v); }
   list(name, elementTag, length) { this.header(TAG.LIST, name); this.u8(elementTag); this.i32(length); }
   intList(name, values) { this.list(name, TAG.INT, values.length); for (const v of values) this.i32(v); }
@@ -32,6 +37,91 @@ function parseBlock(id) {
   const match = /^([^[]+)(?:\[(.*)\])?$/.exec(id);
   const pairs = (match[2] || "").split(",").filter((pair) => pair.includes("=")).map((pair) => pair.split("="));
   return [match[1], Object.fromEntries(pairs)];
+}
+
+/** The patterns of a banner as its block entity stores them in this version. */
+function writePatterns(w, banner, modern) {
+  if (modern) {
+    w.list("patterns", TAG.COMPOUND, banner.length - 1);
+    for (const name of banner.slice(1)) {
+      const [colour, pattern] = name.split("#");
+      w.string("color", colour);
+      w.string("pattern", `minecraft:${pattern}`);
+      w.end();
+    }
+  } else {
+    // Before 1.20.5: short pattern codes and colour numbers.
+    const legacy = legacyLayers(banner);
+    w.list("Patterns", TAG.COMPOUND, legacy.length);
+    for (const layer of legacy) {
+      w.string("Pattern", layer.pattern);
+      w.int("Color", layer.colour);
+      w.end();
+    }
+  }
+}
+
+/**
+ * Sponge Schematic version 2 (.schem), read by WorldEdit 7+, FAWE, Litematica
+ * and Axiom. Version 2 rather than 3: every reader of 3 also reads 2.
+ *
+ * model: see model.js; its blocks are ids of a flattened version (1.13+).
+ * dataVersion: the Minecraft version the schematic is for.
+ * Returns the uncompressed NBT bytes.
+ */
+export function buildSchem(model, assets, dataVersion) {
+  const { width, height } = model;
+  const modern = commandFormat(dataVersion) === "modern";
+  const states = new Map([["minecraft:air", 0]]);
+  const stateOf = (id) => {
+    if (!states.has(id)) states.set(id, states.size);
+    return states.get(id);
+  };
+  // Blocks are stored bottom layer first, each layer north to south, west to east:
+  // (y * Length + z) * Width + x. The art's row 0 is its top and it is seen from the north.
+  const data = [], banners = [];
+  for (let y = 0; y < height; y++) {
+    for (let z = 0; z < 2; z++) {
+      for (let x = 0; x < width; x++) {
+        const cell = model.cells[(height - 1 - y) * width + (width - 1 - x)];
+        let state = 0;
+        if (z === 1) state = stateOf(`minecraft:${cell.block || assets.defaultBlock}`);
+        else if (cell.banner) {
+          state = stateOf(`minecraft:${cell.banner[0].replace("#", "_")}[facing=north]`);
+          banners.push({ pos: [x, y, z], banner: cell.banner });
+        }
+        // Palette indices are written as varints.
+        for (; state > 0x7f; state >>>= 7) data.push((state & 0x7f) | 0x80);
+        data.push(state);
+      }
+    }
+  }
+
+  const w = new Writer();
+  w.header(TAG.COMPOUND, "Schematic");
+  w.int("Version", 2);
+  w.int("DataVersion", dataVersion);
+  w.short("Width", width);
+  w.short("Height", height);
+  w.short("Length", 2);
+  w.intArray("Offset", [0, 0, 0]);
+  w.int("PaletteMax", states.size);
+  w.header(TAG.COMPOUND, "Palette");
+  for (const [id, index] of states) w.int(id, index);
+  w.end();
+  w.byteArray("BlockData", data);
+  w.list("BlockEntities", TAG.COMPOUND, banners.length);
+  for (const { pos, banner } of banners) {
+    w.intArray("Pos", pos);
+    w.string("Id", "minecraft:banner");
+    writePatterns(w, banner, modern);
+    w.end();
+  }
+  w.header(TAG.COMPOUND, "Metadata");
+  w.int("WEOffsetX", 0); w.int("WEOffsetY", 0); w.int("WEOffsetZ", 0);
+  w.end();
+  w.end();
+  return new Uint8Array(w.bytes);
 }
 
 /**
@@ -61,24 +151,7 @@ export function buildStructure(model, assets, dataVersion) {
   cells.forEach((cell, i) => {
     if (cell.banner) {
       w.header(TAG.COMPOUND, "nbt");
-      if (modern) {
-        w.list("patterns", TAG.COMPOUND, cell.banner.length - 1);
-        for (const name of cell.banner.slice(1)) {
-          const [colour, pattern] = name.split("#");
-          w.string("color", colour);
-          w.string("pattern", `minecraft:${pattern}`);
-          w.end();
-        }
-      } else {
-        // Before 1.20.5: short pattern codes and colour numbers.
-        const legacy = legacyLayers(cell.banner);
-        w.list("Patterns", TAG.COMPOUND, legacy.length);
-        for (const layer of legacy) {
-          w.string("Pattern", layer.pattern);
-          w.int("Color", layer.colour);
-          w.end();
-        }
-      }
+      writePatterns(w, cell.banner, modern);
       w.string("id", "minecraft:banner");
       w.end();
     }
