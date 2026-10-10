@@ -3,6 +3,12 @@ export const STRINGS = {
   back: ["← Build Tools", "← Build Tools"],
   subtitle: ["Big letters for Minecraft signs", "Большие буквы для табличек Minecraft"],
   placeholder: ["Type a word…", "Введите слово…"],
+  stepText: ["Text", "Текст"],
+  stepFont: ["Font", "Шрифт"],
+  stepSigns: ["Signs", "Таблички"],
+  empty: ["Type a word above: its signs will appear here.", "Введите слово выше — здесь появятся его таблички."],
+  copy: ["copy", "копировать"],
+  copied: ["copied ✓", "скопировано ✓"],
   clear: ["Clear", "Очистить"],
   symbols: ["Symbols", "Символы"],
   symbolsHint: ["a click types one where the cursor is", "клик вставляет символ туда, где курсор"],
@@ -11,7 +17,7 @@ export const STRINGS = {
     "♥": ["heart", "сердце"], "★": ["star", "звезда"], "☺": ["smile", "смайлик"], "☻": ["creeper", "крипер"],
     "✓": ["tick", "галочка"], "✗": ["cross", "крестик"], "⌂": ["house", "дом"], "⚔": ["sword", "меч"],
     "⛏": ["pickaxe", "кирка"], "◆": ["diamond", "алмаз"], "—": ["dash", "тире"], "…": ["ellipsis", "многоточие"],
-    "•": ["bullet", "маркер"],
+    "•": ["bullet", "маркер"], "¥": ["yen or yuan", "йена или юань"], "元": ["yuan", "юань"], "円": ["yen", "йена"],
   },
   sign: ["Sign:", "Табличка:"],
   sign_standing: ["ordinary — lines up to 90 px", "обычная — строка до 90 px"],
@@ -35,6 +41,7 @@ export const STRINGS = {
   style_tiny: ["tiny — up to four letters to a sign", "мелкий — до четырёх букв на табличку"],
   style_stencil: ["stencil — one letter to a sign", "трафарет — одна буква на табличку"],
   style_box: ["frames — up to three letters to a sign", "рамочный — до трёх букв на табличку"],
+  style_line: ["thin frames — up to three letters to a sign", "тонкая рамка — до трёх букв на табличку"],
   italic: ["italic", "курсив"],
   italicTip: [
     "Every line of the sign stands 3 px to the right of the one below it. Works with any font; letters in italic are wider, so fewer of them share a sign.",
@@ -51,6 +58,10 @@ export const STRINGS = {
   styleHint_box: [
     "Letters of thin double lines, drawn with the box characters ═ ║ ╔ ╗ ╚ ╝. Latin letters come out best; Cyrillic Ж, Ф, Ы, Д, Ю are approximate.",
     "Буквы из тонких двойных линий, нарисованные рамочными символами ═ ║ ╔ ╗ ╚ ╝. Лучше всего выходит латиница; кириллические Ж, Ф, Ы, Д, Ю условные.",
+  ],
+  styleHint_line: [
+    "The frame letters in single lines: ─ │ ┌ ┐ └ ┘. The lightest font; from afar the lines are hard to see, so it suits signs read up close.",
+    "Рамочные буквы одинарными линиями: ─ │ ┌ ┐ └ ┘. Самый лёгкий шрифт; издалека линии видно плохо, так что он для табличек, которые читают вблизи.",
   ],
   styleHint_large: [
     "One big letter fills the sign.",
@@ -73,8 +84,8 @@ export const STRINGS = {
     "Здесь буквы более узкие, чтобы помещались две. Широкие (Ж, Ш, Щ, Ы, Ю, Ф, Д, М, W) встают в пару только с узкой соседкой; две широкие подряд получают по табличке.",
   ],
   howTo: [
-    "Place a sign, then copy each of its four lines and paste it into the same line of the sign (Ctrl+V). Spaces at the start and end of a line matter: they keep the letter straight.",
-    "Поставьте табличку, затем скопируйте каждую из четырёх строк и вставьте в ту же строку таблички (Ctrl+V). Пробелы в начале и в конце строки важны: они держат букву ровной.",
+    "Place a sign in the game. Tap a line here to copy it, then paste it into the same line of the sign (Ctrl+V), and so for all four. Do not trim the spaces at the ends of a line: they keep the letter straight.",
+    "Поставьте табличку в игре. Нажмите на строку здесь, чтобы скопировать её, и вставьте в ту же строку таблички (Ctrl+V) — так все четыре. Пробелы по краям строки не убирайте: они держат букву ровной.",
   ],
   accuracy: [
     "The pictures follow the widths of Minecraft's default font pixel for pixel. With the “Force Unicode Font” option or a resource pack that changes the font, signs will look different.",

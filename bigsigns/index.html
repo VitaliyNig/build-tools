@@ -17,36 +17,51 @@
   </div>
 
   <main>
-    <div class="entry">
-      <input type="text" id="text" maxlength="64" spellcheck="false" autocomplete="off">
-      <button id="clear" data-i18n="clear"></button>
-    </div>
-    <div class="option"><b data-i18n="symbols"></b><span class="hint" data-i18n="symbolsHint"></span></div>
-    <div class="symbols" id="symbols"></div>
-    <div class="option"><label for="sign" data-i18n="sign"></label>
-      <select id="sign">
-        <option value="standing" data-i18n="sign_standing"></option>
-        <option value="hanging" data-i18n="sign_hanging"></option>
-      </select>
-    </div>
-    <p class="hint" id="signHint" data-i18n="signHint" hidden></p>
-    <div class="option"><b id="fontsLabel" data-i18n="style"></b>
-      <label class="check" data-i18n-title="italicTip"><input type="checkbox" id="italic"><span data-i18n="italic"></span></label>
-    </div>
-    <div class="fonts" id="fonts" role="radiogroup" aria-labelledby="fontsLabel"></div>
-    <p class="hint" data-i18n="howTo"></p>
-    <p class="hint" id="styleHint"></p>
-    <p class="hint" id="unknown" hidden></p>
-    <p class="hint" id="tooWide" hidden></p>
+    <section class="step">
+      <h2><span class="number">1</span><span data-i18n="stepText"></span></h2>
+      <div class="entry">
+        <input type="text" id="text" maxlength="64" spellcheck="false" autocomplete="off" autocapitalize="characters" enterkeyhint="done">
+        <button id="clear" data-i18n="clear"></button>
+      </div>
+      <p class="hint warning" id="unknown" hidden></p>
+    </section>
 
-    <div class="signs" id="signs"></div>
+    <section class="step">
+      <h2><span class="number">2</span><span id="fontsLabel" data-i18n="stepFont"></span></h2>
+      <div class="options">
+        <label class="field"><span data-i18n="sign"></span>
+          <select id="sign">
+            <option value="standing" data-i18n="sign_standing"></option>
+            <option value="hanging" data-i18n="sign_hanging"></option>
+          </select>
+        </label>
+        <label class="check" data-i18n-title="italicTip"><input type="checkbox" id="italic"><span data-i18n="italic"></span></label>
+      </div>
+      <p class="hint" id="signHint" data-i18n="signHint" hidden></p>
+      <div class="fonts" id="fonts" role="radiogroup" aria-labelledby="fontsLabel"></div>
+      <p class="hint" id="styleHint"></p>
+      <details class="more" id="symbolsBox" open>
+        <summary><span data-i18n="symbols"></span> <span class="hint" data-i18n="symbolsHint"></span></summary>
+        <div class="symbols" id="symbols"></div>
+      </details>
+    </section>
 
-    <p class="hint" data-i18n="accuracy"></p>
-    <p class="hint">
-      <span data-i18n="credit"></span>
-      <a href="https://superfromnd.gitlab.io/bigsigns/" target="_blank" rel="noopener">Big Sign Letters</a>
-      <span data-i18n="creditBy"></span>
-    </p>
+    <section class="step">
+      <h2><span class="number">3</span><span data-i18n="stepSigns"></span><span class="count" id="count"></span></h2>
+      <p class="hint" data-i18n="howTo"></p>
+      <p class="hint warning" id="tooWide" hidden></p>
+      <p class="empty" id="empty" data-i18n="empty"></p>
+      <div class="signs" id="signs"></div>
+    </section>
+
+    <footer>
+      <p class="hint" data-i18n="accuracy"></p>
+      <p class="hint">
+        <span data-i18n="credit"></span>
+        <a href="https://superfromnd.gitlab.io/bigsigns/" target="_blank" rel="noopener">Big Sign Letters</a>
+        <span data-i18n="creditBy"></span>
+      </p>
+    </footer>
   </main>
 
   <div class="status" id="status" role="status" aria-live="polite"></div>

@@ -11,7 +11,7 @@ const SCALE = 3;
 const BOARD = "#a8825a", GRAIN = "#9a7650", TEXT_COLOUR = "#000000";
 
 // Characters a keyboard does not have, offered as buttons.
-const SYMBOLS = [..."←→↑↓↖↗↘↙↔↕♥★☺☻✓✗⌂⚔⛏◆«»—…•№₽°"];
+const SYMBOLS = [..."←→↑↓↖↗↘↙↔↕♥★☺☻✓✗⌂⚔⛏◆«»—…•№₽$€¥元円°"];
 
 const $ = (id) => document.getElementById(id);
 
@@ -98,13 +98,14 @@ async function writeClipboard(text) {
   }
 }
 
-async function copyLine(text, key, sign, line, button) {
+async function copyLine(text, key, sign, line, row) {
   if (!await writeClipboard(text)) {
     setStatus("errCopy");
     return;
   }
   state.copied.add(key);
-  button.classList.add("done");
+  row.classList.add("done");
+  row.querySelector(".action").textContent = t("copied");
   setStatus("statusCopied", sign, line);
 }
 
@@ -122,25 +123,26 @@ function card(sign, index) {
   if (!sign.lines || blank) return item;
 
   sign.lines.forEach((line, number) => {
-    const key = `${index}:${number}`, row = document.createElement("div");
-    row.className = "line";
+    // The whole line is the button: easier to hit with a finger than a small icon.
+    const key = `${index}:${number}`, done = state.copied.has(key);
+    const row = Object.assign(document.createElement("button"), { type: "button", className: "line", title: t("copyLine", number + 1) });
+    row.disabled = !line.text;
+    row.classList.toggle("done", done);
     const label = Object.assign(document.createElement("span"), { className: "number", textContent: number + 1 });
     // Spaces are part of the line: show the text exactly, without collapsing them.
     const text = Object.assign(document.createElement("code"), { textContent: line.text || t("emptyLine") });
-    text.classList.toggle("empty", !line.text);
-    const button = Object.assign(document.createElement("button"), { type: "button", textContent: "📋", title: t("copyLine", number + 1) });
-    button.disabled = !line.text;
-    button.classList.toggle("done", state.copied.has(key));
-    button.addEventListener("click", () => copyLine(line.text, key, name, number + 1, button));
-    row.append(label, text, button);
+    text.classList.toggle("empty-line", !line.text);
+    const action = Object.assign(document.createElement("span"), { className: "action", textContent: line.text ? t(done ? "copied" : "copy") : "" });
+    row.addEventListener("click", () => copyLine(line.text, key, name, number + 1, row));
+    row.append(label, text, action);
     item.append(row);
   });
   return item;
 }
 
-/** A character on its own, in the large font, drawn in the colour of the page's text. */
+/** A character on its own, in the chosen font, drawn in the colour of the page's text. */
 function symbolIcon(character) {
-  const lines = signsFor(character, "large")[0].lines;
+  const lines = signsFor(character, state.style)[0].lines;
   const left = Math.min(...lines.flatMap((line) => line.blocks.map((block) => block.x)));
   const right = Math.max(...lines.flatMap((line) => line.blocks.map((block) => block.x + BLOCK_INK)));
   const canvas = document.createElement("canvas");
@@ -168,7 +170,12 @@ function insertSymbol(character) {
   textChanged();
 }
 
+// The buttons are redrawn only when what they show changes.
+let symbolsShown = "";
+
 function renderSymbols() {
+  if (symbolsShown === `${state.style}|${state.lang}`) return;
+  symbolsShown = `${state.style}|${state.lang}`;
   $("symbols").replaceChildren(...SYMBOLS.map((character) => {
     const name = STRINGS.symbolNames[character];
     const button = Object.assign(document.createElement("button"), { type: "button", title: name ? `${character} — ${name[state.lang === "ru" ? 1 : 0]}` : character });
@@ -194,19 +201,23 @@ function renderFonts() {
     // The first sign of the sample: as many letters as the font puts on one.
     const first = signsFor(sample, style, italic, signKind().width)[0];
     const [name, note] = t(`style_${style}`).split(" — ");
-    const preview = picture(first && first.lines);
-    // Two screen pixels to a text pixel, whatever the size of the sign.
-    preview.style.width = `${preview.width / SCALE * 2}px`;
-    button.append(preview,
+    button.append(picture(first && first.lines),
       Object.assign(document.createElement("b"), { textContent: name }),
       Object.assign(document.createElement("span"), { textContent: note }));
     button.addEventListener("click", () => { state.style = style; textChanged(); });
     return button;
   }));
+  // On a phone the cards are a row to swipe: keep the chosen one in sight.
+  const row = $("fonts"), chosen = row.querySelector('[aria-checked="true"]');
+  if (chosen && row.scrollWidth > row.clientWidth) {
+    const box = row.getBoundingClientRect(), card = chosen.getBoundingClientRect();
+    if (card.left < box.left || card.right > box.right) row.scrollLeft += card.left - box.left - 10;
+  }
 }
 
 function render() {
   renderFonts();
+  renderSymbols();
   const signs = signsFor($("text").value, state.style, $("italic").checked, signKind().width);
   $("signs").replaceChildren(...signs.map(card));
   const unknown = [...new Set(signs.filter((sign) => !sign.lines && !sign.tooWide).map((sign) => sign.characters))];
@@ -229,6 +240,8 @@ function textChanged() {
   } catch { /* storage unavailable */ }
   render();
   const count = $("signs").children.length;
+  $("empty").hidden = count > 0;
+  $("count").textContent = count ? ` — ${count}` : "";
   setStatus(count ? "statusSigns" : "statusStart", count);
 }
 

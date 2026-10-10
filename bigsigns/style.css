@@ -1,56 +1,93 @@
 body { display: flex; flex-direction: column; min-height: 100vh; }
 .topbar .subtitle { color: var(--muted); }
-main { flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; min-width: 0; }
-.hint { margin: 0; color: var(--muted); font-size: 12px; max-width: 900px; }
+main { flex: 1; display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 1180px; margin: 0 auto; padding: 16px; min-width: 0; }
+.hint { margin: 0; color: var(--muted); font-size: 12px; }
 .hint[hidden] { display: none; }
-#unknown, #tooWide { color: var(--danger); }
+.hint.warning { color: var(--danger); }
 
-.entry { display: flex; gap: 8px; max-width: 640px; }
-.option { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
-.check { display: inline-flex; align-items: center; gap: 6px; }
+/* The page is three steps, top to bottom: the text, the font, the signs. */
+.step {
+  display: flex; flex-direction: column; gap: 10px; padding: 14px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.step h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; }
+.step h2 .number {
+  display: grid; place-items: center; flex: none; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); color: var(--accent-text); font-size: 13px;
+}
+.step h2 .count { color: var(--muted); font-weight: 400; }
 
-/* Characters a keyboard does not have: a click types one. */
-.symbols { display: flex; flex-wrap: wrap; gap: 4px; }
-.symbols button { display: grid; place-items: center; min-width: 48px; height: 50px; padding: 4px 6px; }
+.entry { display: flex; gap: 8px; }
+.entry input {
+  flex: 1; min-width: 0; font: 600 20px/1.3 var(--font); letter-spacing: 0.04em;
+  color: inherit; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+}
+.options { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.field { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.check { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; }
+
+/* Characters a keyboard does not have: a tap types one. */
+.more summary { cursor: pointer; padding: 4px 0; font-weight: 600; }
+.more summary .hint { font-weight: 400; }
+.symbols { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 8px; }
+.symbols button { display: grid; place-items: center; min-width: 48px; height: 50px; padding: 4px 6px; color: var(--text); }
 .symbols canvas { display: block; image-rendering: pixelated; }
 
 /* The fonts to choose from, each shown on a sign. */
-.fonts { display: flex; flex-wrap: wrap; gap: 8px; }
+.fonts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
 .font {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 210px; padding: 8px;
-  text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  display: flex; flex-direction: column; align-items: stretch; gap: 2px; min-width: 0; padding: 8px;
+  text-align: left; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
 }
-.font canvas { display: block; margin: 0 auto 4px; image-rendering: pixelated; border-radius: 3px; }
+.font canvas { display: block; width: 100%; height: auto; margin-bottom: 4px; image-rendering: pixelated; border-radius: 3px; }
 .font span { color: var(--muted); font-size: 12px; }
-.font[aria-checked="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-.entry input {
-  flex: 1; min-width: 0; font: 600 20px/1.3 var(--font); letter-spacing: 0.04em;
-  color: inherit; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px;
-}
+.font[aria-checked="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
 
 /* One card per sign, in reading order. */
-.signs { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.empty { margin: 0; padding: 22px 12px; text-align: center; color: var(--muted); border: 1px dashed var(--border); border-radius: var(--radius); }
+.empty[hidden] { display: none; }
+.signs { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; align-items: start; }
 .sign {
-  display: flex; flex-direction: column; gap: 6px; width: 312px; padding: 12px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 10px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
 }
-.sign canvas { display: block; margin: 0 auto; image-rendering: pixelated; border-radius: 4px; }
+.sign canvas { display: block; max-width: 100%; height: auto; margin: 0 auto; image-rendering: pixelated; border-radius: 4px; }
 .sign .caption { display: flex; align-items: baseline; gap: 8px; }
 .sign .caption b { font-size: 16px; }
 .sign .caption span { color: var(--muted); font-size: 12px; }
 
-.line { display: flex; align-items: center; gap: 6px; }
+/* A line of the sign: tap it anywhere to copy. */
+.line {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 4px 8px;
+  text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+}
 .line .number { flex: none; width: 14px; color: var(--muted); font-size: 12px; text-align: center; }
 .line code {
-  flex: 1; min-width: 0; overflow: hidden; padding: 3px 6px; border-radius: 4px;
-  background: var(--surface-2); font: 13px/1.3 ui-monospace, Consolas, monospace; white-space: pre; user-select: all;
+  flex: 1; min-width: 0; overflow: hidden; font: 13px/1.3 ui-monospace, Consolas, monospace; white-space: pre;
 }
-.line code.empty { color: var(--muted); font-family: var(--font); font-size: 12px; user-select: none; }
-.line button { flex: none; width: 34px; padding: 3px 0; }
-.line button.done { background: var(--accent); border-color: var(--accent); }
+.line code.empty-line { color: var(--muted); font-family: var(--font); font-size: 12px; }
+.line .action { flex: none; color: var(--muted); font-size: 12px; }
+.line.done { border-color: var(--accent); }
+.line.done .action { color: var(--accent); font-weight: 600; }
+
+footer { display: flex; flex-direction: column; gap: 6px; }
 
 .status {
-  padding: 5px 16px; min-height: 30px;
+  position: sticky; bottom: 0; padding: 6px 16px; min-height: 30px;
   background: var(--surface); border-top: 1px solid var(--border); color: var(--muted);
 }
 .status.error { color: var(--danger); }
+
+/* Phones: the fonts and the symbols become rows to swipe, the rest stacks. */
+@media (max-width: 640px) {
+  main { padding: 10px; gap: 10px; }
+  .step { padding: 12px 10px; }
+  .topbar .subtitle { display: none; }
+  .fonts { display: flex; overflow-x: auto; scroll-snap-type: x proximity; margin: 0 -10px; padding: 2px 10px 6px; }
+  .font { flex: 0 0 150px; scroll-snap-align: start; }
+  .symbols { flex-wrap: nowrap; overflow-x: auto; margin: 0 -10px; padding: 8px 10px 6px; }
+  .symbols button { flex: none; }
+  .signs { grid-template-columns: 1fr; }
+  .field { width: 100%; }
+  .field select { flex: 1; min-width: 0; }
+}

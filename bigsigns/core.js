@@ -12,7 +12,8 @@
 // The styles: large letters, one to a sign; narrow ones of the same kind, two to
 // a sign; either of these with thin strokes mixed in; thin ones, whose stems are
 // all the half-wide ▌; tiny ones, three or four to a sign; a stencil, the letter
-// cut out of a plate of blocks; and frame letters made of box-drawing characters.
+// cut out of a plate of blocks; and frame letters made of box-drawing characters,
+// in double or in single lines.
 // Any of them can be slanted.
 
 export const ROWS = 8, LINES = 4;
@@ -154,6 +155,10 @@ const SHAPES = {
   "—": "......./......./......./#######/#######/......./......./.......",
   "…": "...../...../...../...../...../...../#.#.#/#.#.#",
   "•": "../../../##/##/../../..",
+  "€": "..###/.#.../####./.#.../####./.#.../.#.../..###",
+  "¥": "#...#/#...#/.#.#./#####/..#../#####/..#../..#..",
+  "元": ".###../....../######/.#.#../.#.#../.#.#../#..#.#/#..###",
+  "円": "#####/#.#.#/#.#.#/#####/#...#/#...#/#...#/#..##",
   " ": ".../.../.../.../.../.../.../...",
 };
 // Cyrillic letters that look like Latin ones.
@@ -239,6 +244,8 @@ const NARROW = {
   "⛏": ".###./#...#/...##/..#.#/.#.../#..../...../.....",
   "◆": ".###./#####/#####/.###./..#../...../...../.....",
   "—": "...../...../...../#####/#####/...../...../.....",
+  "€": ".###/#.../###./#.../###./#.../#.../.###",
+  "¥": "#.#/#.#/#.#/###/.#./###/.#./.#.",
   " ": "../../../../../../../..",
 };
 
@@ -334,6 +341,36 @@ const THIN = {
   "[": ["|^","|","|","|_"],
   "]": ["^|",":|",":|","_|"],
   "~": ["","^_","",""],
+  "→": [":;|","__||","^^||",":;|"],
+  "←": ["..|","||__","||^^","..|"],
+  "↑": [".,.|",".,|||",".,.|",".,.|"],
+  "↓": [".,.|",".,.|",".,|||",".,.|"],
+  "↗": [".^^|","::||",":,|",";|"],
+  "↖": ["|^^","||",":;|","::,|"],
+  "↘": [";|",":,|","::||",".__|"],
+  "↙": ["::,|",":;|","||","|__"],
+  "↔": [".|;;|","|__|","|^^|",".|;;|"],
+  "↕": [".,|||",".,.|",".,.|",".,|||"],
+  "«": [".|.|","|.|","|.|",".|.|"],
+  "»": ["|.|",".|.|",".|.|","|.|"],
+  "—": ["","___","",""],
+  "…": ["","","","|.|.|"],
+  "•": ["","_","^",""],
+  "^": [".|","|.|","",""],
+  "°": ["|^|",".^","",""],
+  "{": [".|^","|","|",".|_"],
+  "}": ["^|",":.|",":.|","_|"],
+  "#": [":|:|","_|_|_","^|^|^",":|:|"],
+  "%": ["^:|",";;;|",";,|","|:_"],
+  "&": [".|^|",".|_|","|^:|","|__|"],
+  "@": ["|^^|","|.|^|","|.|_|","|__"],
+  "№": ["|::|;|^|","|_:|;.^","|:^|;.^","|::|"],
+  "$": ["|^|^","|_|_",".:|:|","._|_|"],
+  "€": [":|^^","_|_","^|^",":|__"],
+  "₽": [":|^^|",":|__|","_|_",":|"],
+  "¥": ["|:.|",".|;|","_|_","^|^"],
+  "元": [".^^","___",".|;|","|:|_"],
+  "円": ["|^|^|","|_|_|","|::.|","|::.|"],
   " ": [":.", "", "", ""],
 };
 // Large and narrow letters with thin strokes mixed in: stems stay a whole block
@@ -543,13 +580,26 @@ const BOX = {
   "=": ["", "══", "══", ""],
   "_": ["", "", "", "══"],
   "|": ["║", "║", "║", "║"],
+  "#": ["","╬╬","╬╬",""],
+  "[": ["╔═","║","║","╚═"],
+  "]": ["═╗"," ║"," ║","═╝"],
+  "°": ["╔╗","╚╝","",""],
+  "—": ["","═══","",""],
+  "\"": ["║║","","",""],
+  "'": ["║","","",""],
+  ";": ["","▄","","╝"],
   " ": ["  ", "", "", ""],
 };
 
+// The same letters in single lines: every double-line character has a single-line twin.
+const SINGLE_LINE = { "═": "─", "║": "│", "╔": "┌", "╗": "┐", "╚": "└", "╝": "┘", "╠": "├", "╣": "┤", "╦": "┬", "╩": "┴", "╬": "┼" };
+
 const MARKS = { "|": "▌", "^": "▀", "_": "▄", "#": "█" };
 const EMPTY = { ".": 5, ":": 9, ";": 4, ",": 2 };
-// Styles whose letters are written with marks.
-const MARKED = { thin: THIN, largeMixed: LARGE_MIXED, narrowMixed: NARROW_MIXED, tiny: TINY };
+// Where each style looks for a letter written with marks, in order. The tiny
+// and the frame fonts borrow the thin shape of a symbol they have none for:
+// thin strokes sit better among their letters than blocks do.
+const MARKED = { thin: [THIN], largeMixed: [LARGE_MIXED], narrowMixed: [NARROW_MIXED], tiny: [TINY, THIN], box: [THIN], line: [THIN] };
 
 // How the default font draws each character used here: 8 rows of 8 pixels, the
 // leftmost pixel the highest bit. The same in every version checked (1.12 - 26.x).
@@ -569,6 +619,17 @@ export const INK = {
   "╦": [0x00, 0x00, 0xff, 0x00, 0xf7, 0x36, 0x36, 0x36],
   "╩": [0x36, 0x36, 0xf7, 0x00, 0xff, 0x00, 0x00, 0x00],
   "╬": [0x36, 0x36, 0xf7, 0x00, 0xf7, 0x36, 0x36, 0x36],
+  "─": [0x00, 0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00],
+  "│": [0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18],
+  "┌": [0x00, 0x00, 0x00, 0x00, 0x1f, 0x18, 0x18, 0x18],
+  "┐": [0x00, 0x00, 0x00, 0x00, 0xf8, 0x18, 0x18, 0x18],
+  "└": [0x18, 0x18, 0x18, 0x18, 0x1f, 0x00, 0x00, 0x00],
+  "┘": [0x18, 0x18, 0x18, 0x18, 0xf8, 0x00, 0x00, 0x00],
+  "├": [0x18, 0x18, 0x18, 0x18, 0x1f, 0x18, 0x18, 0x18],
+  "┤": [0x18, 0x18, 0x18, 0x18, 0xf8, 0x18, 0x18, 0x18],
+  "┬": [0x00, 0x00, 0x00, 0x00, 0xff, 0x18, 0x18, 0x18],
+  "┴": [0x18, 0x18, 0x18, 0x18, 0xff, 0x00, 0x00, 0x00],
+  "┼": [0x18, 0x18, 0x18, 0x18, 0xff, 0x18, 0x18, 0x18],
 };
 
 /** How far a character moves the pen: one pixel past the last column it draws in. */
@@ -580,10 +641,10 @@ const advanceOf = (cell) => {
 };
 
 // How many letters share a sign in each style.
-const PER_SIGN = { large: 1, largeMixed: 1, stencil: 1, narrow: 2, narrowMixed: 2, thin: 2, box: 3, tiny: 4 };
+const PER_SIGN = { large: 1, largeMixed: 1, stencil: 1, narrow: 2, narrowMixed: 2, thin: 2, box: 3, line: 3, tiny: 4 };
 export const STYLES = Object.keys(PER_SIGN);
 // Styles drawn with the narrow shapes of the grid font where a letter has no shape of their own.
-const NARROW_BASED = new Set(["narrow", "narrowMixed", "thin", "tiny", "box"]);
+const NARROW_BASED = new Set(["narrow", "narrowMixed", "thin", "tiny", "box", "line"]);
 
 /** The grid of a letter of the plain fonts: 8 rows of booleans, or null. */
 function gridOf(name, narrow) {
@@ -631,13 +692,14 @@ function stencil(grid) {
  */
 export function letter(character, style = "large", compact = false) {
   const upper = character.toUpperCase(), name = SAME[upper] || upper;
-  if (style === "box" && Object.hasOwn(BOX, name)) {
+  if ((style === "box" || style === "line") && Object.hasOwn(BOX, name)) {
     // One cell per character, whatever its own width.
-    const lines = BOX[name].map((row) => [...row].flatMap((cell, column) => (cell === " " ? [] : [{ cell, at: column * BLOCK_ADVANCE }])));
+    const drawn = (cell) => (style === "line" && SINGLE_LINE[cell]) || cell;
+    const lines = BOX[name].map((row) => [...row].flatMap((cell, column) => (cell === " " ? [] : [{ cell: drawn(cell), at: column * BLOCK_ADVANCE }])));
     return { width: Math.max(...BOX[name].map((row) => [...row].length)) * BLOCK_ADVANCE, lines };
   }
-  const marked = MARKED[style];
-  if (marked && Object.hasOwn(marked, name)) {
+  const marked = (MARKED[style] || []).find((table) => Object.hasOwn(table, name));
+  if (marked) {
     let width = 0;
     const lines = marked[name].map((marks) => {
       const pieces = [];
