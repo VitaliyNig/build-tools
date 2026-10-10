@@ -61,6 +61,15 @@ export const STRINGS = {
     "Взять цвет блока: нажмите, затем кликните по любому блоку. Покажутся блоки похожего цвета. Поиск ниже находит блок по названию.",
   ],
   sourceLabel: ["Similar to", "Похожие на"],
+  harmonyBlockTip: ["Take the colour of a block for the selected point", "Взять цвет блока для выбранной точки"],
+  stopBlockTip: ["Take the colour of a block for this tag", "Взять цвет блока для этой метки"],
+  chooseBlock: ["Choose a block", "Выберите блок"],
+  chooseBlockHint: [
+    "Its colour replaces the one being edited. Blocks closest to that colour come first; the filters at the top of the page apply here too.",
+    "Его цвет заменит тот, что редактируется. Первыми идут блоки, ближайшие к этому цвету; фильтры вверху страницы действуют и здесь.",
+  ],
+  cancel: ["Cancel", "Отмена"],
+  statusBlockColour: [(name) => `Colour taken from ${name}.`, (name) => `Цвет взят с блока ${name}.`],
   matchingBlocks: ["Matching Blocks", "Подходящие блоки"],
   decorations: ["Decorations", "Декорации"],
   matchHint: [
@@ -99,8 +108,8 @@ export const STRINGS = {
   stopsFromPalette: ["Use my palette as colours", "Взять цвета из моей палитры"],
   addGradient: ["Add all to my palette", "Добавить всё в мою палитру"],
   gradientHint: [
-    "The number on the bar is how many blocks that part takes: type a new value or use the mouse wheel. Click a tag to change its colour, right click to copy its HEX. A click on a block in My Palette recolours the selected tag.",
-    "Число на полосе — сколько блоков в этой части: введите новое значение или прокрутите колесом мыши. Клик по метке меняет цвет, правый клик копирует HEX. Клик по блоку в «Моей палитре» перекрашивает выбранную метку.",
+    "The number on the bar is how many blocks that part takes: type a new value or use the mouse wheel. Click a tag to change its colour, right click to copy its HEX. The cube under a tag takes the colour of a block for it. A click on a block in My Palette recolours the selected tag.",
+    "Число на полосе — сколько блоков в этой части: введите новое значение или прокрутите колесом мыши. Клик по метке меняет цвет, правый клик копирует HEX. Куб под меткой берёт для неё цвет блока. Клик по блоку в «Моей палитре» перекрашивает выбранную метку.",
   ],
   statusHex: [(hex) => `Copied ${hex}.`, (hex) => `Скопировано: ${hex}.`],
 

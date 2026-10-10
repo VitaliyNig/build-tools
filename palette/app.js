@@ -61,7 +61,7 @@ function retranslate() {
   for (const el of document.querySelectorAll("[data-i18n]")) el.textContent = t(el.dataset.i18n);
   for (const el of document.querySelectorAll("[data-i18n-title]")) el.title = t(el.dataset.i18nTitle);
   document.title = `Palette — ${t("subtitle")}`;
-  $("search").placeholder = t("search");
+  $("search").placeholder = $("blockSearch").placeholder = t("search");
   $("paletteName").placeholder = t("paletteName");
   for (const el of document.querySelectorAll(".tiles")) el.dataset.empty = t("nothing");
   renderStatus();
@@ -143,6 +143,44 @@ function pickBlock(entry) {
   setStatus("statusPicked", entry.name);
 }
 
+const CUBE_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM4 7.5l8 4.5 8-4.5M12 12v9"/></svg>';
+
+// ---------- choosing a block in a window ----------
+// The harmonies and the gradient have no list of all blocks on their tabs, so
+// there the block is chosen in a window. Its tiles are made once per palette.
+const chooserTiles = new Map();
+let chooserApply = null, chooserLab = [0, 0, 0];
+
+function renderChooser() {
+  const query = $("blockSearch").value.trim().toLowerCase();
+  const found = pool().filter((entry) => !query
+    || [entry.name, entry.id, ...(entry.also || [])].join(" ").toLowerCase().includes(query));
+  // Closest to the colour being replaced first, so a near match is at hand.
+  $("blockChoices").replaceChildren(...rank(found, chooserLab, 0).map((entry) => {
+    if (!chooserTiles.has(entry.id)) {
+      chooserTiles.set(entry.id, tile(entry, (chosen) => {
+        $("blockDialog").close();
+        chooserApply(chosen);
+      }));
+    }
+    const node = chooserTiles.get(entry.id);
+    node.classList.remove("chosen");
+    return node;
+  }));
+  $("blockChoices").scrollTop = 0;
+}
+
+/** Let the user choose a block; apply(entry) gets it. rgb: the colour it will replace. */
+function chooseBlock(rgb, apply) {
+  setPicking(false);
+  chooserApply = apply;
+  chooserLab = labOf(rgb);
+  $("blockSearch").value = "";
+  renderChooser();
+  $("blockDialog").showModal();
+  $("blockSearch").focus();
+}
+
 function renderSource() {
   const entry = state.source && state.byId.get(state.source);
   // Any other colour is no longer the block's.
@@ -205,6 +243,15 @@ function wirePicker() {
   dragArea($("hue"), (x, y) => apply({ h: Math.min(359.9, y * 360) }));
   $("randomColour").addEventListener("click", () => setColour([0, 0, 0].map(() => Math.floor(Math.random() * 256))));
   $("pickBlock").addEventListener("click", () => setPicking(!state.picking));
+  // On the other tabs the block's colour goes to the point or the tag being edited.
+  $("harmonyBlock").addEventListener("click", () => chooseBlock(state.colour, (entry) => {
+    state.source = entry.id;
+    setColour(entry.rgb);
+    setStatus("statusBlockColour", entry.name);
+  }));
+  $("blockSearch").addEventListener("input", renderChooser);
+  // Enter in the search must not close the window as a form would.
+  $("blockSearch").addEventListener("keydown", (e) => { if (e.key === "Enter") e.preventDefault(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && state.picking) { setPicking(false); setStatus("statusPickCancelled"); } });
   if ("EyeDropper" in window) {
     $("eyedropper").hidden = false;
@@ -478,7 +525,19 @@ function renderGradientBar() {
     });
     input.addEventListener("change", renderGradient);
     tag.addEventListener("contextmenu", (e) => { e.preventDefault(); copy(hex.toUpperCase(), "statusHex", hex.toUpperCase()); });
-    tag.append(input);
+    // Under every tag, a button that takes the colour of a block for it.
+    const block = Object.assign(document.createElement("button"), { type: "button", className: "tag-block", title: t("stopBlockTip") });
+    block.innerHTML = CUBE_ICON;
+    block.addEventListener("click", (e) => {
+      e.stopPropagation();
+      state.selectedStop = i;
+      chooseBlock(state.stops[i], (entry) => {
+        state.stops[i] = [...entry.rgb];
+        renderGradient();
+        setStatus("statusBlockColour", entry.name);
+      });
+    });
+    tag.append(input, block);
     if (state.stops.length > 2) {
       const remove = Object.assign(document.createElement("span"), { className: "remove", textContent: "×" });
       remove.addEventListener("click", (e) => { e.stopPropagation(); removeStop(i); });
@@ -661,6 +720,7 @@ async function selectPalette(key) {
   }
   state.entries = listEntries(state.palette);
   matchTiles.clear();
+  chooserTiles.clear();
   state.byId = new Map(state.entries.map((entry) => [entry.id, entry]));
   $("paletteVersion").value = key;
   setStatus("statusReady", state.palette.version, state.palette.blocks.length, state.palette.decorations.length);

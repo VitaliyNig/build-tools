@@ -47,6 +47,19 @@ input[type="text"] { font: inherit; color: inherit; background: var(--surface-2)
 .picker-row button { width: 36px; padding: 0; display: grid; place-items: center; }
 .picker-row button[hidden] { display: none; }
 #search { width: 100%; }
+button.icon { display: inline-grid; place-items: center; min-width: 36px; padding: 0 8px; }
+.bar button.icon { height: 34px; }
+
+/* The window for choosing a block. */
+#blockDialog {
+  width: min(760px, calc(100vw - 24px)); padding: 0;
+  background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius);
+}
+#blockDialog::backdrop { background: rgba(0, 0, 0, 0.5); }
+#blockDialog form { display: flex; flex-direction: column; gap: 10px; padding: 14px; max-height: min(680px, calc(100vh - 48px)); }
+#blockDialog header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#blockDialog input[type="search"] { width: 100%; }
+#blockDialog .tiles { --tile: 56px; flex: 1; min-height: 160px; overflow-y: auto; align-content: start; padding: 4px; scrollbar-width: thin; }
 .picker-row button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
 /* Taking the colour of a block: the next click on a tile picks it. */
 .picking .tile { cursor: crosshair; }
@@ -145,7 +158,7 @@ input[type="text"] { font: inherit; color: inherit; background: var(--surface-2)
 .stepper .word { padding-right: 6px; }
 /* In a narrow part only the stepper itself fits. */
 @container (max-width: 110px) { .stepper .word { display: none; } }
-.tags { position: relative; height: 34px; margin-top: 4px; }
+.tags { position: relative; height: 60px; margin-top: 4px; }
 .tag {
   position: absolute; top: 0; width: 26px; height: 26px; margin-left: -13px; padding: 0;
   border: 2px solid var(--surface); border-radius: 6px; box-shadow: 0 0 0 1px var(--border); cursor: pointer;
@@ -157,6 +170,11 @@ input[type="text"] { font: inherit; color: inherit; background: var(--surface-2)
   border-radius: 50%; background: var(--danger); color: #fff; font-size: 11px; line-height: 1; z-index: 2;
 }
 .tag:hover .remove { display: grid; }
+/* Under the tag: take the colour of a block for it. */
+.tag-block {
+  position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
+  display: grid; place-items: center; width: 28px; height: 24px; padding: 0; border-radius: 6px;
+}
 
 .rows { display: flex; flex-direction: column; gap: 10px; --tile: 64px; }
 .gradient-row { display: flex; align-items: flex-start; gap: 8px; }
