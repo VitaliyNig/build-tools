@@ -32,6 +32,7 @@
             <button id="zoomIn" aria-label="Zoom in">＋</button>
             <button id="zoomOut" aria-label="Zoom out">－</button>
             <button id="zoomFit" data-i18n="fit"></button>
+            <button id="toggleBanners" data-i18n-title="toggleBannersTip" disabled></button>
             <span class="hint" data-i18n="zoomHint"></span>
           </div>
         </div>
@@ -47,8 +48,15 @@
               </div>
             </div>
             <div id="commandBox">
-              <label class="hint" for="command" data-i18n="giveCommand"></label>
+              <label class="hint command-version"><span data-i18n="giveCommand"></span>
+                <select id="commandVersion">
+                  <option value="modern" data-i18n="commandModern"></option>
+                  <option value="legacy" data-i18n="commandLegacy"></option>
+                  <option value="old" data-i18n="commandOld"></option>
+                </select>
+              </label>
               <textarea id="command" rows="4" readonly></textarea>
+              <p class="hint" id="commandMissing" hidden></p>
               <button id="copyCommand" data-i18n="copy"></button>
             </div>
             <h3 data-i18n="stepsTitle"></h3>

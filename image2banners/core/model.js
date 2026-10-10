@@ -79,8 +79,8 @@ export function bannerSteps(assets, banner) {
   });
 }
 
-/** Draw the whole art: {data: RGBA, w, h} at 22 px per block. */
-export function renderModel(model, assets) {
+/** Draw the whole art, or only its blocks: {data: RGBA, w, h} at 22 px per block. */
+export function renderModel(model, assets, banners = true) {
   const w = model.width * CELL, h = model.height * CELL;
   const data = new Uint8ClampedArray(w * h * 4);
   for (let p = 3; p < data.length; p += 4) data[p] = 255;
@@ -92,7 +92,7 @@ export function renderModel(model, assets) {
     }
   });
   // Bottom rows first, so a banner hanging from above overlaps the one below it.
-  for (let i = model.cells.length - 1; i >= 0; i--) {
+  for (let i = model.cells.length - 1; banners && i >= 0; i--) {
     const banner = model.cells[i].banner;
     if (!banner) continue;
     const image = bannerSteps(assets, banner).at(-1);
@@ -104,12 +104,62 @@ export function renderModel(model, assets) {
   return { data, w, h };
 }
 
-/** /give command for a banner (1.20.5+ item component syntax). */
-export function giveCommand(banner) {
+// Before 1.20.5 a pattern is saved by a short code and a colour by its number.
+const LEGACY_PATTERNS = {
+  square_bottom_left: "bl", square_bottom_right: "br", square_top_left: "tl", square_top_right: "tr",
+  stripe_bottom: "bs", stripe_top: "ts", stripe_left: "ls", stripe_right: "rs", stripe_center: "cs",
+  stripe_middle: "ms", stripe_downright: "drs", stripe_downleft: "dls", small_stripes: "ss",
+  cross: "cr", straight_cross: "sc", triangle_bottom: "bt", triangle_top: "tt",
+  triangles_bottom: "bts", triangles_top: "tts", diagonal_left: "ld", diagonal_up_right: "rd",
+  diagonal_up_left: "lud", diagonal_right: "rud", circle: "mc", rhombus: "mr",
+  half_vertical: "vh", half_horizontal: "hh", half_vertical_right: "vhr", half_horizontal_bottom: "hhb",
+  border: "bo", curly_border: "cbo", gradient: "gra", gradient_up: "gru", bricks: "bri",
+  globe: "glb", creeper: "cre", skull: "sku", flower: "flo", mojang: "moj", piglin: "pig",
+};
+const LEGACY_COLOURS = [
+  "white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray",
+  "light_gray", "cyan", "purple", "blue", "brown", "green", "red", "black",
+];
+
+// Patterns that came after the flattening of 1.13.
+const SINCE_1_13 = new Set(["globe", "piglin"]);
+
+// Command formats: "modern" is 1.20.5+, "legacy" 1.13 - 1.20.4, "old" 1.8 - 1.12.
+const known = (pattern, format) => format === "modern"
+  || (Boolean(LEGACY_PATTERNS[pattern]) && !(format === "old" && SINCE_1_13.has(pattern)));
+
+/**
+ * The patterns of a banner as saved before 1.20.5: [{pattern: code, colour: number}].
+ * Patterns the format does not have are left out.
+ */
+export function legacyLayers(banner, format = "legacy") {
+  return banner.slice(1).map((name) => {
+    const [colour, pattern] = name.split("#");
+    return { pattern: known(pattern, format) && LEGACY_PATTERNS[pattern], colour: LEGACY_COLOURS.indexOf(colour) };
+  }).filter((layer) => layer.pattern && layer.colour >= 0);
+}
+
+/** Names of the banner's patterns that the command format does not have. */
+export function missingPatterns(banner, format) {
+  return [...new Set(banner.slice(1).map((name) => name.split("#")[1]).filter((pattern) => !known(pattern, format)))];
+}
+
+/** /give command for a banner in one of the command formats. */
+export function giveCommand(banner, format = "modern") {
+  const item = banner[0].replace("#wall_banner", "_banner");
+  if (format === "legacy") {
+    const layers = legacyLayers(banner).map((layer) => `{Pattern:"${layer.pattern}",Color:${layer.colour}}`);
+    return `/give @p minecraft:${item}{BlockEntityTag:{Patterns:[${layers.join(",")}]}}`;
+  }
+  if (format === "old") {
+    // One banner item whose colour is its damage value; colours are numbered the other way round.
+    const old = (colour) => 15 - colour, base = old(LEGACY_COLOURS.indexOf(banner[0].split("#")[0]));
+    const layers = legacyLayers(banner, format).map((layer) => `{Pattern:"${layer.pattern}",Color:${old(layer.colour)}}`);
+    return `/give @p minecraft:banner 1 ${base} {BlockEntityTag:{Base:${base},Patterns:[${layers.join(",")}]}}`;
+  }
   const layers = banner.slice(1).map((name) => {
     const [colour, pattern] = name.split("#");
     return `{color: "${colour}", pattern: "${pattern}"}`;
   });
-  const item = banner[0].replace("#wall_banner", "_banner");
   return `/give @p minecraft:${item}[minecraft:banner_patterns=[${layers.join(",")}]]`;
 }

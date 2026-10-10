@@ -4,6 +4,7 @@
 // Layout: blocks at z = 1, wall banners (facing north) on their front at z = 0;
 // x and y are mirrored so the art reads correctly when viewed from the north.
 import { DEFAULT_BLOCK } from "./generate.js";
+import { legacyLayers } from "./model.js";
 
 const TAG = { END: 0, INT: 3, STRING: 8, LIST: 9, COMPOUND: 10 };
 const DATA_VERSION = 4440;      // Minecraft 1.21.7
@@ -74,6 +75,14 @@ export function buildStructure(model) {
         const [colour, pattern] = name.split("#");
         w.string("color", colour);
         w.string("pattern", `minecraft:${pattern}`);
+        w.end();
+      }
+      // The same patterns as versions before 1.20.5 read them; each version ignores the other list.
+      const legacy = legacyLayers(cell.banner);
+      w.list("Patterns", TAG.COMPOUND, legacy.length);
+      for (const layer of legacy) {
+        w.string("Pattern", layer.pattern);
+        w.int("Color", layer.colour);
         w.end();
       }
       w.string("id", "minecraft:banner");

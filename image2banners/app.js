@@ -4,12 +4,15 @@ import { bindLanguageSelect, getLang } from "../shared/i18n.js";
 import { PanZoom } from "../shared/panzoom.js";
 import { loadAssets } from "./assets.js";
 import { BANNER_H, BANNER_W, CELL, DEFAULT_BLOCK, patternTile } from "./core/generate.js";
-import { applyCell, bannerSteps, cellAt, createModel, fromJson, giveCommand, renderModel, toJson } from "./core/model.js";
+import {
+  applyCell, bannerSteps, cellAt, createModel, fromJson, giveCommand, missingPatterns, renderModel, toJson,
+} from "./core/model.js";
 import { buildStructure } from "./core/nbt.js";
 import { DYE_NAMES, PATTERN_ITEMS, PATTERN_NAMES, STRINGS } from "./strings.js";
 
 const MAX_SIZE = 128;   // blocks per side
 const SLOT_H = CELL * 2;
+const COMMAND_VERSION_KEY = "image2banners.commandVersion";
 
 const $ = (id) => document.getElementById(id);
 
@@ -20,6 +23,7 @@ const state = {
   name: "banners",    // file name stem for downloads
   model: null,        // generated or loaded art
   selected: null,     // [x, y] of the cell shown in the details panel
+  banners: true,      // false: the art is drawn without banners, blocks only
   run: null,          // {workers, cancelled} while generating
   status: ["statusAssets"],
   statusError: false,
@@ -70,7 +74,7 @@ function resizeArt(w, h) {
 }
 
 function drawModel() {
-  const { data, w, h } = renderModel(state.model, state.assets);
+  const { data, w, h } = renderModel(state.model, state.assets, state.banners);
   const fresh = art.width !== w || art.height !== h;
   putImage(art, data, w, h);
   if (fresh) { view.setSize(w, h); view.fit(); }
@@ -289,7 +293,10 @@ function showDetails() {
   $("bannerResult").hidden = $("commandBox").hidden = !cell.banner;
   if (cell.banner) {
     putImage($("bannerResult"), steps.at(-1), BANNER_W, BANNER_H);
-    $("command").value = giveCommand(cell.banner);
+    const format = $("commandVersion").value, missing = missingPatterns(cell.banner, format);
+    $("command").value = giveCommand(cell.banner, format);
+    $("commandMissing").hidden = !missing.length;
+    $("commandMissing").textContent = t("commandMissing", missing.map((name) => PATTERN_NAMES[name] || name).join(", "));
     $("copyCommand").textContent = t("copy");
   }
   $("steps").replaceChildren(...steps.map((image, i) => {
@@ -336,6 +343,8 @@ function updateActions() {
   $("generate").disabled = !busy && !(state.image && state.assets);
   $("savePng").disabled = $("saveJson").disabled = $("saveNbt").disabled = !ready;
   $("load").disabled = busy || !state.assets;
+  $("toggleBanners").textContent = t(state.banners ? "hideBanners" : "showBanners");
+  $("toggleBanners").disabled = !state.model;
 }
 
 function wire() {
@@ -380,6 +389,11 @@ function wire() {
   $("savePng").addEventListener("click", savePng);
   $("saveJson").addEventListener("click", saveJson);
   $("saveNbt").addEventListener("click", saveNbt);
+  try { $("commandVersion").value = localStorage.getItem(COMMAND_VERSION_KEY) || "modern"; } catch { /* storage unavailable */ }
+  $("commandVersion").addEventListener("change", () => {
+    try { localStorage.setItem(COMMAND_VERSION_KEY, $("commandVersion").value); } catch { /* storage unavailable */ }
+    showDetails();
+  });
   $("copyCommand").addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText($("command").value);
@@ -390,6 +404,11 @@ function wire() {
     $("copyCommand").textContent = t("copied");
   });
 
+  $("toggleBanners").addEventListener("click", () => {
+    state.banners = !state.banners;
+    drawModel();
+    updateActions();
+  });
   $("zoomIn").addEventListener("click", () => view.zoomBy(1.25));
   $("zoomOut").addEventListener("click", () => view.zoomBy(0.8));
   $("zoomFit").addEventListener("click", () => view.fit());

@@ -17,6 +17,8 @@ canvas.pixel { image-rendering: pixelated; }
 
 #commandBox { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
 #commandBox[hidden] { display: none; }
+.command-version { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.command-version select { padding: 2px 6px; }
 #command {
   width: 100%; resize: vertical; font: 12px/1.4 ui-monospace, Consolas, monospace;
   color: inherit; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 6px;

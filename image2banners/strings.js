@@ -8,6 +8,12 @@ export const STRINGS = {
     "Загрузите изображение (или сохранённый JSON) либо перетащите файл сюда.",
   ],
   fit: ["Fit", "Вписать"],
+  hideBanners: ["Hide banners", "Скрыть баннеры"],
+  showBanners: ["Show banners", "Показать баннеры"],
+  toggleBannersTip: [
+    "Show only the blocks behind the banners. The saved image is the same as the view.",
+    "Показать только блоки позади баннеров. Изображение сохраняется таким же, как на экране.",
+  ],
   zoomHint: ["scroll = zoom, drag = pan, click = banner recipe", "колесо — масштаб, перетаскивание — сдвиг, клик — рецепт баннера"],
   load: ["Select Image / JSON…", "Выбрать изображение / JSON…"],
 
@@ -76,7 +82,14 @@ export const STRINGS = {
   detailsBanner: [(x, y) => `Banner at (${x}, ${y})`, (x, y) => `Баннер (${x}, ${y})`],
   detailsBlock: [(x, y) => `Block at (${x}, ${y})`, (x, y) => `Блок (${x}, ${y})`],
   blockHint: ["Block behind this cell.", "Блок позади этой клетки."],
-  giveCommand: ["Command to get the banner (1.20.5+):", "Команда для получения баннера (1.20.5+):"],
+  giveCommand: ["Command to get the banner, version:", "Команда для получения баннера, версия:"],
+  commandModern: ["1.20.5 and newer", "1.20.5 и новее"],
+  commandLegacy: ["1.13 – 1.20.4", "1.13 – 1.20.4"],
+  commandOld: ["1.8 – 1.12", "1.8 – 1.12"],
+  commandMissing: [
+    (names) => `Not in these versions, left out of the command: ${names}.`,
+    (names) => `Нет в этих версиях, в команду не вошли: ${names}.`,
+  ],
   copy: ["Copy", "Копировать"],
   copied: ["Copied", "Скопировано"],
   stepsTitle: ["Crafting steps", "Шаги крафта"],
