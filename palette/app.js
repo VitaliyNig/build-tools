@@ -24,6 +24,8 @@ const state = {
   entries: [],            // every block and decoration of the palette
   byId: new Map(),
   colour: [127, 178, 56],
+  picking: false,         // the next click on a block takes its colour instead of collecting it
+  source: null,           // id of the block the colour was taken from, while the colour is still its
   // The By colour picker. It keeps its own hue, which a grey or black cannot carry.
   picker: { h: 85, s: 0.69, v: 0.7 },
   // Colour wheel: `base` drives a rule; in the custom rule `custom` holds the points.
@@ -92,7 +94,7 @@ function tile(entry, onClick) {
   }
   button.classList.toggle("chosen", state.mine.includes(entry.id));
   button.append(tileCanvas(state.palette, entry.kind, entry.index));
-  button.addEventListener("click", () => onClick(entry));
+  button.addEventListener("click", () => (state.picking ? pickBlock(entry) : onClick(entry)));
   return button;
 }
 
@@ -117,9 +119,45 @@ function setColour(rgb) {
   colourChanged();
 }
 
+// ---------- colour of a block ----------
+function setPicking(on) {
+  state.picking = on;
+  $("pickBlock").setAttribute("aria-pressed", on);
+  document.body.classList.toggle("picking", on);
+  if (on) {
+    setStatus("statusPicking");
+    $("search").focus();
+  }
+  // While picking, every block is listed, not only those near the current colour.
+  renderMatch();
+}
+
+/** Take the colour of a block: the lists then show the blocks closest to it. */
+function pickBlock(entry) {
+  setPicking(false);
+  // Stay on the harmonies tab if that is where the user is working.
+  if ($("harmonyPane").hidden) showTab("match");
+  $("search").value = "";
+  state.source = entry.id;
+  setColour(entry.rgb);
+  setStatus("statusPicked", entry.name);
+}
+
+function renderSource() {
+  const entry = state.source && state.byId.get(state.source);
+  // Any other colour is no longer the block's.
+  // The picker keeps colours as hue and shade, which can move a channel by a step.
+  if (!entry || entry.rgb.some((v, c) => Math.abs(v - state.colour[c]) > 2)) state.source = null;
+  $("source").hidden = !state.source;
+  if (!state.source) return;
+  $("sourceTile").replaceChildren(tileCanvas(state.palette, entry.kind, entry.index));
+  $("sourceName").textContent = entry.name;
+}
+
 /** The base colour changed: update the inputs and everything derived from it. */
 function colourChanged() {
   state.colour = hsvToRgb(harmonyPoints()[state.harmony.selected]);
+  renderSource();
   for (const id of ["hex", "harmonyColour", "harmonyHex"]) $(id).value = toHex(state.colour);
   renderPicker();
   renderMatch();
@@ -166,6 +204,8 @@ function wirePicker() {
   // The bottom of the hue bar is red again; stop just short so the knob stays there.
   dragArea($("hue"), (x, y) => apply({ h: Math.min(359.9, y * 360) }));
   $("randomColour").addEventListener("click", () => setColour([0, 0, 0].map(() => Math.floor(Math.random() * 256))));
+  $("pickBlock").addEventListener("click", () => setPicking(!state.picking));
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && state.picking) { setPicking(false); setStatus("statusPickCancelled"); } });
   if ("EyeDropper" in window) {
     $("eyedropper").hidden = false;
     $("eyedropper").addEventListener("click", async () => {
@@ -193,7 +233,7 @@ function renderMatch() {
   // Leave the number alone while it is being typed.
   if (document.activeElement !== $("spreadValue")) $("spreadValue").value = spread;
   const near = (entry) => Math.hypot(entry.lab[0] - lab[0], entry.lab[1] - lab[1], entry.lab[2] - lab[2]) <= spread;
-  const closest = (ranked, least) => (query ? ranked : ranked.slice(0, Math.max(least, ranked.filter(near).length)));
+  const closest = (ranked, least) => (query || state.picking ? ranked : ranked.slice(0, Math.max(least, ranked.filter(near).length)));
   const list = (deco) => closest(rank(found.filter((entry) => (entry.kind === "deco") === deco), lab, smooth()), deco ? MIN_DECO_RESULTS : MIN_BLOCK_RESULTS).map((entry) => {
     if (!matchTiles.has(entry.id)) matchTiles.set(entry.id, tile(entry, toggleMine));
     const node = matchTiles.get(entry.id);
@@ -204,7 +244,7 @@ function renderMatch() {
   $("blockResults").replaceChildren(...blocks);
   $("decoResults").replaceChildren(...decorations);
   // A new colour or search starts from the best matches again.
-  const order = `${toHex(state.colour)}|${query}|${spread}`;
+  const order = `${toHex(state.colour)}|${query}|${spread}|${state.picking}`;
   if (order !== matchOrder) {
     matchOrder = order;
     $("blockResults").scrollTop = $("decoResults").scrollTop = 0;
@@ -521,6 +561,7 @@ function renderMine() {
         // Stay on the harmonies tab if that is where the user is working.
         if ($("harmonyPane").hidden) showTab("match");
         $("search").value = "";
+        state.source = entry.id;
         setColour(entry.rgb);
       });
       node.classList.remove("chosen");
@@ -652,6 +693,7 @@ function showTab(name) {
 }
 
 function renderAll() {
+  renderSource();
   renderPicker();
   renderMatch();
   renderHarmonies();

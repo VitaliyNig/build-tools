@@ -47,6 +47,14 @@ input[type="text"] { font: inherit; color: inherit; background: var(--surface-2)
 .picker-row button { width: 36px; padding: 0; display: grid; place-items: center; }
 .picker-row button[hidden] { display: none; }
 #search { width: 100%; }
+.picker-row button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+/* Taking the colour of a block: the next click on a tile picks it. */
+.picking .tile { cursor: crosshair; }
+.source { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--muted); font-size: 12px; }
+.source[hidden] { display: none; }
+.source-tile { flex: none; width: 24px; height: 24px; }
+.source-tile canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.source b { color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .picker .slider input[type="number"] { flex: none; width: 58px; padding: 4px 6px; text-align: right; font-variant-numeric: tabular-nums; }
 .group { display: flex; flex-direction: column; gap: 10px; }
 /* The two panels share the remaining width equally, show four rows and scroll. */

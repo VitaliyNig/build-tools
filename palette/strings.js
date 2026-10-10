@@ -56,11 +56,16 @@ export const STRINGS = {
   ],
   randomColourTip: ["Random colour", "Случайный цвет"],
   eyedropperTip: ["Pick a colour from the screen", "Взять цвет с экрана"],
+  pickBlockTip: [
+    "Take the colour of a block: press, then click any block. Blocks of a similar colour are listed. The search below finds a block by name.",
+    "Взять цвет блока: нажмите, затем кликните по любому блоку. Покажутся блоки похожего цвета. Поиск ниже находит блок по названию.",
+  ],
+  sourceLabel: ["Similar to", "Похожие на"],
   matchingBlocks: ["Matching Blocks", "Подходящие блоки"],
   decorations: ["Decorations", "Декорации"],
   matchHint: [
-    "Click a block to add it to your palette. Click a block in your palette to find similar ones.",
-    "Клик по блоку добавляет его в палитру. Клик по блоку в палитре ищет похожие.",
+    "Click a block to add it to your palette. Click a block in your palette, or use the cube button, to find similar ones.",
+    "Клик по блоку добавляет его в палитру. Клик по блоку в палитре или кнопка с кубом ищут похожие.",
   ],
   nothing: ["Nothing found.", "Ничего не найдено."],
 
@@ -117,6 +122,12 @@ export const STRINGS = {
     (v, blocks, deco) => `${v}: ${blocks} блоков, ${deco} декораций.`,
   ],
   statusAdded: [(name) => `Added ${name}.`, (name) => `Добавлено: ${name}.`],
+  statusPicking: [
+    "Click a block to take its colour. Type in the search to find it by name; Esc cancels.",
+    "Кликните по блоку, чтобы взять его цвет. Поиск находит блок по названию; Esc — отмена.",
+  ],
+  statusPicked: [(name) => `Blocks similar to ${name}.`, (name) => `Блоки, похожие на ${name}.`],
+  statusPickCancelled: ["Cancelled.", "Отменено."],
   statusRemoved: [(name) => `Removed ${name}.`, (name) => `Убрано: ${name}.`],
   statusSaved: [(name) => `Saved “${name}”.`, (name) => `Сохранено: «${name}».`],
   statusLink: ["Link copied.", "Ссылка скопирована."],
