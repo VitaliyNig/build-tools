@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Heads</title>
+  <link rel="stylesheet" href="../shared/base.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="../" data-i18n="back"></a>
+    <h1>Heads</h1>
+    <span class="subtitle" data-i18n="subtitle"></span>
+    <span class="spacer"></span>
+    <select id="lang" aria-label="Language / Язык"></select>
+  </div>
+
+  <main>
+    <section class="panel search">
+      <input type="search" id="query" spellcheck="false" autocomplete="off" enterkeyhint="search">
+      <p class="hint" data-i18n="searchHint"></p>
+      <div class="options">
+        <label class="field"><span data-i18n="category"></span> <select id="category"></select></label>
+        <label class="field"><span data-i18n="collection"></span> <select id="collection"></select></label>
+        <label class="field"><span data-i18n="format"></span> <select id="format"></select></label>
+        <label class="field"><span data-i18n="addTo"></span> <select id="target"></select></label>
+      </div>
+    </section>
+
+    <nav class="tabs" role="tablist">
+      <button type="button" role="tab" id="tabCatalog" aria-selected="true" data-i18n="tabCatalog"></button>
+      <button type="button" role="tab" id="tabCollections" aria-selected="false"><span data-i18n="tabCollections"></span> <span class="count" id="collectionsCount"></span></button>
+    </nav>
+
+    <section id="catalogView" class="view">
+      <div class="loading" id="loading">
+        <p id="loadingText"></p>
+        <div class="bar"><i id="loadingBar"></i></div>
+        <button type="button" id="retry" data-i18n="retry" hidden></button>
+      </div>
+      <p class="info" id="info"></p>
+      <div class="grid" id="grid"></div>
+      <button type="button" class="more" id="more" hidden></button>
+    </section>
+
+    <section id="collectionsView" class="view" hidden>
+      <aside class="lists">
+        <div id="standardsBox" hidden>
+          <h2 data-i18n="standards"></h2>
+          <p class="hint" data-i18n="standardsHint"></p>
+          <div class="list" id="standardsList"></div>
+        </div>
+        <div id="sharedBox" hidden>
+          <h2 data-i18n="shared"></h2>
+          <div class="list" id="sharedList"></div>
+        </div>
+        <h2 data-i18n="mine"></h2>
+        <p class="hint" data-i18n="mineHint"></p>
+        <div class="list" id="mineList"></div>
+        <div class="row">
+          <button type="button" id="newCollection" data-i18n="newCollection"></button>
+          <button type="button" id="importButton" data-i18n="importFile"></button>
+          <input type="file" id="importFile" accept=".json,application/json" hidden>
+        </div>
+      </aside>
+      <div class="collection">
+        <header id="collectionHeader" hidden>
+          <div class="title">
+            <h2 id="collectionName"></h2>
+            <span class="count" id="collectionCount"></span>
+          </div>
+          <p class="hint" id="collectionNote" hidden></p>
+          <div class="row" id="collectionActions"></div>
+        </header>
+        <p class="empty" id="collectionEmpty"></p>
+        <div class="grid" id="collectionGrid"></div>
+      </div>
+    </section>
+
+    <footer>
+      <p class="hint" id="source"></p>
+    </footer>
+  </main>
+
+  <dialog id="details">
+    <form method="dialog" class="details">
+      <button class="close" value="close" data-i18n-title="close" aria-label="Close">✕</button>
+      <div class="head-view">
+        <canvas id="detailsCanvas" width="320" height="320"></canvas>
+        <div>
+          <h2 id="detailsName"></h2>
+          <p class="meta" id="detailsMeta"></p>
+          <div class="chips" id="detailsTags"></div>
+          <div class="chips" id="detailsCollections"></div>
+        </div>
+      </div>
+      <h3 data-i18n="commands"></h3>
+      <div class="commands" id="detailsCommands"></div>
+      <h3 data-i18n="texture"></h3>
+      <div class="commands" id="detailsTexture"></div>
+      <h3 data-i18n="myCollections"></h3>
+      <div class="checks" id="detailsMine"></div>
+    </form>
+  </dialog>
+
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

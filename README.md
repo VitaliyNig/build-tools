@@ -15,6 +15,7 @@ and are remembered in the browser (`localStorage`), like the chosen language.
 | **Image2Banners** | `image2banners/` | Image to Minecraft banner art; web port of the app by MARSTeamMC |
 | **GeoToSchematic** | external link | KML/GeoJSON outlines to schematics, by reyysun ([site](https://reyysun.github.io/geo-to-schematic/)) |
 | **Big Signs** | `bigsigns/` | Big letters for Minecraft signs, one per sign, Latin and Cyrillic; after an idea by SuperFromND ([site](https://superfromnd.gitlab.io/bigsigns/)) |
+| **Heads** | `heads/` | Search the HeadDB catalogue of 116,000 heads in Russian or English, keep collections, copy `/hdb give` or `/give` commands |
 
 ```
 index.html     hub page, built from shared/tools.js
@@ -27,6 +28,7 @@ graffiti/      the Graffiti tool (formerly Pixel; `pixel/` only redirects to it)
 palette/       the Palette tool
 image2banners/ the Image2Banners tool
 bigsigns/      the Big Signs tool
+heads/         the Heads tool
 tools/         build-palettes.mjs, a Node script that rebuilds the bundled palettes
 .nojekyll      turns GitHub's Jekyll processing off
 ```
@@ -294,6 +296,78 @@ bigsigns/
   strings.js              UI strings (en/ru)
   core.js                 the font, and the padding of sign lines
 ```
+
+## Heads
+Finds Minecraft heads in the catalogue of the HeadDB plugin
+([headsdb.com](https://headsdb.com/), 116,000 heads) and copies the command
+that gives one in the game. Made for a server that runs HeadDB, whose own
+search is English only and hard to browse.
+
+- **Search in Russian.** Head names, tags and collections are in English. A
+  Russian query word is stemmed (Snowball) and looked up in a dictionary of
+  about 3,000 words: those most often found in the names, tags and
+  collections, plus builders' everyday objects. So «стулья», «красный цветок»
+  or «железная дорога» find what their English words find. A word that is
+  still being typed matches the dictionary words it starts. Names nobody
+  translated are tried in Latin letters, and a query typed in the wrong
+  keyboard layout («cnek») is read in the other one («стул»). A number finds
+  the head with that id.
+- **Filters**: the catalogue's categories and collections, named in Russian
+  too.
+- **Commands**: `/hdb give <id>` for the plugin, or vanilla `/give` with the
+  texture for 1.20.5+, 1.16–1.20.4, 1.13–1.15 and 1.12.2. Vanilla commands
+  before 1.20.5 are longer than the 256 characters the chat takes; the
+  details of a head say so, and they work from a command block.
+- **Collections.** The + on a card adds the head to the chosen collection.
+  Collections are kept in the browser; a collection can be copied as one
+  command per line, shared as a link (`#c=<name>~<ids>`), and exported to or
+  imported from a `.json` file.
+- **Project standards**: the collections in `heads/standards.json` are shown
+  to everyone, read-only, and can be saved as one's own. To add one, export a
+  collection and move it into the file:
+
+```json
+{
+  "collections": [
+    {
+      "name": "Street",
+      "description": "What goes on a street.",
+      "heads": [{ "id": 18462, "name": "Flower (red)" }, 81828]
+    }
+  ]
+}
+```
+
+A head is an id, or an object with an `id`; the other fields are only for
+the people reading the file.
+
+The catalogue is read the way the plugin reads it: a manifest at
+`data.headsdb.com` names the current files, which are Zstandard-compressed
+JSON (about 5 MB) with a size and a SHA-256 each. The page checks both,
+decompresses them with [fzstd](https://github.com/101arrowz/fzstd) and keeps
+them in the browser's Cache Storage, so the next visit only fetches the
+manifest. Ids therefore match `/hdb give` on a server with HeadDB 2 (Paper,
+Folia). Pictures are the skins from `textures.minecraft.net`, drawn as the
+game draws a head in the inventory.
+
+```
+heads/
+  index.html, style.css   page
+  app.js                  UI: search, cards, details, collections
+  strings.js              UI strings (en/ru), Russian names of categories and collections
+  worker.js               holds the catalogue and answers searches off the UI thread
+  catalog.js              downloads, checks, caches and decompresses the catalogue
+  search.js               index, Russian stemmer, keyboard layout, transliteration
+  dictionary.js           Russian words for the catalogue's English words
+  commands.js             /hdb give and /give for each game version
+  render.js               a head as a cube, from its skin
+  standards.json          the project's collections
+  vendor/fzstd.js         Zstandard decoder (MIT)
+```
+
+To add Russian words, add them to the line of the English word in
+`dictionary.js` (`english русское русское`); any form of a word will do, since
+both sides are stemmed.
 
 ## Image2Banners
 Converts an image into banner art: for every banner slot (1 block wide, 2 blocks

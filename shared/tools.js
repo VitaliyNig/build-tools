@@ -77,4 +77,17 @@ export const TOOLS = [
     icon: ["#a8825a", "#1d1d21", "#1d1d21", "#a8825a", "#1d1d21", "#a8825a", "#a8825a", "#1d1d21",
       "#1d1d21", "#1d1d21", "#1d1d21", "#1d1d21", "#1d1d21", "#a8825a", "#a8825a", "#1d1d21"],
   },
+  {
+    id: "heads",
+    href: "heads/",
+    title: { en: "Heads", ru: "Heads" },
+    description: {
+      en: "Search 116,000 heads of the HeadDB catalogue in Russian or English, keep collections and project standards, copy /hdb give or /give commands for any game version.",
+      ru: "Поиск по 116 000 голов каталога HeadDB по-русски и по-английски, свои коллекции и стандарты проекта, копирование команд /hdb give или /give для любой версии игры.",
+    },
+    tags: ["HeadDB"],
+    // A creeper face.
+    icon: ["#5aa953", "#5aa953", "#5aa953", "#5aa953", "#1d1d21", "#5aa953", "#5aa953", "#1d1d21",
+      "#5aa953", "#1d1d21", "#1d1d21", "#5aa953", "#5aa953", "#1d1d21", "#1d1d21", "#5aa953"],
+  },
 ];
