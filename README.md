@@ -333,8 +333,16 @@ search is English only and hard to browse.
   details of a head say so, and they work from a command block.
 - **Collections.** The + on a card adds the head to the chosen collection.
   Collections are kept in the browser; a collection can be copied as one
-  command per line, shared as a link (`#c=<name>~<ids>`), and exported to or
-  imported from a `.json` file.
+  command per line, shared as a link (`#c=<name>~<ids>`) or exported to a
+  `.json` file with the heads' ids and names.
+- **Sharing and keeping**, at the top of the Collections tab: import `.json`
+  files (several at once, or dropped anywhere on the page), paste links or
+  the text of a file (handy in a chat), and export all one's collections to
+  one file as a backup or to move them to another computer. That file has
+  the format of `standards.json`. An import that is already there is skipped,
+  so a file imported twice changes nothing; a different collection with a
+  taken name gets a number. A link opened while the page is open shows up at
+  once under "Shared with you".
 - **Project standards**: the collections in `heads/standards.json` are shown
   to everyone, read-only, and can be saved as one's own. To add one, export a
   collection and move it into the file:

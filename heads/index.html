@@ -46,6 +46,16 @@
 
     <section id="collectionsView" class="view" hidden>
       <aside class="lists">
+        <div class="share">
+          <h2 data-i18n="shareTitle"></h2>
+          <p class="hint" data-i18n="shareHint"></p>
+          <div class="row">
+            <button type="button" id="importButton" data-i18n="importFile"></button>
+            <button type="button" id="pasteButton" data-i18n="paste"></button>
+            <button type="button" id="exportAll" data-i18n="exportAll"></button>
+          </div>
+          <input type="file" id="importFile" accept=".json,application/json" multiple hidden>
+        </div>
         <div id="standardsBox" hidden>
           <h2 data-i18n="standards"></h2>
           <p class="hint" data-i18n="standardsHint"></p>
@@ -63,11 +73,7 @@
         <h2 data-i18n="mine"></h2>
         <p class="hint" data-i18n="mineHint"></p>
         <div class="list" id="mineList"></div>
-        <div class="row">
-          <button type="button" id="newCollection" data-i18n="newCollection"></button>
-          <button type="button" id="importButton" data-i18n="importFile"></button>
-          <input type="file" id="importFile" accept=".json,application/json" hidden>
-        </div>
+        <button type="button" id="newCollection" data-i18n="newCollection"></button>
       </aside>
       <div class="collection">
         <header id="collectionHeader" hidden>
@@ -109,6 +115,20 @@
       <div class="checks" id="detailsMine"></div>
     </form>
   </dialog>
+
+  <dialog id="pasteDialog">
+    <form method="dialog" class="paste">
+      <h2 data-i18n="pasteTitle"></h2>
+      <p class="hint" data-i18n="pasteHint"></p>
+      <textarea id="pasteText" rows="8" spellcheck="false"></textarea>
+      <div class="row end">
+        <button value="cancel" data-i18n="cancel"></button>
+        <button value="add" class="primary" id="pasteAdd" data-i18n="pasteAdd"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="drop" id="drop" hidden><span data-i18n="dropHint"></span></div>
 
   <div class="status" id="status" role="status" aria-live="polite"></div>
   <script type="module" src="app.js"></script>

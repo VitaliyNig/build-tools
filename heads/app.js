@@ -436,6 +436,7 @@ function renderCollections() {
   $("standardsList").replaceChildren(...state.standards.map((c, i) => listButton(c, "standard", i)));
   $("sharedBox").hidden = !state.shared;
   $("sharedList").replaceChildren(...(state.shared ? [listButton(state.shared, "shared", 0)] : []));
+  $("exportAll").hidden = !state.collections.length;
   $("mineList").replaceChildren(...(state.collections.length
     ? state.collections.map((c, i) => listButton(c, "mine", i))
     : [Object.assign(document.createElement("p"), { className: "hint", textContent: t("noCollections") })]));
@@ -533,28 +534,58 @@ function shareLink(collection) {
   return url.href;
 }
 
-function readLink() {
-  const match = /^#c=([^~]*)~([0-9a-z.]*)$/.exec(location.hash);
-  if (!match) return null;
-  let name;
-  try { name = decodeURIComponent(match[1]); } catch { name = match[1]; }
-  const heads = match[2].split(".").filter(Boolean).map((id) => parseInt(id, 36)).filter(Number.isFinite);
-  return { name: name || t("shared"), heads };
+/** Every collection link in a text: [{ name, heads }]. */
+function parseLinks(text) {
+  return [...text.matchAll(/#c=([^~\s]*)~([0-9a-z.]*)/g)].map(([, encoded, ids]) => {
+    let name;
+    try { name = decodeURIComponent(encoded); } catch { name = encoded; }
+    const heads = [...new Set(ids.split(".").filter(Boolean).map((id) => parseInt(id, 36)).filter(Number.isFinite))];
+    return { name: name || t("shared"), description: "", heads };
+  }).filter((c) => c.heads.length);
 }
 
-function exportCollection(collection) {
-  const data = {
+/** Open a collection link of the address bar, if there is one. */
+function openLink() {
+  const [shared] = parseLinks(location.hash);
+  if (!shared) return;
+  state.shared = shared;
+  state.selected = { kind: "shared", index: 0 };
+  showTab("collections");
+  renderCollections();
+  document.querySelector(".collection").scrollIntoView();
+}
+
+/** A collection as it is written to a file: heads with their names, for people reading it. */
+async function collectionData(collection) {
+  await headsOf(collection.heads);
+  return {
     name: collection.name,
     ...(collection.description ? { description: collection.description } : {}),
     heads: collection.heads.map((id) => (state.heads.has(id) ? { id, name: state.heads.get(id).name } : { id })),
   };
+}
+
+function download(data, name) {
   const blob = new Blob([JSON.stringify(data, null, 2) + "\n"], { type: "application/json" });
   const link = Object.assign(document.createElement("a"), {
     href: URL.createObjectURL(blob),
-    download: `${collection.name.replace(/[\\/:*?"<>|]+/g, "_") || "heads"}.json`,
+    download: `${name.replace(/[\\/:*?"<>|]+/g, "_") || "heads"}.json`,
   });
   link.click();
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+async function exportCollection(collection) {
+  download(await collectionData(collection), collection.name);
+}
+
+/** All one's collections in one file, in the format of standards.json. */
+async function exportAll() {
+  if (!state.collections.length) return;
+  const collections = [];
+  for (const collection of state.collections) collections.push(await collectionData(collection));
+  download({ collections }, `heads-collections-${new Date().toISOString().slice(0, 10)}`);
+  setStatus("statusExported", collections.length);
 }
 
 /**
@@ -570,18 +601,44 @@ function parseCollections(data) {
   }));
 }
 
-async function importFile(file) {
-  try {
-    const collections = parseCollections(JSON.parse(await file.text()));
-    if (!collections.length) throw new Error("empty");
-    for (const c of collections) createCollection(c.name, c.heads, c.description);
-    state.selected = { kind: "mine", index: state.collections.length - 1 };
-    setStatus("statusImported", collections.length);
-    refreshMarks();
-    renderCollections();
-  } catch {
-    setStatus("errImport");
+const sameHeads = (a, b) => a.length === b.length && a.every((id) => b.includes(id));
+
+/**
+ * Add collections to one's own. One that is already there, with the same
+ * name and heads, is skipped, so importing a file twice changes nothing; a
+ * different one with a taken name gets a number: "Street (2)".
+ */
+function addCollections(collections) {
+  let added = 0, same = 0;
+  for (const c of collections) {
+    if (state.collections.some((mine) => mine.name === c.name && sameHeads(mine.heads, c.heads))) { same++; continue; }
+    let name = c.name;
+    for (let n = 2; state.collections.some((mine) => mine.name === name); n++) name = `${c.name} (${n})`;
+    createCollection(name, c.heads, c.description);
+    added++;
   }
+  if (added) state.selected = { kind: "mine", index: state.collections.length - 1 };
+  setStatus("statusImported", added, same);
+  refreshMarks();
+  showTab("collections");
+  renderCollections();
+}
+
+async function importFiles(files) {
+  const collections = [];
+  for (const file of files) {
+    try { collections.push(...parseCollections(JSON.parse(await file.text()))); } catch { /* not JSON */ }
+  }
+  if (collections.length) addCollections(collections); else setStatus("errImport");
+}
+
+/** Collections from pasted text: links, or the text of a .json file. */
+function importText(text) {
+  let collections = parseLinks(text);
+  if (!collections.length) {
+    try { collections = parseCollections(JSON.parse(text)); } catch { /* not JSON */ }
+  }
+  if (collections.length) addCollections(collections); else setStatus("errPaste");
 }
 
 async function loadStandards() {
@@ -624,10 +681,34 @@ $("newCollection").addEventListener("click", () => {
 });
 $("importButton").addEventListener("click", () => $("importFile").click());
 $("importFile").addEventListener("change", () => {
-  const file = $("importFile").files[0];
+  const files = [...$("importFile").files];
   $("importFile").value = "";
-  if (file) importFile(file);
+  if (files.length) importFiles(files);
 });
+$("exportAll").addEventListener("click", exportAll);
+$("pasteButton").addEventListener("click", () => {
+  $("pasteText").value = "";
+  $("pasteDialog").showModal();
+});
+$("pasteDialog").addEventListener("close", () => {
+  if ($("pasteDialog").returnValue === "add" && $("pasteText").value.trim()) importText($("pasteText").value);
+});
+// .json files dropped anywhere on the page are imported.
+let dragDepth = 0;
+const carriesFiles = (event) => [...(event.dataTransfer?.types || [])].includes("Files");
+document.addEventListener("dragenter", (event) => { if (carriesFiles(event)) { dragDepth++; $("drop").hidden = false; } });
+document.addEventListener("dragleave", (event) => { if (carriesFiles(event) && --dragDepth <= 0) { dragDepth = 0; $("drop").hidden = true; } });
+document.addEventListener("dragover", (event) => { if (carriesFiles(event)) event.preventDefault(); });
+document.addEventListener("drop", (event) => {
+  if (!carriesFiles(event)) return;
+  event.preventDefault();
+  dragDepth = 0;
+  $("drop").hidden = true;
+  const files = [...event.dataTransfer.files].filter((file) => /\.json$/i.test(file.name) || file.type === "application/json");
+  if (files.length) importFiles(files); else setStatus("errImport");
+});
+// A collection link opened while the page is open.
+window.addEventListener("hashchange", openLink);
 // "/" jumps to the search box.
 document.addEventListener("keydown", (event) => {
   if (event.key === "/" && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName) && !$("details").open) {
@@ -637,10 +718,8 @@ document.addEventListener("keydown", (event) => {
 });
 
 bindLanguageSelect($("lang"), (lang) => { state.lang = lang; retranslate(); });
-state.shared = readLink();
-if (state.shared) state.selected = { kind: "shared", index: 0 };
 retranslate();
 saveCollections();
-if (state.shared) showTab("collections");
+openLink();
 loadStandards();
 loadCatalog();
