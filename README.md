@@ -1,8 +1,12 @@
 # Build Tools
 
-A static site of small browser tools, served by GitHub Pages from the repository
-root. The hub page (`index.html`) lists the tools; each tool lives in its own
-folder. There is no build step and no backend: plain HTML, CSS and ES modules.
+A static site of small browser tools for Minecraft builders, served by GitHub
+Pages from the repository root. The hub page (`index.html`) lists the tools;
+each tool lives in its own folder. There is no build step and no backend: plain
+HTML, CSS and ES modules. The interface is in English and Russian.
+
+A star on a hub card marks the tool as a favourite. Favourites are listed first
+and are remembered in the browser (`localStorage`), like the chosen language.
 
 | Tool | Folder | What it does |
 |------|--------|--------------|
@@ -15,12 +19,14 @@ folder. There is no build step and no backend: plain HTML, CSS and ES modules.
 ```
 index.html     hub page, built from shared/tools.js
 shared/        theme (base.css), tool layout (tool.css), language switch (i18n.js),
-               zoom/pan view (panzoom.js), tool registry (tools.js)
+               zoom/pan view (panzoom.js), hover hints (tooltip.js),
+               tool registry (tools.js)
 shared/mc/     Minecraft block palettes used by Graffiti and Palette: bundled
                versions, the client-JAR importer and colour maths
 graffiti/      the Graffiti tool (formerly Pixel; `pixel/` only redirects to it)
 palette/       the Palette tool
 image2banners/ the Image2Banners tool
+bigsigns/      the Big Signs tool
 tools/         build-palettes.mjs, a Node script that rebuilds the bundled palettes
 .nojekyll      turns GitHub's Jekyll processing off
 ```
@@ -38,7 +44,7 @@ ES modules and the worker only load over HTTP, so opening `index.html` from disk
 does not work. Any static file server will do, for example from the project root:
 
 ```bash
-py -m http.server 8765
+python -m http.server 8765
 ```
 
 Then open `http://localhost:8765/`.
@@ -48,6 +54,7 @@ Then open `http://localhost:8765/`.
    (and `../shared/tool.css` for the viewport + controls layout), and use
    `../shared/i18n.js` for the shared English/Russian language switch.
 2. Add an entry to `TOOLS` in `shared/tools.js` — the hub card is built from it.
+   Its `id` is what the favourites are stored by, so keep it once published.
 
 A tool hosted on another site needs only the entry: give its full URL as `href`
 and set `external: true`, and the card opens it in a new tab.
@@ -208,6 +215,10 @@ game version, including ones imported from a client JAR.
   the row of blocks closest to the bar. Colours blend in OkLab (evenly spaced
   steps) or plain sRGB; **No repeats** uses every block once; rows can be kept
   below to compare settings. The interface follows HueBlocks.
+- **A block's colour** — on the Harmonies and Gradient tabs a cube button, next
+  to the colour of the selected point and under every gradient tag, opens a
+  window to choose a block and takes its colour. Blocks closest to the colour
+  being replaced come first; search by name and the page's filters apply.
 - **My Palette** — click blocks to collect them. Save palettes in the browser,
   copy the block names, or copy a link that opens the same palette for anyone.
   A click on a collected block searches for similar ones, and **Use my palette
@@ -243,8 +254,8 @@ palette/
 ## Big Signs
 Turns a word into Minecraft signs with one big letter each. A sign line of the
 block characters `█ ▀ ▄` gives two rows of "pixels", so the four lines of a sign
-hold a letter 8 rows tall. `▌`, the left half of a block, gives thin stems. For every sign the tool shows the four lines to copy
-and paste into it.
+hold a letter 8 rows tall. `▌`, the left half of a block, gives thin stems. For
+every sign the tool shows the four lines to copy and paste into it.
 
 The idea, and the trick itself, come from
 [Big Sign Letters](https://superfromnd.gitlab.io/bigsigns/) by **SuperFromND**.
