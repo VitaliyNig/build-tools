@@ -25,10 +25,10 @@ export function command(head, format) {
   const value = textureValue(head.texture);
   const { hex, ints } = uuid(head.texture);
   switch (format) {
-    case "1.20.5": return `/give @s player_head[profile={properties:[{name:"textures",value:"${value}"}]}]`;
-    case "1.16": return `/give @s player_head{SkullOwner:{Id:[I;${ints.join(",")}],Properties:{textures:[{Value:"${value}"}]}}}`;
-    case "1.13": return `/give @s player_head{SkullOwner:{Id:"${dashed(hex)}",Properties:{textures:[{Value:"${value}"}]}}}`;
-    case "1.12": return `/give @s skull 1 3 {SkullOwner:{Id:"${dashed(hex)}",Properties:{textures:[{Value:"${value}"}]}}}`;
+    case "1.20.5": return `/give @p player_head[profile={properties:[{name:"textures",value:"${value}"}]}]`;
+    case "1.16": return `/give @p player_head{SkullOwner:{Id:[I;${ints.join(",")}],Properties:{textures:[{Value:"${value}"}]}}}`;
+    case "1.13": return `/give @p player_head{SkullOwner:{Id:"${dashed(hex)}",Properties:{textures:[{Value:"${value}"}]}}}`;
+    case "1.12": return `/give @p skull 1 3 {SkullOwner:{Id:"${dashed(hex)}",Properties:{textures:[{Value:"${value}"}]}}}`;
     default: throw new Error(`unknown format ${format}`);
   }
 }
@@ -65,9 +65,9 @@ export function boxCommand(slots, format) {
   const version = format === "hdb" ? "1.20.5" : format;
   const items = slots.map(([slot, head]) => headItem(head, slot, version)).join(",");
   switch (version) {
-    case "1.20.5": return `/give @s shulker_box[container=[${items}]]`;
-    case "1.16": case "1.13": return `/give @s shulker_box{BlockEntityTag:{Items:[${items}]}}`;
-    case "1.12": return `/give @s purple_shulker_box 1 0 {BlockEntityTag:{Items:[${items}]}}`;
+    case "1.20.5": return `/give @p shulker_box[container=[${items}]]`;
+    case "1.16": case "1.13": return `/give @p shulker_box{BlockEntityTag:{Items:[${items}]}}`;
+    case "1.12": return `/give @p purple_shulker_box 1 0 {BlockEntityTag:{Items:[${items}]}}`;
     default: throw new Error(`unknown format ${version}`);
   }
 }
