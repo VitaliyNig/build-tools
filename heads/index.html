@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Heads</title>
+  <link rel="stylesheet" href="../shared/base.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="../" data-i18n="back"></a>
+    <h1>Heads</h1>
+    <span class="subtitle" data-i18n="subtitle"></span>
+    <span class="spacer"></span>
+    <select id="lang" aria-label="Language / Язык"></select>
+  </div>
+
+  <main>
+    <section class="panel search">
+      <input type="search" id="query" spellcheck="false" autocomplete="off" enterkeyhint="search">
+      <p class="hint" data-i18n="searchHint"></p>
+      <div class="options">
+        <label class="field"><span data-i18n="category"></span> <select id="category"></select></label>
+        <label class="field"><span data-i18n="collection"></span> <select id="collection"></select></label>
+        <label class="field"><span data-i18n="format"></span> <select id="format"></select></label>
+        <label class="field"><span data-i18n="addTo"></span> <select id="target"></select></label>
+      </div>
+    </section>
+
+    <nav class="tabs" role="tablist">
+      <button type="button" role="tab" id="tabCatalog" aria-selected="true" data-i18n="tabCatalog"></button>
+      <button type="button" role="tab" id="tabCollections" aria-selected="false"><span data-i18n="tabCollections"></span> <span class="count" id="collectionsCount"></span></button>
+      <button type="button" role="tab" id="tabWord" aria-selected="false" data-i18n="tabWord"></button>
+    </nav>
+
+    <section id="catalogView" class="view">
+      <div class="loading" id="loading">
+        <p id="loadingText"></p>
+        <div class="bar"><i id="loadingBar"></i></div>
+        <button type="button" id="retry" data-i18n="retry" hidden></button>
+      </div>
+      <p class="info" id="info"></p>
+      <div class="grid" id="grid"></div>
+      <button type="button" class="more" id="more" hidden></button>
+    </section>
+
+    <section id="wordView" class="view" hidden>
+      <div class="panel">
+        <input type="text" id="wordText" class="word-input" maxlength="300" spellcheck="false" autocomplete="off">
+        <div class="options">
+          <label class="field"><span data-i18n="wordFont"></span> <select id="wordFont"></select></label>
+          <label class="field"><span data-i18n="wordPlayer"></span> <input type="text" id="wordPlayer" class="small-input" maxlength="16" spellcheck="false" autocomplete="off"></label>
+        </div>
+        <p class="hint" data-i18n="wordHint"></p>
+      </div>
+      <div class="word-preview" id="wordPreview"></div>
+      <p class="hint warning" id="wordMissing" hidden></p>
+      <div class="panel" id="wordOutput" hidden>
+        <h3 data-i18n="wordBoxTitle"></h3>
+        <p class="hint" id="wordBoxHint"></p>
+        <div class="commands" id="wordBoxes"></div>
+        <h3 data-i18n="wordHdbTitle"></h3>
+        <p class="hint" id="wordHdbHint"></p>
+        <div class="row"><button type="button" id="wordHdbCopy" data-i18n="copyAll"></button></div>
+        <pre class="word-hdb" id="wordHdb"></pre>
+      </div>
+    </section>
+
+    <section id="collectionsView" class="view" hidden>
+      <aside class="lists">
+        <div class="share">
+          <h2 data-i18n="shareTitle"></h2>
+          <p class="hint" data-i18n="shareHint"></p>
+          <div class="row">
+            <button type="button" id="importButton" data-i18n="importFile"></button>
+            <button type="button" id="pasteButton" data-i18n="paste"></button>
+            <button type="button" id="exportAll" data-i18n="exportAll"></button>
+          </div>
+          <input type="file" id="importFile" accept=".json,application/json" multiple hidden>
+          <button type="button" class="wide" id="idButton" data-i18n="idButton"></button>
+        </div>
+        <div id="foundBox" hidden>
+          <h2 data-i18n="foundTitle"></h2>
+          <div class="list" id="foundList"></div>
+        </div>
+        <div id="standardsBox" hidden>
+          <h2 data-i18n="standards"></h2>
+          <p class="hint" data-i18n="standardsHint"></p>
+          <div class="list" id="standardsList"></div>
+        </div>
+        <div id="cityBox" hidden>
+          <h2 data-i18n="city"></h2>
+          <p class="hint" data-i18n="cityHint"></p>
+          <div class="list" id="cityList"></div>
+        </div>
+        <div id="sharedBox" hidden>
+          <h2 data-i18n="shared"></h2>
+          <div class="list" id="sharedList"></div>
+        </div>
+        <h2 data-i18n="mine"></h2>
+        <p class="hint" data-i18n="mineHint"></p>
+        <div class="list" id="mineList"></div>
+        <button type="button" id="newCollection" data-i18n="newCollection"></button>
+      </aside>
+      <div class="collection">
+        <header id="collectionHeader" hidden>
+          <div class="title">
+            <h2 id="collectionName"></h2>
+            <span class="count" id="collectionCount"></span>
+          </div>
+          <p class="hint" id="collectionNote" hidden></p>
+          <div class="row" id="collectionActions"></div>
+        </header>
+        <p class="empty" id="collectionEmpty"></p>
+        <div class="grid" id="collectionGrid"></div>
+        <button type="button" class="more" id="collectionMore" hidden></button>
+      </div>
+    </section>
+
+    <footer>
+      <p class="hint" id="source"></p>
+    </footer>
+  </main>
+
+  <dialog id="details">
+    <form method="dialog" class="details">
+      <button class="close" value="close" data-i18n-title="close" aria-label="Close">✕</button>
+      <div class="head-view">
+        <canvas id="detailsCanvas" width="320" height="320"></canvas>
+        <div>
+          <h2 id="detailsName"></h2>
+          <p class="meta" id="detailsMeta"></p>
+          <div class="chips" id="detailsTags"></div>
+          <div class="chips" id="detailsCollections"></div>
+        </div>
+      </div>
+      <h3 data-i18n="commands"></h3>
+      <div class="commands" id="detailsCommands"></div>
+      <h3 data-i18n="texture"></h3>
+      <div class="commands" id="detailsTexture"></div>
+      <h3 data-i18n="myCollections"></h3>
+      <div class="checks" id="detailsMine"></div>
+    </form>
+  </dialog>
+
+  <dialog id="pasteDialog">
+    <form method="dialog" class="paste">
+      <h2 data-i18n="pasteTitle"></h2>
+      <p class="hint" data-i18n="pasteHint"></p>
+      <textarea id="pasteText" rows="8" spellcheck="false"></textarea>
+      <div class="row end">
+        <button value="cancel" data-i18n="cancel"></button>
+        <button value="add" class="primary" id="pasteAdd" data-i18n="pasteAdd"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="idDialog">
+    <form method="dialog" class="paste">
+      <h2 data-i18n="idTitle"></h2>
+      <ol class="ways">
+        <li data-i18n="idWaySchem"></li>
+        <li data-i18n="idWayF3"></li>
+        <li data-i18n="idWayHdb"></li>
+      </ol>
+      <textarea id="idText" rows="6" spellcheck="false"></textarea>
+      <div class="row">
+        <button type="button" id="idFileButton" data-i18n="idFile"></button>
+        <input type="file" id="idFile" accept=".schem,.schematic,.litematic,.nbt,.bp,.txt" hidden>
+        <span class="spacer"></span>
+        <button value="cancel" data-i18n="cancel"></button>
+        <button value="find" class="primary" data-i18n="idFind"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="drop" id="drop" hidden><span data-i18n="dropHint"></span></div>
+
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

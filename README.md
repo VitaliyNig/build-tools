@@ -15,6 +15,7 @@ and are remembered in the browser (`localStorage`), like the chosen language.
 | **Image2Banners** | `image2banners/` | Image to Minecraft banner art; web port of the app by MARSTeamMC |
 | **GeoToSchematic** | external link | KML/GeoJSON outlines to schematics, by reyysun ([site](https://reyysun.github.io/geo-to-schematic/)) |
 | **Big Signs** | `bigsigns/` | Big letters for Minecraft signs, one per sign, Latin and Cyrillic; after an idea by SuperFromND ([site](https://superfromnd.gitlab.io/bigsigns/)) |
+| **Heads** | `heads/` | Search the HeadDB catalogue of 116,000 heads in Russian or English, keep collections, copy `/hdb give` or `/give` commands |
 
 ```
 index.html     hub page, built from shared/tools.js
@@ -27,6 +28,7 @@ graffiti/      the Graffiti tool (formerly Pixel; `pixel/` only redirects to it)
 palette/       the Palette tool
 image2banners/ the Image2Banners tool
 bigsigns/      the Big Signs tool
+heads/         the Heads tool
 tools/         build-palettes.mjs, a Node script that rebuilds the bundled palettes
 .nojekyll      turns GitHub's Jekyll processing off
 ```
@@ -294,6 +296,139 @@ bigsigns/
   strings.js              UI strings (en/ru)
   core.js                 the font, and the padding of sign lines
 ```
+
+## Heads
+Finds Minecraft heads in the catalogue of the HeadDB plugin
+([headsdb.com](https://headsdb.com/), 116,000 heads) and copies the command
+that gives one in the game. Made for a server that runs HeadDB, whose own
+search is English only and hard to browse.
+
+- **Search in Russian.** Head names, tags and collections are in English. A
+  Russian query word is stemmed (Snowball) and looked up in a dictionary of
+  about 3,000 words: those most often found in the names, tags and
+  collections, plus builders' everyday objects. So «стулья», «красный цветок»
+  or «железная дорога» find what their English words find. A word that is
+  still being typed matches the dictionary words it starts. Names nobody
+  translated are tried in Latin letters, and a query typed in the wrong
+  keyboard layout («cnek») is read in the other one («стул»). A number finds
+  the head with that id.
+- **City selections** for BuildTheEarth streets, in the Collections tab next
+  to the project standards: mini blocks (344 heads, one for every full block
+  of the game the catalogue has: the head of that name closest in colour to
+  the block, captioned with its name in the Russian game, in five groups:
+  wood, stone and others, concrete, terracotta, wool), letters (the
+  catalogue's 58 fonts, each a set of letters, digits and signs on one
+  coloured or material background, in two groups; each lists the full
+  Russian alphabet first, where the Latin head stands in for А, В, Е, К, М,
+  Н, О, Р, С, Т, Х that the fonts leave out, then Latin letters, digits and
+  signs, each captioned with its character), road signs, traffic lights, road and pavement
+  (cones, hydrants, parking meters, crossings), street lamps, bins, post,
+  boxes and crates, things on walls (air conditioners, cameras, vents, pipes,
+  clocks), street furniture, potted plants, vehicles, birds and flags. They
+  are read-only like the standards: copy all their commands, share or export
+  them, or save one to your collections to add and drop heads. Each is a
+  list of name phrases with exclusions in `heads/themes.js`.
+- **Ranking for builders**: among equally good matches, decoration comes
+  before characters and letters. A Russian word that the dictionary has in
+  exactly that form keeps to its own translations («голубь» is a pigeon, not
+  «голубой»), and English phrases are translated whole («светофор» → traffic
+  light, «мусорка» → trash can, recycling bin…).
+- **Filters**: the catalogue's categories and collections, named in Russian
+  too.
+- **Commands**: `/hdb give <id>` for the plugin, or vanilla `/give` with the
+  texture for 1.20.5+, 1.16–1.20.4, 1.13–1.15 and 1.12.2. Vanilla commands
+  before 1.20.5 are longer than the 256 characters the chat takes; the
+  details of a head say so, and they work from a command block.
+- **Collections.** The + on a card adds the head to the chosen collection.
+  Collections are kept in the browser; a collection can be copied as one
+  command per line, shared as a link (`#c=<name>~<ids>`) or exported to a
+  `.json` file with the heads' ids and names.
+- **Sharing and keeping**, at the top of the Collections tab: import `.json`
+  files (several at once, or dropped anywhere on the page), paste links or
+  the text of a file (handy in a chat), and export all one's collections to
+  one file as a backup or to move them to another computer. That file has
+  the format of `standards.json`. An import that is already there is skipped,
+  so a file imported twice changes nothing; a different collection with a
+  taken name gets a number. A link opened while the page is open shows up at
+  once under "Shared with you".
+- **Lettering.** Type a word or a sign and pick one of the letter fonts: the
+  tab shows it in heads and gives one vanilla `/give` of a shulker box with
+  the letters in reading order (a space leaves a slot empty, a new line
+  starts a row; 27 slots a box), in the game version chosen above, and the
+  `/hdb give` commands, one per different head, with an amount when a
+  nickname is given (the plugin takes an amount only after a player name).
+  Such a box command is longer than the chat takes and goes in a command
+  block. Cyrillic letters a font lacks are taken from their Latin twins.
+- **Ids of heads already in the world.** `/hdb info` only knows heads that
+  HeadDB 2 gave and that are still items, so placed heads are found by
+  their texture instead, which is the same in the world and in the
+  catalogue. "Find ids of heads from the game" takes an Axiom blueprint
+  (`.bp`, saved on the player's own computer), a WorldEdit schematic
+  (`//copy`, `//schem save`), a Litematica or structure block file, or
+  pasted text: F3+I lines (the game puts the texture in them only for
+  players allowed to read block data), `/give` and `/setblock` commands,
+  texture values, links and hashes. The heads it finds become a collection
+  to save, copy or share; textures that are not in the catalogue (a
+  server's own heads) are counted, and their vanilla `/give` commands can
+  be copied. Schematic files dropped on the page go the same way.
+- **Project standards**: the collections in `heads/standards.json` are shown
+  to everyone, read-only, and can be saved as one's own. To add one, export a
+  collection and move it into the file:
+
+```json
+{
+  "collections": [
+    {
+      "name": "Street",
+      "description": "What goes on a street.",
+      "heads": [{ "id": 18462, "name": "Flower (red)" }, 81828]
+    }
+  ]
+}
+```
+
+A head is an id, or an object with an `id`; its `name`, if any, captions the
+head on the cards instead of the catalogue name (a head listed twice gets
+both captions). A head the catalogue lacks, such as one the project drew
+itself, is an object with a `texture` (the hash or the skin URL) instead of
+an `id`: it is shown as "not in HeadDB" and given by vanilla `/give`, since
+`/hdb give` cannot give it; links carry it as `_<hash>`. The standards now
+hold the project's road signs in the eight groups of the Russian traffic
+rules, read from the signs wall (blueprint `znaki_1`): 172 heads, each
+captioned from the sign next to it, 7 of them custom; and the custom
+heads of the wall "Кастомные головы Егор_Swan" (blueprints `znaki_2` and
+`znaki_3`), in the wall's order: 12 shop signs and 21 road signs and plates.
+
+The catalogue is read the way the plugin reads it: a manifest at
+`data.headsdb.com` names the current files, which are Zstandard-compressed
+JSON (about 5 MB) with a size and a SHA-256 each. The page checks both,
+decompresses them with [fzstd](https://github.com/101arrowz/fzstd) and keeps
+them in the browser's Cache Storage, so the next visit only fetches the
+manifest. Ids therefore match `/hdb give` on a server with HeadDB 2 (Paper,
+Folia). Pictures are the skins from `textures.minecraft.net`, drawn as the
+game draws a head in the inventory.
+
+```
+heads/
+  index.html, style.css   page
+  app.js                  UI: search, cards, details, collections
+  strings.js              UI strings (en/ru), Russian names of categories and collections
+  worker.js               holds the catalogue and answers searches off the UI thread
+  catalog.js              downloads, checks, caches and decompresses the catalogue
+  search.js               index, Russian stemmer, keyboard layout, transliteration
+  dictionary.js           Russian words for the catalogue's English words
+  themes.js               city selections for BuildTheEarth
+  textures.js             head textures in pasted text and structure files (NBT)
+  commands.js             /hdb give and /give for each game version
+  render.js               a head as a cube, from its skin
+  standards.json          the project's collections
+  vendor/fzstd.js         Zstandard decoder (MIT)
+```
+
+To add Russian words, add them to the line of the English word in
+`dictionary.js` (`english русское русское`); any form of a word will do, since
+both sides are stemmed. An English phrase is written with `_`
+(`traffic_light светофор`).
 
 ## Image2Banners
 Converts an image into banner art: for every banner slot (1 block wide, 2 blocks

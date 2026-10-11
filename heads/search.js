@@ -1,0 +1,444 @@
+// Search over the head catalogue: an index of the words in names, tags and
+// collections, queried in English or Russian. Russian words are stemmed and
+// looked up in the dictionary (dictionary.js), which turns them into the
+// English words the catalogue is written in.
+
+// ---------- text ----------
+const CYRILLIC = /[а-яё]/;
+const LATIN = /[a-z]/;
+
+/** Lower case, ё as е, everything that is not a letter or digit a space. */
+export function normalize(text) {
+  return text.toLowerCase().replace(/ё/g, "е").replace(/'s\b/g, "").replace(/[^a-z0-9а-яÀ-ɏ]+/g, " ").trim();
+}
+
+export const words = (text) => normalize(text).split(" ").filter(Boolean);
+
+// ---------- Russian stemmer (Snowball) ----------
+const VOWELS = "аеиоуыэюя";
+const PERFECTIVE_1 = ["вшись", "вши", "в"];
+const PERFECTIVE_2 = ["ившись", "ывшись", "ивши", "ывши", "ив", "ыв"];
+const REFLEXIVE = ["ся", "сь"];
+const ADJECTIVE = ["ими", "ыми", "его", "ого", "ему", "ому", "ее", "ие", "ые", "ое", "ей", "ий", "ый", "ой", "ем", "им",
+  "ым", "ом", "их", "ых", "ую", "юю", "ая", "яя", "ою", "ею"];
+const PARTICIPLE_1 = ["ем", "нн", "вш", "ющ", "щ"];
+const PARTICIPLE_2 = ["ивш", "ывш", "ующ"];
+const VERB_1 = ["ете", "йте", "ешь", "нно", "ла", "на", "ли", "ем", "ло", "но", "ет", "ют", "ны", "ть", "й", "л", "н"];
+const VERB_2 = ["ейте", "уйте", "ила", "ыла", "ена", "ите", "или", "ыли", "ило", "ыло", "ено", "ует", "уют", "ены", "ить",
+  "ыть", "ишь", "ей", "уй", "ил", "ыл", "им", "ым", "ен", "ят", "ит", "ыт", "ую", "ю"];
+const NOUN = ["иями", "ями", "ами", "ией", "иям", "ием", "иях", "ев", "ов", "ие", "ье", "еи", "ии", "ей", "ой", "ий", "ям",
+  "ем", "ам", "ом", "ах", "ях", "ию", "ью", "ия", "ья", "а", "е", "и", "й", "о", "у", "ы", "ь", "ю", "я"];
+const SUPERLATIVE = ["ейше", "ейш"];
+const DERIVATIONAL = ["ость", "ост"];
+
+/** Start of the region after the first vowel, and of R2, as Snowball defines them. */
+function regions(word) {
+  const after = (from) => {
+    for (let i = from; i < word.length - 1; i++) {
+      if (VOWELS.includes(word[i]) && !VOWELS.includes(word[i + 1])) return i + 2;
+    }
+    return word.length;
+  };
+  let rv = word.length;
+  for (let i = 0; i < word.length; i++) if (VOWELS.includes(word[i])) { rv = i + 1; break; }
+  const r1 = after(0);
+  return { rv, r2: after(r1) };
+}
+
+/** The longest ending from the list that the word has after `start`; with `afterAorYa`, only one that follows а or я. */
+function ending(word, start, list, afterAorYa = false) {
+  let best = "";
+  for (const suffix of list) {
+    if (suffix.length <= best.length || !word.endsWith(suffix) || word.length - suffix.length < start) continue;
+    if (afterAorYa) {
+      const before = word[word.length - suffix.length - 1];
+      if ((before !== "а" && before !== "я") || word.length - suffix.length - 1 < start) continue;
+    }
+    best = suffix;
+  }
+  return best;
+}
+
+const cut = (word, suffix) => word.slice(0, word.length - suffix.length);
+
+export function stemRu(input) {
+  let word = input.replace(/ё/g, "е");
+  const { rv, r2 } = regions(word);
+  if (rv >= word.length) return word;
+  // Step 1: a perfective gerund, or else a reflexive ending followed by an adjective, a verb or a noun ending.
+  let suffix = ending(word, rv, PERFECTIVE_1, true) || ending(word, rv, PERFECTIVE_2);
+  if (suffix) word = cut(word, suffix);
+  else {
+    suffix = ending(word, rv, REFLEXIVE);
+    if (suffix) word = cut(word, suffix);
+    const adjective = ending(word, rv, ADJECTIVE);
+    if (adjective) {
+      word = cut(word, adjective);
+      const participle = ending(word, rv, PARTICIPLE_1, true) || ending(word, rv, PARTICIPLE_2);
+      if (participle) word = cut(word, participle);
+    } else {
+      const verb = ending(word, rv, VERB_1, true) || ending(word, rv, VERB_2);
+      if (verb) word = cut(word, verb);
+      else {
+        const noun = ending(word, rv, NOUN);
+        if (noun) word = cut(word, noun);
+      }
+    }
+  }
+  // Step 2: a final и.
+  if (word.endsWith("и") && word.length - 1 >= rv) word = word.slice(0, -1);
+  // Step 3: a derivational ending in R2.
+  const derivational = ending(word, r2, DERIVATIONAL);
+  if (derivational) word = cut(word, derivational);
+  // Step 4: нн to н, a superlative ending, or a soft sign.
+  if (word.endsWith("нн") && word.length - 1 > rv) return word.slice(0, -1);
+  const superlative = ending(word, rv, SUPERLATIVE);
+  if (superlative) {
+    word = cut(word, superlative);
+    return word.endsWith("нн") ? word.slice(0, -1) : word;
+  }
+  if (word.endsWith("ь") && word.length - 1 >= rv) word = word.slice(0, -1);
+  return word;
+}
+
+/** A crude English stem: enough for plural forms to meet their singular. */
+export function stemEn(word) {
+  if (word.length > 4 && word.endsWith("ies")) return word.slice(0, -3) + "y";
+  if (word.length > 4 && /(ches|shes|sses|xes)$/.test(word)) return word.slice(0, -2);
+  if (word.length > 3 && word.endsWith("s") && !word.endsWith("ss")) return word.slice(0, -1);
+  return word;
+}
+
+// ---------- keyboard layout and transliteration ----------
+const QWERTY = "qwertyuiop[]asdfghjkl;'zxcvbnm,.`";
+const JCUKEN = "йцукенгшщзхъфывапролджэячсмитьбюё";
+
+/** Text typed with the other keyboard layout, as it was meant: "cnek" → "стул", "сфе" → "cat". */
+export function switchLayout(text) {
+  const lower = text.toLowerCase();
+  const toRussian = !CYRILLIC.test(lower);
+  const [from, to] = toRussian ? [QWERTY, JCUKEN] : [JCUKEN, QWERTY];
+  return [...lower].map((c) => { const i = from.indexOf(c); return i < 0 ? c : to[i]; }).join("");
+}
+
+const TRANSLIT = {
+  а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ж: "zh", з: "z", и: "i", й: "y", к: "k", л: "l", м: "m", н: "n",
+  о: "o", п: "p", р: "r", с: "s", т: "t", у: "u", ф: "f", х: "h", ц: "ts", ч: "ch", ш: "sh", щ: "sch", ъ: "", ы: "y",
+  ь: "", э: "e", ю: "yu", я: "ya",
+};
+/** A Russian word spelled in Latin letters, for names the dictionary does not know. */
+export const transliterate = (word) => [...word].map((c) => TRANSLIT[c] ?? c).join("");
+
+// ---------- dictionary ----------
+/**
+ * Lines "english русское русское" into lookups: the exact Russian word form
+ * and its stem, each → the English words it translates. An English phrase is
+ * written with "_" ("traffic_light"): a head's name must have all its words.
+ */
+export function parseDictionary(text) {
+  const map = new Map(), forms = new Map();
+  const add = (table, key, english) => {
+    if (!table.has(key)) table.set(key, new Set());
+    table.get(key).add(english);
+  };
+  for (const line of text.split("\n")) {
+    const [entry, ...russian] = line.trim().toLowerCase().split(/\s+/);
+    if (!entry || !russian.length) continue;
+    const english = entry.replace(/_/g, " ");
+    for (const ru of russian) {
+      for (const part of ru.replace(/ё/g, "е").split("-")) {
+        if (part.length < 2) continue;
+        add(forms, part, english);
+        add(map, stemRu(part), english);
+      }
+    }
+  }
+  const stems = [...map.keys()].sort();
+  return { map, forms, stems };
+}
+
+// ---------- sorted word lists ----------
+/** Index of the first word in a sorted list that is not less than `prefix`. */
+function lowerBound(list, prefix) {
+  let lo = 0, hi = list.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (list[mid] < prefix) lo = mid + 1; else hi = mid;
+  }
+  return lo;
+}
+
+/** The words of a sorted list that start with `prefix`, at most `limit` of them. */
+function withPrefix(list, prefix, limit = 400) {
+  const out = [];
+  for (let i = lowerBound(list, prefix); i < list.length && out.length < limit && list[i].startsWith(prefix); i++) out.push(list[i]);
+  return out;
+}
+
+// ---------- index ----------
+// Where a word is found counts towards the score: in the name it weighs most.
+const WHERE = { name: 0, meta: 1 };
+const SCORE = { exact: [10, 4], prefix: [6, 2] };
+
+/**
+ * Build the index. `heads` are catalogue records; `labels` gives display names
+ * for tag, collection and category ids, whose words are searched too.
+ */
+export function buildIndex(heads, labels = {}) {
+  const postings = new Map(); // word → [head numbers in the name, head numbers in tags/collections]
+  const add = (word, where, n) => {
+    let entry = postings.get(word);
+    if (!entry) postings.set(word, entry = [[], []]);
+    const list = entry[where];
+    if (list[list.length - 1] !== n) list.push(n);
+  };
+  const labelWords = new Map();
+  const wordsOf = (id) => {
+    if (!labelWords.has(id)) labelWords.set(id, words(`${labels[id] || ""} ${id.replace(/-/g, " ")}`));
+    return labelWords.get(id);
+  };
+  heads.forEach((head, n) => {
+    for (const word of words(head.name)) add(word, WHERE.name, n);
+    for (const id of [head.category, ...head.tags, ...head.collections]) {
+      if (id) for (const word of wordsOf(id)) add(word, WHERE.meta, n);
+    }
+  });
+  const byId = new Map(heads.map((head, n) => [head.id, n]));
+  return { heads, postings, vocabulary: [...postings.keys()].sort(), byId };
+}
+
+// ---------- queries ----------
+// How a word of the query meets the words of the index: only itself, itself
+// or its plural ("car", "cars" but not "cart"), or every word it starts.
+const EXACT = "exact", PLURAL = "plural", PREFIX = "prefix";
+
+/** How an English word from the dictionary is matched: short words are too often the start of others. */
+const englishMode = (word) => (word.length >= 5 ? PREFIX : PLURAL);
+
+/**
+ * The alternatives a query word stands for: [word or phrase, weight, mode].
+ * `last` is true for the word being typed, which may be unfinished.
+ */
+export function alternatives(token, dictionary, last) {
+  const out = new Map();
+  const put = (word, weight, mode) => {
+    if (!word) return;
+    const key = `${word}|${mode}`;
+    if ((out.get(key)?.[1] ?? 0) < weight) out.set(key, [word, weight, mode]);
+  };
+  if (CYRILLIC.test(token)) {
+    const stem = stemRu(token);
+    // Names written in Russian in the catalogue itself.
+    put(stem, 1, PREFIX);
+    // The word exactly as the dictionary has it decides between words with one stem: «голубь» is not «голубой».
+    const exact = dictionary.forms.get(token);
+    for (const english of exact || dictionary.map.get(stem) || []) put(english, 1, englishMode(english));
+    // A word still being typed, or a form the stemmer leaves longer: stems that start with it.
+    if (!exact && stem.length >= 3) {
+      for (const longer of withPrefix(dictionary.stems, stem, 60)) {
+        if (longer === stem) continue;
+        for (const english of dictionary.map.get(longer)) put(english, last ? 0.7 : 0.5, englishMode(english));
+      }
+    }
+    // Names nobody translated: try them in Latin letters.
+    if (token.length >= 4) put(transliterate(stem), 0.4, PREFIX);
+  } else {
+    put(token, 1, PREFIX);
+    const stem = stemEn(token);
+    if (stem !== token) put(stem, 0.9, PREFIX);
+  }
+  return [...out.values()];
+}
+
+/** The index words a query word meets, each with whether it is the word itself. */
+function wordsFor(index, word, mode) {
+  if (mode === PREFIX && word.length >= 2) return withPrefix(index.vocabulary, word).map((w) => [w, w === word]);
+  const found = [];
+  for (const w of mode === PLURAL ? [word, `${word}s`, `${word}es`] : [word]) if (index.postings.has(w)) found.push([w, true]);
+  return found;
+}
+
+/** Heads whose names have every word of the phrase: a Set of head numbers. */
+function namesWith(index, phrase, mode = null) {
+  let heads = null;
+  for (const word of phrase.split(" ")) {
+    const here = new Set();
+    for (const [w] of wordsFor(index, word, mode || englishMode(word))) for (const n of index.postings.get(w)[WHERE.name]) here.add(n);
+    heads = heads ? new Set([...heads].filter((n) => here.has(n))) : here;
+    if (!heads.size) break;
+  }
+  return heads || new Set();
+}
+
+/** Score of every head that matches one query word: head number → score. */
+function matchToken(index, alts) {
+  const scores = new Map();
+  const raise = (n, score) => { if ((scores.get(n) ?? 0) < score) scores.set(n, score); };
+  for (const [word, weight, mode] of alts) {
+    if (word.includes(" ")) {
+      // A phrase counts as a whole word of the name.
+      for (const n of namesWith(index, word)) raise(n, SCORE.exact[WHERE.name] * weight);
+      continue;
+    }
+    for (const [w, itself] of wordsFor(index, word, mode)) {
+      const kind = itself || mode === PLURAL ? "exact" : "prefix";
+      const [inName, inMeta] = index.postings.get(w);
+      for (const [list, where] of [[inName, WHERE.name], [inMeta, WHERE.meta]]) {
+        const score = SCORE[kind][where] * weight;
+        for (const n of list) raise(n, score);
+      }
+    }
+  }
+  return scores;
+}
+
+// Builders look for objects more often than for characters: among equally
+// good matches, decoration comes first and people and letters last.
+const CATEGORY_WEIGHT = {
+  decoration: 1.2, blocks: 1.1, plants: 1.1, "food-and-drinks": 1.05, animals: 1.05, flags: 1.05,
+  alphabet: 0.85, humans: 0.85, humanoid: 0.85, monsters: 0.9, emojis: 0.9,
+};
+
+/**
+ * Find heads. Returns the head numbers, best first. `filter(head number)`
+ * narrows the result (category, collection, selection). A number alone also
+ * finds the head with that id.
+ */
+export function search(index, dictionary, query, filter = null) {
+  const tokens = words(query);
+  const keep = (n) => !filter || filter(n);
+  if (!tokens.length) {
+    const all = [];
+    for (let n = 0; n < index.heads.length; n++) if (keep(n)) all.push(n);
+    return all;
+  }
+  let total = null;
+  tokens.forEach((token, i) => {
+    const last = i === tokens.length - 1;
+    const scores = /^\d+$/.test(token) ? matchNumber(index, token) : matchToken(index, alternatives(token, dictionary, last));
+    if (total === null) total = scores;
+    else {
+      const next = new Map();
+      for (const [n, score] of total) if (scores.has(n)) next.set(n, score + scores.get(n));
+      total = next;
+    }
+  });
+  const heads = index.heads;
+  const found = [];
+  for (const [n, score] of total) if (keep(n)) found.push([n, score * (CATEGORY_WEIGHT[heads[n].category] ?? 1)]);
+  found.sort((a, b) => b[1] - a[1] || heads[a[0]].name.length - heads[b[0]].name.length || heads[a[0]].id - heads[b[0]].id);
+  return found.map(([n]) => n);
+}
+
+/** Heads named exactly so, the part in brackets aside. */
+function named(index, name) {
+  if (!index.byBareName) {
+    index.byBareName = new Map();
+    index.heads.forEach((head, n) => {
+      const bare = normalize(head.name.replace(/\(.*?\)/g, ""));
+      if (!index.byBareName.has(bare)) index.byBareName.set(bare, []);
+      index.byBareName.get(bare).push(n);
+    });
+  }
+  return index.byBareName.get(name) || [];
+}
+
+/** The heads of a selection from themes.js, in the order of its terms. */
+export function themeHeads(index, theme) {
+  if (theme.heads) return theme.heads.map(([id]) => index.byId.get(id)).filter((n) => n !== undefined);
+  const heads = index.heads;
+  const allowed = (n) => !theme.categories || theme.categories.includes(heads[n].category);
+  const exclude = (theme.exclude || []).map((phrase) => ` ${normalize(phrase)} `);
+  const clean = (n) => !exclude.length || !exclude.some((phrase) => ` ${normalize(heads[n].name)} `.includes(phrase));
+  const byName = (a, b) => heads[a].name.length - heads[b].name.length || heads[a].id - heads[b].id;
+  const seen = new Set(), out = [];
+  const groups = theme.terms.length
+    ? theme.terms.map((term) => (term.startsWith("=") ? named(index, normalize(term)) : [...namesWith(index, normalize(term))]))
+    : [heads.map((_, n) => n)];
+  for (const group of groups) {
+    for (const n of group.filter((n) => !seen.has(n) && allowed(n) && clean(n)).sort(byName)) {
+      seen.add(n);
+      out.push(n);
+    }
+  }
+  return out;
+}
+
+/** A number: the head with that id first, then names that contain the number. */
+function matchNumber(index, token) {
+  const scores = matchToken(index, [[token, 1, false]]);
+  const n = index.byId.get(Number(token));
+  if (n !== undefined) scores.set(n, 100);
+  return scores;
+}
+
+/** The query typed in the other keyboard layout, when it finds nothing as typed. */
+export function layoutFix(query) {
+  return LATIN.test(query) || CYRILLIC.test(query) ? switchLayout(query) : null;
+}
+
+// ---------- letter fonts ----------
+const RUSSIAN = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ";
+// Cyrillic letters the catalogue's fonts leave out, because the Latin head looks the same.
+const LOOKALIKE = { А: "A", В: "B", Е: "E", К: "K", М: "M", Н: "H", О: "O", Р: "P", С: "C", Т: "T", Х: "X" };
+// Signs shown as themselves rather than by name.
+const SIGNS = {
+  "question mark": "?", "exclamation mark": "!", "exclamation": "!", "dot": ".", "period": ".", "full stop": ".",
+  "comma": ",", "colon": ":", "semicolon": ";", "plus": "+", "minus": "−", "dash": "–", "hyphen": "-", "equals": "=",
+  "slash": "/", "backslash": "\\", "underscore": "_", "apostrophe": "'", "quote": "\"", "quotation mark": "\"",
+  "ampersand": "&", "percent": "%", "octothorpe": "#", "hashtag": "#", "hash": "#", "at": "@", "at sign": "@",
+  "dollar": "$", "dollar sign": "$", "percent sign": "%", "asterisk": "*", "heart": "♥", "star": "★", "ellipses": "…", "ellipsis": "…",
+  "multiply": "×", "multiplication": "×", "divide": "÷", "division": "÷", "caret": "^", "tilde": "~",
+  "arrow up": "↑", "arrow down": "↓", "arrow left": "←", "arrow right": "→", "up": "↑", "down": "↓", "left": "←", "right": "→",
+  "blank": "␣", "space": "␣",
+};
+
+/**
+ * The heads of a letter font, in reading order, with the character each
+ * stands for: [head number, caption]. The font's name is the part of the
+ * head names before the letter ("Red Я", "Oak Wood A").
+ */
+export function fontHeads(index, theme) {
+  const heads = [];
+  index.heads.forEach((head, n) => { if (head.tags.includes(theme.font)) heads.push(n); });
+  // The name before the character: the most common start of names that end in a single letter.
+  const starts = new Map();
+  for (const n of heads) {
+    const match = /^(.*\S)\s+[A-Za-zА-ЯЁа-яё0-9]$/.exec(index.heads[n].name.replace(/\s*\(.*?\)\s*$/, ""));
+    if (match) starts.set(match[1], (starts.get(match[1]) || 0) + 1);
+  }
+  const prefix = [...starts].sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+  const items = heads.map((n) => {
+    const name = index.heads[n].name;
+    const variant = /\((.*?)\)\s*$/.exec(name)?.[1].toLowerCase() || "";
+    let rest = name.replace(/\s*\(.*?\)\s*$/, "");
+    rest = prefix && rest.startsWith(prefix) ? rest.slice(prefix.length).trim() : rest;
+    const lower = variant.includes("lowercase");
+    let kind, order, caption;
+    if (/^[A-Z]$/.test(rest)) { kind = lower ? 2 : 1; order = rest.charCodeAt(0); caption = lower ? rest.toLowerCase() : rest; }
+    else if (/^[А-ЯЁ]$/.test(rest)) { kind = 0; order = RUSSIAN.indexOf(rest); caption = rest; }
+    else if (/^\d+$/.test(rest)) { kind = 3; order = Number(rest); caption = rest; }
+    else {
+      kind = 4; order = 0;
+      const sign = SIGNS[rest.toLowerCase()] || SIGNS[`${rest} ${variant}`.toLowerCase()];
+      caption = sign || (variant && !lower && !variant.includes("uppercase") ? `${rest} (${variant})` : rest);
+    }
+    return { n, kind, order, caption, name };
+  });
+  // The Russian alphabet in full: the Latin twin stands in for a letter the font leaves out.
+  const latin = new Map(items.filter((i) => i.kind === 1).map((i) => [i.caption, i]));
+  const russian = new Map(items.filter((i) => i.kind === 0).map((i) => [i.caption, i]));
+  const out = [], used = new Set();
+  const take = (item, caption) => { if (!used.has(item.n)) { used.add(item.n); out.push([item.n, caption]); } };
+  if (russian.size) {
+    for (const letter of RUSSIAN) {
+      const own = russian.get(letter), twin = latin.get(LOOKALIKE[letter]);
+      if (own) take(own, letter);
+      else if (twin) take(twin, `${letter} · ${twin.caption}`);
+    }
+  }
+  const rest = items.filter((i) => !used.has(i.n))
+    .sort((a, b) => a.kind - b.kind || a.order - b.order || a.caption.localeCompare(b.caption) || a.n - b.n);
+  for (const item of rest) take(item, item.caption);
+  return out;
+}
