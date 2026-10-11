@@ -1,7 +1,7 @@
 // Heads: search the HeadDB catalogue in Russian or English, keep collections
 // of heads and copy the commands that give them in the game.
 import { bindLanguageSelect, getLang } from "../shared/i18n.js";
-import { CHAT_LIMIT, command, FORMATS, textureValue } from "./commands.js";
+import { BOX_SLOTS, boxCommand, CHAT_LIMIT, command, FORMATS, hdbCommands, textureValue } from "./commands.js";
 import { drawHead, loadSkin } from "./render.js";
 import { NAMES, STRINGS } from "./strings.js";
 import { GROUPS, THEMES } from "./themes.js";
@@ -9,6 +9,7 @@ import { findInFile, findInText } from "./textures.js";
 
 const COLLECTIONS_KEY = "heads.collections", TARGET_KEY = "heads.target", FORMAT_KEY = "heads.format";
 const OPEN_GROUPS_KEY = "heads.openGroups";
+const WORD_KEY = "heads.word", WORD_FONT_KEY = "heads.wordFont", PLAYER_KEY = "heads.player";
 // Cards shown at a time; "show more" adds as many again.
 const PAGE = 60;
 // Size of a head picture on a card, in CSS pixels.
@@ -54,6 +55,7 @@ function retranslate() {
   for (const el of document.querySelectorAll("[data-i18n-title]")) el.title = t(el.dataset.i18nTitle);
   document.title = `Heads — ${t("subtitle")}`;
   $("query").placeholder = t("placeholder");
+  $("wordText").placeholder = t("wordPlaceholder");
   $("idText").placeholder = t("idPlaceholder");
   if (state.status) $("status").textContent = t(...state.status);
   fillFormats();
@@ -62,6 +64,8 @@ function retranslate() {
   renderSource();
   renderResults();
   renderCollections();
+  fillWordFonts();
+  if (!$("wordView").hidden) renderWord();
   if ($("details").open) renderDetails();
 }
 
@@ -100,6 +104,7 @@ async function loadCatalog() {
     state.tagNames = new Map(state.meta.tags.map((tag) => [tag.id, tag.name]));
     $("loading").hidden = true;
     fillFilters();
+    fillWordFonts();
     renderSource();
     await runSearch();
     renderCollections();
@@ -313,6 +318,8 @@ function city() {
     .map((item) => [item.id, new Map(item.heads.map((id, i) => [id, item.captions[i]]))]));
   const lang = state.lang === "ru" ? 1 : 0;
   return THEMES.filter((theme) => heads.get(theme.id)?.length).map((theme) => ({
+    id: theme.id,
+    font: theme.font || null,
     name: theme.name[lang],
     short: theme.short?.[lang] || theme.name[lang],
     group: theme.group,
@@ -405,12 +412,12 @@ function renderDetails() {
 
 // ---------- collections ----------
 function showTab(name) {
-  const catalog = name === "catalog";
-  $("tabCatalog").setAttribute("aria-selected", catalog);
-  $("tabCollections").setAttribute("aria-selected", !catalog);
-  $("catalogView").hidden = !catalog;
-  $("collectionsView").hidden = catalog;
-  if (!catalog) renderCollections();
+  for (const [tab, view, id] of [["tabCatalog", "catalogView", "catalog"], ["tabCollections", "collectionsView", "collections"], ["tabWord", "wordView", "word"]]) {
+    $(tab).setAttribute("aria-selected", name === id);
+    $(view).hidden = name !== id;
+  }
+  if (name === "collections") renderCollections();
+  if (name === "word") renderWord();
 }
 
 /** The collection being shown: { name, heads, description }. */
@@ -573,6 +580,105 @@ async function headsOf(ids) {
 async function copyAll(collection) {
   const heads = await headsOf(collection.heads);
   await copy(heads.map((head) => command(head, format())).join("\n"), "statusCopiedAll", heads.length);
+}
+
+// ---------- lettering ----------
+/** The letter fonts, grouped as in the collections. */
+function fillWordFonts() {
+  const fonts = city().filter((c) => c.font);
+  const select = $("wordFont");
+  const value = select.value || load(WORD_FONT_KEY) || "font-white";
+  select.replaceChildren(...GROUPS.filter((g) => fonts.some((f) => f.group === g.id)).map((g) => {
+    const group = Object.assign(document.createElement("optgroup"), { label: g.name[state.lang === "ru" ? 1 : 0] });
+    group.append(...fonts.filter((f) => f.group === g.id).map((f) => new Option(f.short, f.id)));
+    return group;
+  }));
+  select.value = fonts.some((f) => f.id === value) ? value : fonts[0]?.id || "";
+}
+
+/** Character → head id in a font: each caption names the characters its head stands for ("А · A"). */
+function fontCharacters(font) {
+  const map = new Map();
+  for (const id of font.heads) {
+    for (const ch of (font.captions?.get(id) || "").split(" · ")) if (ch && !map.has(ch)) map.set(ch, id);
+  }
+  return map;
+}
+
+// Cyrillic letters drawn the same as Latin ones.
+const LOOKALIKE = { А: "A", В: "B", Е: "E", К: "K", М: "M", Н: "H", О: "O", Р: "P", С: "C", Т: "T", Х: "X", У: "Y" };
+
+let wordSeq = 0;
+
+async function renderWord() {
+  const font = city().find((c) => c.id === $("wordFont").value);
+  const text = $("wordText").value.replace(/\r/g, "");
+  const seq = ++wordSeq;
+  if (!font || !text.trim()) {
+    $("wordPreview").replaceChildren(Object.assign(document.createElement("p"), { className: "empty", textContent: t("wordEmpty") }));
+    $("wordMissing").hidden = true;
+    $("wordOutput").hidden = true;
+    return;
+  }
+  const chars = fontCharacters(font);
+  const idOf = (ch) => {
+    const upper = ch.toUpperCase();
+    // A Latin font still has the Cyrillic letters that look like Latin ones; Ё can stand in as Е.
+    return chars.get(ch) ?? chars.get(upper) ?? chars.get(LOOKALIKE[upper]) ?? (upper === "Ё" ? chars.get("Е") ?? chars.get("E") : undefined);
+  };
+  const lines = text.split("\n");
+  const ids = [...new Set([...text].map(idOf).filter((id) => id !== undefined))];
+  await headsOf(ids);
+  if (seq !== wordSeq) return;
+  // The picture of the text, line by line.
+  const missing = new Set();
+  $("wordPreview").replaceChildren(...lines.map((line) => {
+    const row = Object.assign(document.createElement("div"), { className: "word-line" });
+    for (const ch of line) {
+      const id = idOf(ch);
+      if (ch === " ") row.append(Object.assign(document.createElement("span"), { className: "word-gap" }));
+      else if (id === undefined) {
+        missing.add(ch);
+        row.append(Object.assign(document.createElement("span"), { className: "word-missing", textContent: ch }));
+      } else {
+        const canvas = headCanvas(state.heads.get(id), 44);
+        canvas.title = ch;
+        row.append(canvas);
+      }
+    }
+    return row;
+  }));
+  $("wordMissing").hidden = !missing.size;
+  $("wordMissing").textContent = t("wordMissing", [...missing].join(" "));
+  // Shulker boxes: the characters in reading order, a space leaves a slot, a new line starts a row of nine.
+  const boxes = [[]];
+  let slot = 0;
+  lines.forEach((line, i) => {
+    if (i > 0 && slot % 9) slot += 9 - (slot % 9);
+    for (const ch of line) {
+      if (slot >= BOX_SLOTS) { boxes.push([]); slot = 0; }
+      const id = idOf(ch);
+      if (ch !== " " && id !== undefined) boxes[boxes.length - 1].push([slot, state.heads.get(id)]);
+      if (ch === " " || id !== undefined) slot++;
+    }
+  });
+  const filled = boxes.filter((box) => box.length);
+  const version = format() === "hdb" ? "1.20.5" : format();
+  $("wordBoxHint").textContent = t("wordBoxHint", t(`format_${version}`).replace(/^\/give — /, ""));
+  $("wordBoxes").replaceChildren(...filled.map((box, i) => {
+    const text = boxCommand(box, format());
+    return commandRow(t("wordBox", i + 1, filled.length), text, text.length > CHAT_LIMIT ? t("tooLong", text.length) : "");
+  }));
+  // HeadDB: each different head once, with how many the text needs.
+  const counts = new Map();
+  for (const ch of text) {
+    const id = idOf(ch);
+    if (ch.trim() && id !== undefined) counts.set(id, (counts.get(id) || 0) + 1);
+  }
+  const commands = hdbCommands([...counts].map(([id, count]) => [state.heads.get(id), count]), $("wordPlayer").value);
+  $("wordHdbHint").textContent = t("wordHdbHint", counts.size);
+  $("wordHdb").textContent = commands.join("\n");
+  $("wordOutput").hidden = !filled.length;
 }
 
 // ---------- heads from the game ----------
@@ -749,13 +855,31 @@ $("query").addEventListener("keydown", (event) => {
 });
 $("query").addEventListener("focus", () => showTab("catalog"));
 for (const id of ["category", "collection"]) $(id).addEventListener("change", () => { showTab("catalog"); runSearch(); });
-$("format").addEventListener("change", () => store(FORMAT_KEY, format()));
+$("format").addEventListener("change", () => {
+  store(FORMAT_KEY, format());
+  if (!$("wordView").hidden) renderWord();
+});
 $("target").addEventListener("change", () => { store(TARGET_KEY, $("target").value); refreshMarks(); });
 $("more").addEventListener("click", () => runSearch(true));
 $("collectionMore").addEventListener("click", () => { state.shown += PAGE * 2; renderCollection(); });
 $("retry").addEventListener("click", loadCatalog);
 $("tabCatalog").addEventListener("click", () => showTab("catalog"));
 $("tabCollections").addEventListener("click", () => showTab("collections"));
+$("tabWord").addEventListener("click", () => showTab("word"));
+$("wordText").value = load(WORD_KEY) || "";
+$("wordPlayer").value = load(PLAYER_KEY) || "";
+let wordTimer = 0;
+$("wordText").addEventListener("input", () => {
+  store(WORD_KEY, $("wordText").value);
+  clearTimeout(wordTimer);
+  wordTimer = setTimeout(renderWord, 150);
+});
+$("wordFont").addEventListener("change", () => { store(WORD_FONT_KEY, $("wordFont").value); renderWord(); });
+$("wordPlayer").addEventListener("input", () => { store(PLAYER_KEY, $("wordPlayer").value.trim()); renderWord(); });
+$("wordHdbCopy").addEventListener("click", () => {
+  const text = $("wordHdb").textContent;
+  if (text) copy(text, "statusCopiedAll", text.split("\n").length);
+});
 $("newCollection").addEventListener("click", () => {
   const name = prompt(t("namePrompt"), t("defaultName"));
   if (!name?.trim()) return;

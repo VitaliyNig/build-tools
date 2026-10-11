@@ -110,6 +110,17 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
 .checks { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; }
 .check { display: inline-flex; align-items: center; gap: 4px; }
 
+/* Lettering: the text, its picture in heads, and the commands. */
+.word-input { width: 100%; font: 600 20px/1.3 var(--font); letter-spacing: 0.03em; color: inherit; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; }
+.small-input { font: inherit; color: inherit; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; width: 160px; }
+.word-preview { display: flex; flex-direction: column; gap: 6px; padding: 14px; overflow-x: auto; background: var(--canvas); border-radius: var(--radius); }
+.word-line { display: flex; gap: 2px; min-height: 44px; }
+.word-gap { flex: none; width: 22px; }
+.word-missing { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border: 2px dashed var(--danger); border-radius: 6px; color: #fff; font-weight: 700; }
+.word-hdb { margin: 0; max-height: 240px; overflow: auto; padding: 8px 10px; font: 12px/1.5 ui-monospace, Consolas, monospace; background: var(--surface-2); border-radius: 6px; white-space: pre; }
+#wordOutput h3 { margin: 6px 0 0; font-size: 14px; }
+.hint.warning { color: var(--danger); }
+
 /* Pasting links or a file's text. */
 .paste { display: flex; flex-direction: column; gap: 10px; padding: 18px; }
 .paste h2 { margin: 0; font-size: 17px; }

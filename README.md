@@ -354,6 +354,14 @@ search is English only and hard to browse.
   so a file imported twice changes nothing; a different collection with a
   taken name gets a number. A link opened while the page is open shows up at
   once under "Shared with you".
+- **Lettering.** Type a word or a sign and pick one of the letter fonts: the
+  tab shows it in heads and gives one vanilla `/give` of a shulker box with
+  the letters in reading order (a space leaves a slot empty, a new line
+  starts a row; 27 slots a box), in the game version chosen above, and the
+  `/hdb give` commands, one per different head, with an amount when a
+  nickname is given (the plugin takes an amount only after a player name).
+  Such a box command is longer than the chat takes and goes in a command
+  block. Cyrillic letters a font lacks are taken from their Latin twins.
 - **Ids of heads already in the world.** `/hdb info` only knows heads that
   HeadDB 2 gave and that are still items, so placed heads are found by
   their texture instead, which is the same in the world and in the

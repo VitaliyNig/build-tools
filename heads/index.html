@@ -31,6 +31,7 @@
     <nav class="tabs" role="tablist">
       <button type="button" role="tab" id="tabCatalog" aria-selected="true" data-i18n="tabCatalog"></button>
       <button type="button" role="tab" id="tabCollections" aria-selected="false"><span data-i18n="tabCollections"></span> <span class="count" id="collectionsCount"></span></button>
+      <button type="button" role="tab" id="tabWord" aria-selected="false" data-i18n="tabWord"></button>
     </nav>
 
     <section id="catalogView" class="view">
@@ -42,6 +43,28 @@
       <p class="info" id="info"></p>
       <div class="grid" id="grid"></div>
       <button type="button" class="more" id="more" hidden></button>
+    </section>
+
+    <section id="wordView" class="view" hidden>
+      <div class="panel">
+        <input type="text" id="wordText" class="word-input" maxlength="300" spellcheck="false" autocomplete="off">
+        <div class="options">
+          <label class="field"><span data-i18n="wordFont"></span> <select id="wordFont"></select></label>
+          <label class="field"><span data-i18n="wordPlayer"></span> <input type="text" id="wordPlayer" class="small-input" maxlength="16" spellcheck="false" autocomplete="off"></label>
+        </div>
+        <p class="hint" data-i18n="wordHint"></p>
+      </div>
+      <div class="word-preview" id="wordPreview"></div>
+      <p class="hint warning" id="wordMissing" hidden></p>
+      <div class="panel" id="wordOutput" hidden>
+        <h3 data-i18n="wordBoxTitle"></h3>
+        <p class="hint" id="wordBoxHint"></p>
+        <div class="commands" id="wordBoxes"></div>
+        <h3 data-i18n="wordHdbTitle"></h3>
+        <p class="hint" id="wordHdbHint"></p>
+        <div class="row"><button type="button" id="wordHdbCopy" data-i18n="copyAll"></button></div>
+        <pre class="word-hdb" id="wordHdb"></pre>
+      </div>
     </section>
 
     <section id="collectionsView" class="view" hidden>

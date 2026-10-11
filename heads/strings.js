@@ -19,6 +19,27 @@ export const STRINGS = {
   addTo: ["Add to", "Добавлять в"],
   tabCatalog: ["Catalogue", "Каталог"],
   tabCollections: ["Collections", "Коллекции"],
+  tabWord: ["Lettering", "Надпись"],
+  wordPlaceholder: ["Type a word or a sign: БУЛОЧНАЯ, CAFE 24…", "Введите слово или вывеску: БУЛОЧНАЯ, CAFE 24…"],
+  wordFont: ["Letters", "Буквы"],
+  wordPlayer: ["Your nickname (for HeadDB)", "Ваш ник (для HeadDB)"],
+  wordHint: [
+    "Letters come from one font of the catalogue. A space leaves a slot empty, a new line starts a new row of the shulker box.",
+    "Буквы берутся из одного набора каталога. Пробел оставляет пустую ячейку, перевод строки начинает новый ряд в шалкере.",
+  ],
+  wordMissing: [(chars) => `Not in this font: ${chars}`, (chars) => `Нет в этом наборе: ${chars}`],
+  wordBoxTitle: ["One command: a shulker box with the letters", "Одна команда: шалкер с буквами"],
+  wordBoxHint: [
+    (version) => `Vanilla /give for ${version}; the letters lie in the box in reading order. Pick another game version in “Command” above.`,
+    (version) => `Обычный /give для ${version}; буквы лежат в шалкере по порядку. Другую версию игры выберите в поле «Команда» сверху.`,
+  ],
+  wordBox: [(n, total) => `Shulker box ${n} of ${total}`, (n, total) => `Шалкер ${n} из ${total}`],
+  wordHdbTitle: ["HeadDB commands", "Команды HeadDB"],
+  wordHdbHint: [
+    (n) => `${n} different heads. With your nickname a repeated letter takes one command with an amount.`,
+    (n) => `Разных голов: ${n}. С вашим ником повторяющаяся буква выдаётся одной командой с количеством.`,
+  ],
+  wordEmpty: ["Type something above.", "Введите текст выше."],
   loading: [(p) => `Loading the catalogue… ${p}%`, (p) => `Загрузка каталога… ${p}%`],
   indexing: ["Preparing the search…", "Подготовка поиска…"],
   errLoad: [
