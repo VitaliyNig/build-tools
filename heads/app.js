@@ -4,10 +4,11 @@ import { bindLanguageSelect, getLang } from "../shared/i18n.js";
 import { CHAT_LIMIT, command, FORMATS, textureValue } from "./commands.js";
 import { drawHead, loadSkin } from "./render.js";
 import { NAMES, STRINGS } from "./strings.js";
-import { THEMES } from "./themes.js";
+import { GROUPS, THEMES } from "./themes.js";
 import { findInFile, findInText } from "./textures.js";
 
 const COLLECTIONS_KEY = "heads.collections", TARGET_KEY = "heads.target", FORMAT_KEY = "heads.format";
+const OPEN_GROUPS_KEY = "heads.openGroups";
 // Cards shown at a time; "show more" adds as many again.
 const PAGE = 60;
 // Size of a head picture on a card, in CSS pixels.
@@ -308,8 +309,11 @@ function renderResults(from = 0) {
 /** The selections from themes.js as read-only collections, named in the page's language. */
 function city() {
   const heads = new Map((state.meta?.themes || []).map((item) => [item.id, item.heads]));
+  const lang = state.lang === "ru" ? 1 : 0;
   return THEMES.filter((theme) => heads.get(theme.id)?.length).map((theme) => ({
-    name: theme.name[state.lang === "ru" ? 1 : 0],
+    name: theme.name[lang],
+    short: theme.short?.[lang] || theme.name[lang],
+    group: theme.group,
     heads: heads.get(theme.id),
     captions: theme.heads ? new Map(theme.heads) : null,
   }));
@@ -418,9 +422,9 @@ function selected() {
   return state.shared;
 }
 
-function listButton(collection, kind, index) {
-  const button = Object.assign(document.createElement("button"), { type: "button", className: "item" });
-  button.append(Object.assign(document.createElement("span"), { textContent: collection.name }),
+function listButton(collection, kind, index, label = collection.name) {
+  const button = Object.assign(document.createElement("button"), { type: "button", className: "item", title: collection.name });
+  button.append(Object.assign(document.createElement("span"), { textContent: label }),
     Object.assign(document.createElement("span"), { className: "count", textContent: collection.heads.length }));
   button.setAttribute("aria-pressed", state.selected?.kind === kind && state.selected.index === index);
   button.addEventListener("click", () => {
@@ -432,6 +436,37 @@ function listButton(collection, kind, index) {
   return button;
 }
 
+/** Which groups of city selections are open, kept between visits. */
+function loadOpenGroups() {
+  try {
+    const saved = JSON.parse(load(OPEN_GROUPS_KEY));
+    if (Array.isArray(saved)) return new Set(saved);
+  } catch { /* damaged */ }
+  return new Set([GROUPS[0].id]); // on a first visit, the first group is open
+}
+const openGroups = loadOpenGroups();
+
+/** The city selections in collapsible groups, folded or open as they were left. */
+function renderCityGroups() {
+  const all = city();
+  $("cityList").replaceChildren(...GROUPS.map((group) => {
+    const members = all.map((c, i) => [c, i]).filter(([c]) => c.group === group.id);
+    if (!members.length) return null;
+    const box = Object.assign(document.createElement("details"), { className: "group", open: openGroups.has(group.id) });
+    const summary = document.createElement("summary");
+    summary.append(Object.assign(document.createElement("span"), { textContent: group.name[state.lang === "ru" ? 1 : 0] }),
+      Object.assign(document.createElement("span"), { className: "count", textContent: members.length }));
+    const list = Object.assign(document.createElement("div"), { className: "list" });
+    list.append(...members.map(([c, i]) => listButton(c, "city", i, c.short)));
+    box.append(summary, list);
+    box.addEventListener("toggle", () => {
+      if (box.open) openGroups.add(group.id); else openGroups.delete(group.id);
+      store(OPEN_GROUPS_KEY, JSON.stringify([...openGroups]));
+    });
+    return box;
+  }).filter(Boolean));
+}
+
 function renderCollections() {
   $("collectionsCount").textContent = state.collections.length || "";
   if (!selected()) {
@@ -439,7 +474,7 @@ function renderCollections() {
       : state.collections.length ? { kind: "mine", index: 0 } : city().length ? { kind: "city", index: 0 } : null;
   }
   $("cityBox").hidden = !city().length;
-  $("cityList").replaceChildren(...city().map((c, i) => listButton(c, "city", i)));
+  renderCityGroups();
   $("standardsBox").hidden = !state.standards.length;
   $("standardsList").replaceChildren(...state.standards.map((c, i) => listButton(c, "standard", i)));
   $("foundBox").hidden = !state.found;

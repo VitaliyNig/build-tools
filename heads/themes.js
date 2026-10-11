@@ -9,6 +9,14 @@
 // A selection can instead list its `heads` outright, as [id, caption]: the
 // caption replaces the catalogue name on the cards.
 
+// The selections are shown in these groups, in this order; `short` names a
+// selection inside its group.
+export const GROUPS = [
+  { id: "pdd", name: ["Russian road signs", "Знаки ПДД РФ"] },
+  { id: "blocks", name: ["Mini blocks", "Мини-блоки"] },
+  { id: "street", name: ["Street", "Улица"] },
+];
+
 const STREET = ["decoration", "blocks", "miscellaneous"];
 
 export const THEMES = [
@@ -20,6 +28,8 @@ export const THEMES = [
   {
     id: "pdd1",
     name: ["Road signs 1: warning signs", "ПДД 1. Предупреждающие знаки"],
+    group: "pdd",
+    short: ["1. Warning", "1. Предупреждающие"],
     heads: [
       [46599, "1.1 Железнодорожный переезд со шлагбаумом"],
       [46600, "1.2 Железнодорожный переезд без шлагбаума"],
@@ -64,6 +74,8 @@ export const THEMES = [
   {
     id: "pdd2",
     name: ["Road signs 2: priority signs", "ПДД 2. Знаки приоритета"],
+    group: "pdd",
+    short: ["2. Priority", "2. Приоритета"],
     heads: [
       [36210, "2.1 Главная дорога"],
       [54636, "2.2 Конец главной дороги"],
@@ -81,6 +93,8 @@ export const THEMES = [
   {
     id: "pdd3",
     name: ["Road signs 3: prohibitory signs", "ПДД 3. Запрещающие знаки"],
+    group: "pdd",
+    short: ["3. Prohibitory", "3. Запрещающие"],
     heads: [
       [54633, "3.1 Въезд запрещён"],
       [54632, "3.2 Движение запрещено"],
@@ -146,6 +160,8 @@ export const THEMES = [
   {
     id: "pdd4",
     name: ["Road signs 4: mandatory signs", "ПДД 4. Предписывающие знаки"],
+    group: "pdd",
+    short: ["4. Mandatory", "4. Предписывающие"],
     heads: [
       [36114, "4.1.1 Движение прямо"],
       [36112, "4.1.2 Движение направо"],
@@ -167,6 +183,8 @@ export const THEMES = [
   {
     id: "pdd5",
     name: ["Road signs 5: special regulation signs", "ПДД 5. Знаки особых предписаний"],
+    group: "pdd",
+    short: ["5. Special regulation", "5. Особых предписаний"],
     heads: [
       [36383, "5.1 Автомагистраль"],
       [36382, "5.2 Конец автомагистрали"],
@@ -200,6 +218,8 @@ export const THEMES = [
   {
     id: "pdd6",
     name: ["Road signs 6: information signs", "ПДД 6. Информационные знаки"],
+    group: "pdd",
+    short: ["6. Information", "6. Информационные"],
     heads: [
       [49527, "6.3.1 Место для разворота"],
       [46483, "6.4 Парковка"],
@@ -211,6 +231,8 @@ export const THEMES = [
   {
     id: "pdd7",
     name: ["Road signs 7: service signs", "ПДД 7. Знаки сервиса"],
+    group: "pdd",
+    short: ["7. Service", "7. Сервиса"],
     heads: [
       [46487, "7.1 Пункт медицинской помощи"],
       [49514, "7.2 Больница"],
@@ -234,6 +256,8 @@ export const THEMES = [
   {
     id: "blocks-wood",
     name: ["Blocks: wood", "Блоки: дерево"],
+    group: "blocks",
+    short: ["Wood", "Дерево"],
     heads: [
       [41243, "Акациевое бревно"],
       [29423, "Акациевые доски"],
@@ -300,6 +324,8 @@ export const THEMES = [
   {
     id: "blocks-stone",
     name: ["Blocks: stone, ores and others", "Блоки: камень, руды и другие"],
+    group: "blocks",
+    short: ["Stone, ores and others", "Камень, руды и другие"],
     heads: [
       [88020, "Аметистовый блок"],
       [77183, "Древние обломки"],
@@ -509,6 +535,8 @@ export const THEMES = [
   {
     id: "blocks-concrete",
     name: ["Blocks: concrete", "Блоки: бетон и сухой бетон"],
+    group: "blocks",
+    short: ["Concrete", "Бетон и сухой бетон"],
     heads: [
       [8627, "Чёрный бетон"],
       [6100, "Чёрный сухой бетон"],
@@ -547,6 +575,8 @@ export const THEMES = [
   {
     id: "blocks-terracotta",
     name: ["Blocks: terracotta", "Блоки: терракота"],
+    group: "blocks",
+    short: ["Terracotta", "Терракота"],
     heads: [
       [21556, "Чёрная глазурованная керамика"],
       [52938, "Чёрная керамика"],
@@ -586,6 +616,8 @@ export const THEMES = [
   {
     id: "blocks-wool",
     name: ["Blocks: wool", "Блоки: шерсть"],
+    group: "blocks",
+    short: ["Wool", "Шерсть"],
     heads: [
       [88005, "Чёрная шерсть"],
       [88014, "Синяя шерсть"],
@@ -608,6 +640,7 @@ export const THEMES = [
   {
     id: "signs",
     name: ["Road signs", "Дорожные знаки"],
+    group: "street",
     terms: ["stop sign", "yield sign", "traffic sign", "road sign", "street sign", "bus stop", "tram stop", "crossroad sign",
       "parking", "mph sign", "speed limit", "one way", "no entry", "pedestrian crossing", "warning sign", "sign"],
     categories: STREET,
@@ -616,12 +649,14 @@ export const THEMES = [
   {
     id: "lights",
     name: ["Traffic lights", "Светофоры"],
+    group: "street",
     terms: ["traffic light", "traffic lamp", "traffic signal", "tram signal", "railroad signal", "tram light", "signal", "push button"],
     categories: STREET,
   },
   {
     id: "road",
     name: ["Road and pavement", "Дорога и тротуар"],
+    group: "street",
     terms: ["traffic cone", "barrier", "barricade", "bollard", "hydrant", "manhole", "drain", "parking meter", "crosswalk",
       "road", "railway crossing", "train crossing"],
     categories: STREET,
@@ -630,6 +665,7 @@ export const THEMES = [
   {
     id: "lamps",
     name: ["Street lamps", "Фонари"],
+    group: "street",
     terms: ["street lamp", "streetlight", "street light", "lamp post", "lamppost", "street lantern", "=lantern", "old lantern",
       "lantern with candle", "lantern on holder", "copper lantern", "stone lantern", "paper lantern", "chinese lantern",
       "japanese lantern", "warning lamp", "wall lamp", "industrial lamp", "modern lamp", "ceiling lamp", "=lamp"],
@@ -638,6 +674,7 @@ export const THEMES = [
   {
     id: "bins",
     name: ["Bins", "Мусорки"],
+    group: "street",
     terms: ["trash can", "trashcan", "trash bin", "garbage can", "recycling bin", "dumpster", "garbage", "compost bin", "bin"],
     categories: STREET,
     exclude: ["bot", "animatronic", "raccoon"],
@@ -645,6 +682,7 @@ export const THEMES = [
   {
     id: "mail",
     name: ["Post", "Почта"],
+    group: "street",
     terms: ["mailbox", "mail box", "postbox", "letterbox", "mail package", "parcel", "newspaper", "envelope"],
     categories: STREET,
     exclude: ["boy in"],
@@ -652,6 +690,7 @@ export const THEMES = [
   {
     id: "boxes",
     name: ["Boxes and crates", "Ящики и коробки"],
+    group: "street",
     terms: ["cardboard box", "cardboard shipment", "=crate", "wooden crate", "oak crate", "spruce crate", "birch crate",
       "jungle crate", "acacia crate", "cherry crate", "mangrove crate", "bamboo crate", "iron crate", "metal crate",
       "cargo crate", "military crate", "locked crate", "=package", "mail package", "amazon box", "amazon package", "=box", "wooden box",
@@ -662,6 +701,7 @@ export const THEMES = [
   {
     id: "facade",
     name: ["On the walls", "На фасадах"],
+    group: "street",
     terms: ["air conditioner", "=ac", "gray ac", "security camera", "satellite dish", "antenna", "=vent", "fuse box",
       "electric meter", "gas meter", "intercom", "doorbell", "fire alarm", "=speaker", "hanging speaker", "=pipe", "copper pipe",
       "rusty pipe", "iron pipe", "gray pipe", "exhaust pipe", "elbow pipe", "tee pipe", "cross pipe", "=clock", "old clock",
@@ -671,6 +711,7 @@ export const THEMES = [
   {
     id: "street",
     name: ["Street furniture", "Уличные мелочи"],
+    group: "street",
     terms: ["vending", "atm", "payphone", "phone booth", "ticket machine", "ticket office", "kiosk", "bench", "fountain",
       "bubbler", "bike rack", "bicycle parking", "bicycle garage", "flag pole", "flagpole"],
     categories: STREET,
@@ -679,6 +720,7 @@ export const THEMES = [
   {
     id: "plants",
     name: ["Potted plants", "Растения в горшках"],
+    group: "street",
     terms: ["potted", "flowerpot", "flower pot", "planter", "flower box", "bush", "hedge"],
     categories: ["decoration", "plants", "blocks"],
     exclude: ["pot of gold", "honey pot", "tea pot"],
@@ -686,6 +728,7 @@ export const THEMES = [
   {
     id: "transport",
     name: ["Vehicles", "Транспорт"],
+    group: "street",
     terms: ["police car", "sheriff car", "fire truck", "=car", "old car", "=bus", "old bus", "vw bus", "=truck", "truck with",
       "=van", "surf van", "surfer van", "=taxi", "=tram", "old train", "ice train", "underground train", "train engine",
       "train carriage", "=bicycle", "=bike", "=scooter", "=motorcycle", "=boat"],
@@ -695,6 +738,7 @@ export const THEMES = [
   {
     id: "birds",
     name: ["Birds", "Птицы"],
+    group: "street",
     terms: ["=pigeon", "white pigeon", "wood pigeon", "collared dove", "=dove", "=crow", "=seagull", "seagull on", "=sparrow",
       "=raven", "magpie", "jackdaw", "=duck", "mallard", "ruddy duck", "=swan", "=goose", "=owl", "=parrot", "bird house",
       "bird feeder", "birdcage", "bird cage", "bird nest", "=bird", "bird on"],
@@ -704,6 +748,7 @@ export const THEMES = [
   {
     id: "flags",
     name: ["Flags", "Флаги"],
+    group: "street",
     terms: [],
     categories: ["flags"],
   },
