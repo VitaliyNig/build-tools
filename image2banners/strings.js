@@ -84,6 +84,11 @@ export const STRINGS = {
     "Sponge schematic for WorldEdit, FAWE, Litematica or Axiom: put it in the schematics folder and run //schem load <file name>. The art faces north: banners are on the north side of the wall.",
     "Схема Sponge для WorldEdit, FAWE, Litematica или Axiom: положите файл в папку schematics и выполните //schem load <имя файла>. Арт смотрит на север: баннеры с северной стороны стены.",
   ],
+  saveBp: ["Save as BP (Axiom)", "Сохранить как BP (Axiom)"],
+  saveBpTip: [
+    "An Axiom blueprint. Put the file into .minecraft/config/axiom/blueprints: it appears in Axiom's blueprint browser. The art faces north: banners are on the north side of the wall.",
+    "Чертёж Axiom. Положите файл в .minecraft/config/axiom/blueprints — он появится в браузере чертежей Axiom. Арт смотрит на север: баннеры с северной стороны стены.",
+  ],
   saveSchematic: ["Save as SCHEMATIC", "Сохранить как SCHEMATIC"],
   saveSchematicTip: [
     "MCEdit schematic for WorldEdit 6, Schematica or MCEdit: put it in the schematics folder and run //schematic load <file name>. The art faces north: banners are on the north side of the wall.",

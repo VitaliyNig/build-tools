@@ -180,7 +180,7 @@ graffiti/
     quantize.js           nearest block, dithering, material counts
     texture.js            texture-aware matching
     schematic.js          .schem and .schematic writers
-    blueprint.js          Axiom .bp writer
+    blueprint.js          the wall as an Axiom .bp
 
 shared/mc/                shared with Palette
   palettes.js             bundled palettes + JARs imported into IndexedDB
@@ -190,6 +190,8 @@ shared/mc/                shared with Palette
   zip.js, jar.js          client JAR reader and palette importer
   render.js               isometric picture of a block model, for decorations
   legacy.js               pre-1.13 numeric block ids
+  nbt.js                  NBT writer
+  blueprint.js            Axiom .bp writer, also used by Image2Banners
 ```
 
 ### Notes
@@ -464,8 +466,10 @@ the BSD 2-Clause License, reproduced in `image2banners/LICENSE-Image2Banners.txt
 - **Hide banners** to look at the blocks alone.
 - **Save** as PNG, as JSON (reload it later instead of regenerating), as a
   structure `.nbt` for a structure block or as a Sponge `.schem` for WorldEdit,
-  FAWE, Litematica and Axiom (both for Minecraft 1.13 and newer). For older
-  versions the schematic is an MCEdit `.schematic` (WorldEdit 6, Schematica).
+  FAWE, Litematica and Axiom, or as an Axiom blueprint `.bp` for
+  `.minecraft/config/axiom/blueprints` (all three for Minecraft 1.13 and newer).
+  For older versions the schematic is an MCEdit `.schematic` (WorldEdit 6,
+  Schematica).
 - Multi-threaded: one worker per CPU thread.
 
 Following the usual advice for creative-mode building, all options are on by
@@ -511,6 +515,6 @@ image2banners/
     similarity.js         CIEDE2000 + SSIM hybrid score
     color.js              sRGB -> CIE-Lab, CIEDE2000
     model.js              art data, JSON import/export, rendering, /give commands
-    nbt.js                structure (.nbt) and schematic (.schem, .schematic) writers
+    nbt.js                structure (.nbt), schematic (.schem, .schematic) and blueprint (.bp) writers
     png.js                exact PNG decoder for the atlases
 ```

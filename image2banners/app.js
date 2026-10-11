@@ -9,12 +9,14 @@ import {
   applyCell, bannerSteps, cellAt, commandFormat, createModel, fromJson, giveCommand, missingPatterns, remapBlocks,
   renderModel, toJson, unavailablePatterns,
 } from "./core/model.js";
-import { buildLegacySchematic, buildSchem, buildStructure } from "./core/nbt.js";
+import { buildBlueprint, buildLegacySchematic, buildSchem, buildStructure } from "./core/nbt.js";
 import { DYE_NAMES, PATTERN_ITEMS, PATTERN_NAMES, STRINGS } from "./strings.js";
 
 const MAX_SIZE = 128;   // blocks per side
 const SLOT_H = CELL * 2;
 const VERSION_KEY = "image2banners.version";
+// Side of the picture a blueprint shows in Axiom's browser, as Axiom makes them.
+const BP_THUMB = 96;
 
 const $ = (id) => document.getElementById(id);
 
@@ -415,6 +417,22 @@ async function saveWorld(build, extension) {
   download(await new Response(gzip).blob(), fileName(extension));
 }
 
+/** The art fitted into a square PNG, for a blueprint's thumbnail. */
+async function thumbnail() {
+  const canvas = Object.assign(document.createElement("canvas"), { width: BP_THUMB, height: BP_THUMB });
+  const scale = BP_THUMB / Math.max(art.width, art.height);
+  const w = Math.max(1, Math.round(art.width * scale)), h = Math.max(1, Math.round(art.height * scale));
+  canvas.getContext("2d").drawImage(art, (BP_THUMB - w) >> 1, (BP_THUMB - h) >> 1, w, h);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  if (!blob) throw new Error("PNG");
+  return new Uint8Array(await blob.arrayBuffer());
+}
+
+async function saveBp() {
+  const bytes = await buildBlueprint(state.model, state.assets, state.palette.dataVersion, await thumbnail(), state.name);
+  download(new Blob([bytes]), fileName("bp"));
+}
+
 // ---------- wiring ----------
 function updateActions() {
   const running = Boolean(state.run), busy = running || state.busy, ready = Boolean(state.model) && !busy;
@@ -423,7 +441,7 @@ function updateActions() {
   $("generate").textContent = t(running ? "cancel" : "generate");
   $("generate").disabled = !running && (state.busy || !(state.image && state.assets));
   $("savePng").disabled = $("saveJson").disabled = !ready;
-  $("saveNbt").disabled = !ready || old;
+  $("saveNbt").disabled = $("saveBp").disabled = !ready || old;
   $("saveSchem").disabled = !ready;
   $("saveSchem").textContent = t(old ? "saveSchematic" : "saveSchem");
   $("saveSchem").title = t(old ? "saveSchematicTip" : "saveSchemTip");
@@ -493,6 +511,7 @@ function wire() {
     if (commandFormat(state.palette.dataVersion) === "old") saveWorld(buildLegacySchematic, "schematic");
     else saveWorld(buildSchem, "schem");
   });
+  $("saveBp").addEventListener("click", saveBp);
   // Follows the Minecraft version; changing it by hand lasts until the version changes.
   $("commandVersion").addEventListener("change", showDetails);
   $("copyCommand").addEventListener("click", async () => {

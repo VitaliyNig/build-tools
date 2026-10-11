@@ -1,38 +1,18 @@
 // Export the art as NBT payloads (not yet gzipped): a Minecraft structure (.nbt)
 // for a structure block, a Sponge schematic (.schem) for WorldEdit and the like,
 // and for versions before 1.13 an MCEdit .schematic with numeric block ids.
+// And as an Axiom blueprint (.bp), a whole file: see shared/mc/blueprint.js.
 //
 // The structure writer is ported from Image2Banners by MARSTeamMC
 // (banners_to_nbt.py), BSD 2-Clause.
-// Layout of both: blocks at z = 1, wall banners (facing north) on their front at
+// Layout of all: blocks at z = 1, wall banners (facing north) on their front at
 // z = 0; x and y are mirrored so the art reads correctly when viewed from the north.
+import { buildBlueprint as build } from "../../shared/mc/blueprint.js";
 import { legacyBlock } from "../../shared/mc/legacy.js";
+import { NbtWriter as Writer, TAG } from "../../shared/mc/nbt.js";
 import { commandFormat, legacyLayers } from "./model.js";
 
-const TAG = { END: 0, SHORT: 2, INT: 3, BYTE_ARRAY: 7, STRING: 8, LIST: 9, COMPOUND: 10, INT_ARRAY: 11 };
 const MAX_DECLARED_SIZE = 32;   // larger sizes are not shown by structure blocks
-const encoder = new TextEncoder();
-
-class Writer {
-  constructor() { this.bytes = []; }
-  u8(v) { this.bytes.push(v & 0xff); }
-  i16(v) { this.u8(v >> 8); this.u8(v); }
-  i32(v) { this.u8(v >> 24); this.u8(v >> 16); this.u8(v >> 8); this.u8(v); }
-  text(value) {
-    const utf8 = encoder.encode(value);
-    this.i16(utf8.length);
-    for (const b of utf8) this.bytes.push(b);
-  }
-  header(tag, name) { this.u8(tag); this.text(name); }
-  short(name, v) { this.header(TAG.SHORT, name); this.i16(v); }
-  int(name, v) { this.header(TAG.INT, name); this.i32(v); }
-  byteArray(name, values) { this.header(TAG.BYTE_ARRAY, name); this.i32(values.length); for (const v of values) this.u8(v); }
-  intArray(name, values) { this.header(TAG.INT_ARRAY, name); this.i32(values.length); for (const v of values) this.i32(v); }
-  string(name, v) { this.header(TAG.STRING, name); this.text(v); }
-  list(name, elementTag, length) { this.header(TAG.LIST, name); this.u8(elementTag); this.i32(length); }
-  intList(name, values) { this.list(name, TAG.INT, values.length); for (const v of values) this.i32(v); }
-  end() { this.u8(TAG.END); }
-}
 
 /** "barrel[facing=up,open=false]" -> ["barrel", {facing: "up", open: "false"}]. */
 function parseBlock(id) {
@@ -238,4 +218,28 @@ export function buildStructure(model, assets, dataVersion) {
   w.int("DataVersion", dataVersion);
   w.end();
   return new Uint8Array(w.bytes);
+}
+
+/**
+ * Axiom blueprint (.bp), centred on its origin as Axiom's own blueprints are.
+ *
+ * model: see model.js; its blocks are ids of a flattened version (1.13+).
+ * thumbnail: the bytes of a PNG. Returns the bytes of the whole file.
+ */
+export async function buildBlueprint(model, assets, dataVersion, thumbnail, name) {
+  const { width, height } = model;
+  const modern = commandFormat(dataVersion) === "modern";
+  const left = -(width >> 1), bottom = -(height >> 1);
+  const blocks = [], blockEntities = [];
+  for (let row = 0; row < height; row++) {
+    for (let col = 0; col < width; col++) {
+      const cell = model.cells[row * width + col];
+      const x = left + width - 1 - col, y = bottom + height - 1 - row;
+      blocks.push([x, y, 1, `minecraft:${cell.block || assets.defaultBlock}`]);
+      if (!cell.banner) continue;
+      blocks.push([x, y, 0, `minecraft:${cell.banner[0].replace("#", "_")}[facing=north]`]);
+      blockEntities.push({ x, y, z: 0, id: "minecraft:banner", write: (w) => writePatterns(w, cell.banner, modern) });
+    }
+  }
+  return (await build({ blocks, blockEntities, dataVersion, thumbnail, name, author: "Image2Banners" })).bytes;
 }
