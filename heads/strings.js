@@ -73,6 +73,39 @@ export const STRINGS = {
     "Импортируйте файлы .json (или перетащите их на страницу), вставьте присланные ссылки или сохраните все свои коллекции в файл.",
   ],
   paste: ["Paste a link…", "Вставить ссылку…"],
+  idButton: ["Find ids of heads from the game…", "Узнать ID голов из игры…"],
+  idTitle: ["Which heads are these?", "Какие это головы?"],
+  idWaySchem: [
+    "Many at once: select them with WorldEdit, //copy, //schem save <name>, and load the .schem file here. Litematica (.litematic) and structure block (.nbt) files work too.",
+    "Сразу много: выделите их WorldEdit, затем //copy и //schem save <имя>, и загрузите сюда файл .schem. Подойдут и файлы Litematica (.litematic) и структурного блока (.nbt).",
+  ],
+  idWayF3: [
+    "One by one: look at a head, press F3+I and paste here; lines can pile up. The game copies the texture only for players allowed to read block data (usually operators); otherwise the line has no texture in it.",
+    "По одной: наведитесь на голову, нажмите F3+I и вставьте сюда; строки можно копить. Текстуру игра копирует только тем, кому можно читать данные блоков (обычно операторам), иначе в строке её не будет.",
+  ],
+  idWayHdb: [
+    "A head given by HeadDB 2 and still in the inventory: hold it and type /hdb info. Heads placed in the world lose the plugin's mark.",
+    "Голова, выданная HeadDB 2 и ещё лежащая в инвентаре: возьмите её в руку и введите /hdb info. У поставленных в мир голов метки плагина уже нет.",
+  ],
+  idPlaceholder: [
+    "Paste F3+I lines, /give or /setblock commands, texture values or links…",
+    "Вставьте строки F3+I, команды /give или /setblock, значения или ссылки текстур…",
+  ],
+  idFile: ["Load a schematic…", "Загрузить схему…"],
+  idFind: ["Find", "Найти"],
+  foundTitle: ["Found by texture", "Найдено по текстурам"],
+  foundName: ["Found heads", "Найденные головы"],
+  foundNote: [
+    (found, missing) => `In the catalogue: ${found}.${missing ? ` Not in it: ${missing} — the server's own heads or heads from elsewhere; /hdb give cannot give them, a vanilla /give can.` : ""}`,
+    (found, missing) => `Есть в каталоге: ${found}.${missing ? ` Нет в каталоге: ${missing} — это свои головы сервера или головы из других мест; /hdb give их не выдаст, обычный /give выдаст.` : ""}`,
+  ],
+  copyMissing: ["Copy /give for the rest", "Скопировать /give для остальных"],
+  statusFound: [(found, missing) => `Found in the catalogue: ${found}; not in it: ${missing}.`, (found, missing) => `Найдено в каталоге: ${found}; нет в каталоге: ${missing}.`],
+  errFound: [
+    "No head textures here. If it is an F3+I line, the game copied the block without its data: that takes the right to read block data.",
+    "Здесь нет текстур голов. Если это строка F3+I, игра скопировала блок без данных: для этого нужно право читать данные блоков.",
+  ],
+  errFile: [(e) => `Could not read the file: ${e}`, (e) => `Не удалось прочитать файл: ${e}`],
   exportAll: ["Export all", "Экспорт всех"],
   pasteTitle: ["Add collections", "Добавить коллекции"],
   pasteHint: [
@@ -81,7 +114,10 @@ export const STRINGS = {
   ],
   pasteAdd: ["Add", "Добавить"],
   cancel: ["Cancel", "Отмена"],
-  dropHint: ["Drop .json files to import collections", "Отпустите файлы .json, чтобы импортировать коллекции"],
+  dropHint: [
+    "Drop .json files to import collections, or a schematic to find its heads",
+    "Отпустите файлы .json, чтобы импортировать коллекции, или схему, чтобы узнать её головы",
+  ],
   newCollection: ["+ New", "+ Новая"],
   importFile: ["Import…", "Импорт…"],
   defaultName: ["My collection", "Моя коллекция"],

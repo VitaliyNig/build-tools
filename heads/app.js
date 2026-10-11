@@ -5,6 +5,7 @@ import { CHAT_LIMIT, command, FORMATS, textureValue } from "./commands.js";
 import { drawHead, loadSkin } from "./render.js";
 import { NAMES, STRINGS } from "./strings.js";
 import { THEMES } from "./themes.js";
+import { findInFile, findInText } from "./textures.js";
 
 const COLLECTIONS_KEY = "heads.collections", TARGET_KEY = "heads.target", FORMAT_KEY = "heads.format";
 // Cards shown at a time; "show more" adds as many again.
@@ -24,6 +25,7 @@ const state = {
   collections: loadCollections(),
   standards: [],               // from standards.json
   shared: null,                // a collection opened from a link
+  found: null,                 // heads found by their textures: { name, heads, description, missing }
   selected: null,              // { kind: "mine" | "standard" | "city" | "shared", index }
   shown: 0, shownOf: "",       // cards of the selected collection on the page, and which collection that is
   detailsHead: null,
@@ -51,6 +53,7 @@ function retranslate() {
   for (const el of document.querySelectorAll("[data-i18n-title]")) el.title = t(el.dataset.i18nTitle);
   document.title = `Heads — ${t("subtitle")}`;
   $("query").placeholder = t("placeholder");
+  $("idText").placeholder = t("idPlaceholder");
   if (state.status) $("status").textContent = t(...state.status);
   fillFormats();
   fillFilters();
@@ -407,6 +410,7 @@ function selected() {
   if (s.kind === "mine") return state.collections[s.index] || null;
   if (s.kind === "standard") return state.standards[s.index] || null;
   if (s.kind === "city") return city()[s.index] || null;
+  if (s.kind === "found") return state.found;
   return state.shared;
 }
 
@@ -434,6 +438,8 @@ function renderCollections() {
   $("cityList").replaceChildren(...city().map((c, i) => listButton(c, "city", i)));
   $("standardsBox").hidden = !state.standards.length;
   $("standardsList").replaceChildren(...state.standards.map((c, i) => listButton(c, "standard", i)));
+  $("foundBox").hidden = !state.found;
+  $("foundList").replaceChildren(...(state.found ? [listButton(state.found, "found", 0)] : []));
   $("sharedBox").hidden = !state.shared;
   $("sharedList").replaceChildren(...(state.shared ? [listButton(state.shared, "shared", 0)] : []));
   $("exportAll").hidden = !state.collections.length;
@@ -490,6 +496,7 @@ async function renderCollection() {
       renderCollections();
     }));
   } else {
+    if (kind === "found" && collection.missing.length) actions.push(action("copyMissing", () => copyMissing(collection)));
     actions.unshift(action("saveCopy", () => {
       createCollection(collection.name, collection.heads, collection.description);
       state.selected = { kind: "mine", index: state.collections.length - 1 };
@@ -525,6 +532,42 @@ async function headsOf(ids) {
 async function copyAll(collection) {
   const heads = await headsOf(collection.heads);
   await copy(heads.map((head) => command(head, format())).join("\n"), "statusCopiedAll", heads.length);
+}
+
+// ---------- heads from the game ----------
+/** Show the catalogue heads with these textures (and these HeadDB ids) as a collection. */
+async function showFound({ textures, ids }, name) {
+  if (!textures.length && !ids.length) { setStatus("errFound"); return; }
+  if (!state.meta) return;
+  const answer = await ask({ type: "textures", textures });
+  remember(answer.items);
+  const heads = [...new Set([...ids, ...answer.items.map((head) => head.id)])];
+  state.found = {
+    name: name || t("foundName"),
+    heads,
+    missing: answer.missing,
+    get description() { return t("foundNote", heads.length, this.missing.length); },
+  };
+  state.selected = { kind: "found", index: 0 };
+  setStatus("statusFound", heads.length, answer.missing.length);
+  showTab("collections");
+  renderCollections();
+  document.querySelector(".collection").scrollIntoView();
+}
+
+/** Vanilla /give for textures the catalogue lacks: /hdb give cannot give them. */
+async function copyMissing(found) {
+  const version = format() === "hdb" ? "1.20.5" : format();
+  const commands = found.missing.map((texture) => command({ id: 0, texture }, version));
+  await copy(commands.join("\n"), "statusCopiedAll", commands.length);
+}
+
+async function findFromFile(file) {
+  try {
+    await showFound(await findInFile(file), file.name.replace(/\.[^.]+$/, ""));
+  } catch (error) {
+    setStatus("errFile", error.message);
+  }
 }
 
 // A collection in a link: #c=<name>~<ids in base 36, joined by dots>.
@@ -686,6 +729,18 @@ $("importFile").addEventListener("change", () => {
   if (files.length) importFiles(files);
 });
 $("exportAll").addEventListener("click", exportAll);
+$("idButton").addEventListener("click", () => $("idDialog").showModal());
+$("idDialog").addEventListener("close", () => {
+  if ($("idDialog").returnValue === "find" && $("idText").value.trim()) showFound(findInText($("idText").value));
+});
+$("idFileButton").addEventListener("click", () => $("idFile").click());
+$("idFile").addEventListener("change", () => {
+  const file = $("idFile").files[0];
+  $("idFile").value = "";
+  if (!file) return;
+  $("idDialog").close();
+  findFromFile(file);
+});
 $("pasteButton").addEventListener("click", () => {
   $("pasteText").value = "";
   $("pasteDialog").showModal();
@@ -704,7 +759,10 @@ document.addEventListener("drop", (event) => {
   event.preventDefault();
   dragDepth = 0;
   $("drop").hidden = true;
-  const files = [...event.dataTransfer.files].filter((file) => /\.json$/i.test(file.name) || file.type === "application/json");
+  const all = [...event.dataTransfer.files];
+  const structure = all.find((file) => /\.(schem|schematic|litematic|nbt)$/i.test(file.name));
+  if (structure) { findFromFile(structure); return; }
+  const files = all.filter((file) => /\.json$/i.test(file.name) || file.type === "application/json");
   if (files.length) importFiles(files); else setStatus("errImport");
 });
 // A collection link opened while the page is open.

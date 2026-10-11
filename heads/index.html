@@ -55,6 +55,11 @@
             <button type="button" id="exportAll" data-i18n="exportAll"></button>
           </div>
           <input type="file" id="importFile" accept=".json,application/json" multiple hidden>
+          <button type="button" class="wide" id="idButton" data-i18n="idButton"></button>
+        </div>
+        <div id="foundBox" hidden>
+          <h2 data-i18n="foundTitle"></h2>
+          <div class="list" id="foundList"></div>
         </div>
         <div id="standardsBox" hidden>
           <h2 data-i18n="standards"></h2>
@@ -124,6 +129,25 @@
       <div class="row end">
         <button value="cancel" data-i18n="cancel"></button>
         <button value="add" class="primary" id="pasteAdd" data-i18n="pasteAdd"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="idDialog">
+    <form method="dialog" class="paste">
+      <h2 data-i18n="idTitle"></h2>
+      <ol class="ways">
+        <li data-i18n="idWaySchem"></li>
+        <li data-i18n="idWayF3"></li>
+        <li data-i18n="idWayHdb"></li>
+      </ol>
+      <textarea id="idText" rows="6" spellcheck="false"></textarea>
+      <div class="row">
+        <button type="button" id="idFileButton" data-i18n="idFile"></button>
+        <input type="file" id="idFile" accept=".schem,.schematic,.litematic,.nbt,.txt" hidden>
+        <span class="spacer"></span>
+        <button value="cancel" data-i18n="cancel"></button>
+        <button value="find" class="primary" data-i18n="idFind"></button>
       </div>
     </form>
   </dialog>

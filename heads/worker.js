@@ -5,8 +5,11 @@ import { DICTIONARY } from "./dictionary.js";
 import { buildIndex, layoutFix, parseDictionary, search, themeHeads } from "./search.js";
 import { NAMES } from "./strings.js";
 import { THEMES } from "./themes.js";
+import { normalizeTexture } from "./textures.js";
 
 let catalog = null, index = null, dictionary = null;
+// Texture hash → head number, to name heads found in the world.
+let byTexture = null;
 // The head numbers of the last search, so that "show more" does not search again.
 let last = { key: null, found: [] };
 
@@ -23,6 +26,11 @@ async function load(id) {
   for (const [key, name] of Object.entries(NAMES)) if (labels[key]) labels[key] += ` ${name}`;
   dictionary = parseDictionary(DICTIONARY);
   index = buildIndex(catalog.heads, labels);
+  byTexture = new Map();
+  catalog.heads.forEach((head, n) => {
+    const key = normalizeTexture(head.texture);
+    if (!byTexture.has(key)) byTexture.set(key, n);
+  });
   // How many heads each collection holds, for the filter list.
   const counts = {};
   for (const head of catalog.heads) for (const c of head.collections) counts[c] = (counts[c] || 0) + 1;
@@ -65,6 +73,16 @@ function find({ query, category, collection, offset, limit }) {
   };
 }
 
+/** Catalogue heads with these textures, in order; and the textures that are not in the catalogue. */
+function lookup(textures) {
+  const items = [], missing = [];
+  for (const texture of textures) {
+    const n = byTexture.get(normalizeTexture(texture));
+    if (n === undefined) missing.push(texture); else items.push(view(catalog.heads[n]));
+  }
+  return { items, missing };
+}
+
 function get(ids) {
   return ids.map((id) => index.byId.get(id)).filter((n) => n !== undefined).map((n) => view(catalog.heads[n]));
 }
@@ -74,6 +92,7 @@ self.onmessage = async ({ data }) => {
     if (data.type === "load") await load(data.id);
     else if (data.type === "search") answer(data.id, find(data));
     else if (data.type === "get") answer(data.id, { items: get(data.ids) });
+    else if (data.type === "textures") answer(data.id, lookup(data.textures));
   } catch (error) {
     answer(data.id, { error: String((error && error.message) || error) });
   }

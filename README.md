@@ -343,6 +343,17 @@ search is English only and hard to browse.
   so a file imported twice changes nothing; a different collection with a
   taken name gets a number. A link opened while the page is open shows up at
   once under "Shared with you".
+- **Ids of heads already in the world.** `/hdb info` only knows heads that
+  HeadDB 2 gave and that are still items, so placed heads are found by
+  their texture instead, which is the same in the world and in the
+  catalogue. "Find ids of heads from the game" takes a WorldEdit schematic
+  (`//copy`, `//schem save`), a Litematica or structure block file, or
+  pasted text: F3+I lines (the game puts the texture in them only for
+  players allowed to read block data), `/give` and `/setblock` commands,
+  texture values, links and hashes. The heads it finds become a collection
+  to save, copy or share; textures that are not in the catalogue (a
+  server's own heads) are counted, and their vanilla `/give` commands can
+  be copied. Schematic files dropped on the page go the same way.
 - **Project standards**: the collections in `heads/standards.json` are shown
   to everyone, read-only, and can be saved as one's own. To add one, export a
   collection and move it into the file:
@@ -381,6 +392,7 @@ heads/
   search.js               index, Russian stemmer, keyboard layout, transliteration
   dictionary.js           Russian words for the catalogue's English words
   themes.js               city selections for BuildTheEarth
+  textures.js             head textures in pasted text and structure files (NBT)
   commands.js             /hdb give and /give for each game version
   render.js               a head as a cube, from its skin
   standards.json          the project's collections
