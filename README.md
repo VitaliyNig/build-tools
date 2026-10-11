@@ -94,7 +94,7 @@ are never uploaded.
 4. Pick the **Palette** version you will build in. Adjust the image controls;
    optionally **Choose blocks…**, set **Dithering** and **Texture influence**.
 5. **Generate** → the *Result* tab shows the block grid and material counts.
-6. Export the schematic and/or **Export PNG mockup**. The Export panel shows the
+6. Export the schematic and/or **Export .png**. The Export panel shows the
    generated result's MC version. To change it, select another palette and click
    **Generate** again.
 
@@ -464,7 +464,7 @@ the BSD 2-Clause License, reproduced in `image2banners/LICENSE-Image2Banners.txt
   it and a `/give` command: item components (1.20.5+), item NBT (1.13 – 1.20.4)
   or the numeric form of 1.8 – 1.12.
 - **Hide banners** to look at the blocks alone.
-- **Save** as PNG, as JSON (reload it later instead of regenerating), as a
+- **Export** as PNG, as JSON (reload it later instead of regenerating), as a
   structure `.nbt` for a structure block or as a Sponge `.schem` for WorldEdit,
   FAWE, Litematica and Axiom, or as an Axiom blueprint `.bp` for
   `.minecraft/config/axiom/blueprints` (all three for Minecraft 1.13 and newer).

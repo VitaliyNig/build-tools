@@ -445,7 +445,8 @@ function updateActions() {
   $("saveSchem").disabled = !ready;
   $("saveSchem").textContent = t(old ? "saveSchematic" : "saveSchem");
   $("saveSchem").title = t(old ? "saveSchematicTip" : "saveSchemTip");
-  $("saveNbtOld").hidden = !old;
+  $("saveNbt").title = t(old ? "saveNbtOld" : "saveNbtTip");
+  $("saveVersion").textContent = state.palette ? state.palette.version : "—";
   $("load").disabled = busy || !state.assets;
   $("paletteVersion").disabled = $("addJar").disabled = busy;
   $("toggleBanners").textContent = t(state.banners ? "hideBanners" : "showBanners");

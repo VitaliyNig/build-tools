@@ -59,7 +59,7 @@ export const STRINGS = {
     "An Axiom blueprint. Put the file into .minecraft/config/axiom/blueprints: it appears in Axiom's blueprint browser.",
     "Чертёж Axiom. Положите файл в .minecraft/config/axiom/blueprints — он появится в браузере чертежей Axiom.",
   ],
-  exportPng: ["Export PNG mockup", "Экспорт PNG"],
+  exportPng: ["Export .png", "Экспорт .png"],
   pickerTitle: ["Choose blocks", "Выбор блоков"],
   pickerSearch: ["Search blocks…", "Поиск блоков…"],
   all: ["All", "Все"],

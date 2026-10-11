@@ -67,29 +67,34 @@ export const STRINGS = {
   generate: ["Generate Banners", "Сгенерировать баннеры"],
   cancel: ["Cancel", "Отмена"],
 
-  save: ["Save", "Сохранение"],
-  savePng: ["Save as image", "Сохранить как изображение"],
-  saveJson: ["Save as JSON", "Сохранить как JSON"],
+  save: ["Export", "Экспорт"],
+  mcVersion: ["MC version", "Версия MC"],
+  saveTip: [
+    "The export uses the Minecraft version chosen above.\n1.13+: Sponge .schem (WorldEdit 7, FAWE, Litematica, Axiom), an Axiom blueprint (.bp) or a structure (.nbt).\n1.12 and older: MCEdit .schematic (WorldEdit 6, Schematica).",
+    "Экспорт использует версию Minecraft, выбранную выше.\n1.13+: Sponge .schem (WorldEdit 7, FAWE, Litematica, Axiom), чертёж Axiom (.bp) или структура (.nbt).\n1.12 и старше: MCEdit .schematic (WorldEdit 6, Schematica).",
+  ],
+  savePng: ["Export .png", "Экспорт .png"],
+  saveJson: ["Export .json", "Экспорт .json"],
   saveJsonTip: [
     "Reload it later instead of generating again. Compatible with the Image2Banners desktop app.",
     "Его можно загрузить позже вместо повторной генерации. Совместим с десктопным Image2Banners.",
   ],
-  saveNbt: ["Save as NBT", "Сохранить как NBT"],
+  saveNbt: ["Export .nbt", "Экспорт .nbt"],
   saveNbtTip: [
     "For a structure block: put the file in saves/<world>/generated/i2b/structures/ and load i2b:<file name> (without .nbt). Structure blocks do not show the real size of art larger than 32×32.",
     "Для структурного блока: положите файл в saves/<мир>/generated/i2b/structures/ и загрузите i2b:<имя файла> (без .nbt). Структурный блок не показывает реальный размер арта больше 32×32.",
   ],
-  saveSchem: ["Save as SCHEM", "Сохранить как SCHEM"],
+  saveSchem: ["Export .schem", "Экспорт .schem"],
   saveSchemTip: [
     "Sponge schematic for WorldEdit, FAWE, Litematica or Axiom: put it in the schematics folder and run //schem load <file name>. The art faces north: banners are on the north side of the wall.",
     "Схема Sponge для WorldEdit, FAWE, Litematica или Axiom: положите файл в папку schematics и выполните //schem load <имя файла>. Арт смотрит на север: баннеры с северной стороны стены.",
   ],
-  saveBp: ["Save as BP (Axiom)", "Сохранить как BP (Axiom)"],
+  saveBp: ["Export .bp (Axiom)", "Экспорт .bp (Axiom)"],
   saveBpTip: [
     "An Axiom blueprint. Put the file into .minecraft/config/axiom/blueprints: it appears in Axiom's blueprint browser. The art faces north: banners are on the north side of the wall.",
     "Чертёж Axiom. Положите файл в .minecraft/config/axiom/blueprints — он появится в браузере чертежей Axiom. Арт смотрит на север: баннеры с северной стороны стены.",
   ],
-  saveSchematic: ["Save as SCHEMATIC", "Сохранить как SCHEMATIC"],
+  saveSchematic: ["Export .schematic", "Экспорт .schematic"],
   saveSchematicTip: [
     "MCEdit schematic for WorldEdit 6, Schematica or MCEdit: put it in the schematics folder and run //schematic load <file name>. The art faces north: banners are on the north side of the wall.",
     "Схема MCEdit для WorldEdit 6, Schematica или MCEdit: положите файл в папку schematics и выполните //schematic load <имя файла>. Арт смотрит на север: баннеры с северной стороны стены.",
