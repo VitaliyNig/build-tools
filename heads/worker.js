@@ -2,7 +2,7 @@
 // searches. Messages carry an `id` that the answer repeats.
 import { loadCatalog } from "./catalog.js";
 import { DICTIONARY } from "./dictionary.js";
-import { buildIndex, layoutFix, parseDictionary, search, themeHeads } from "./search.js";
+import { buildIndex, fontHeads, layoutFix, parseDictionary, search, themeHeads } from "./search.js";
 import { NAMES } from "./strings.js";
 import { THEMES } from "./themes.js";
 import { normalizeTexture } from "./textures.js";
@@ -41,8 +41,12 @@ async function load(id) {
     total: catalog.heads.length,
     categories: catalog.categories,
     collections: catalog.collections.map((c) => ({ ...c, count: counts[c.id] || 0 })).filter((c) => c.count),
-    // The city selections, as collections of head ids.
-    themes: THEMES.map((theme) => ({ id: theme.id, heads: themeHeads(index, theme).map((n) => catalog.heads[n].id) })),
+    // The city selections, as collections of head ids; letter fonts also caption each head with its character.
+    themes: THEMES.map((theme) => {
+      if (!theme.font) return { id: theme.id, heads: themeHeads(index, theme).map((n) => catalog.heads[n].id) };
+      const items = fontHeads(index, theme);
+      return { id: theme.id, heads: items.map(([n]) => catalog.heads[n].id), captions: items.map(([, caption]) => caption) };
+    }),
     tags: catalog.tags,
   });
 }

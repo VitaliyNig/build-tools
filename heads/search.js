@@ -376,3 +376,69 @@ function matchNumber(index, token) {
 export function layoutFix(query) {
   return LATIN.test(query) || CYRILLIC.test(query) ? switchLayout(query) : null;
 }
+
+// ---------- letter fonts ----------
+const RUSSIAN = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ";
+// Cyrillic letters the catalogue's fonts leave out, because the Latin head looks the same.
+const LOOKALIKE = { А: "A", В: "B", Е: "E", К: "K", М: "M", Н: "H", О: "O", Р: "P", С: "C", Т: "T", Х: "X" };
+// Signs shown as themselves rather than by name.
+const SIGNS = {
+  "question mark": "?", "exclamation mark": "!", "exclamation": "!", "dot": ".", "period": ".", "full stop": ".",
+  "comma": ",", "colon": ":", "semicolon": ";", "plus": "+", "minus": "−", "dash": "–", "hyphen": "-", "equals": "=",
+  "slash": "/", "backslash": "\\", "underscore": "_", "apostrophe": "'", "quote": "\"", "quotation mark": "\"",
+  "ampersand": "&", "percent": "%", "octothorpe": "#", "hashtag": "#", "hash": "#", "at": "@", "at sign": "@",
+  "dollar": "$", "dollar sign": "$", "percent sign": "%", "asterisk": "*", "heart": "♥", "star": "★", "ellipses": "…", "ellipsis": "…",
+  "multiply": "×", "multiplication": "×", "divide": "÷", "division": "÷", "caret": "^", "tilde": "~",
+  "arrow up": "↑", "arrow down": "↓", "arrow left": "←", "arrow right": "→", "up": "↑", "down": "↓", "left": "←", "right": "→",
+  "blank": "␣", "space": "␣",
+};
+
+/**
+ * The heads of a letter font, in reading order, with the character each
+ * stands for: [head number, caption]. The font's name is the part of the
+ * head names before the letter ("Red Я", "Oak Wood A").
+ */
+export function fontHeads(index, theme) {
+  const heads = [];
+  index.heads.forEach((head, n) => { if (head.tags.includes(theme.font)) heads.push(n); });
+  // The name before the character: the most common start of names that end in a single letter.
+  const starts = new Map();
+  for (const n of heads) {
+    const match = /^(.*\S)\s+[A-Za-zА-ЯЁа-яё0-9]$/.exec(index.heads[n].name.replace(/\s*\(.*?\)\s*$/, ""));
+    if (match) starts.set(match[1], (starts.get(match[1]) || 0) + 1);
+  }
+  const prefix = [...starts].sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+  const items = heads.map((n) => {
+    const name = index.heads[n].name;
+    const variant = /\((.*?)\)\s*$/.exec(name)?.[1].toLowerCase() || "";
+    let rest = name.replace(/\s*\(.*?\)\s*$/, "");
+    rest = prefix && rest.startsWith(prefix) ? rest.slice(prefix.length).trim() : rest;
+    const lower = variant.includes("lowercase");
+    let kind, order, caption;
+    if (/^[A-Z]$/.test(rest)) { kind = lower ? 2 : 1; order = rest.charCodeAt(0); caption = lower ? rest.toLowerCase() : rest; }
+    else if (/^[А-ЯЁ]$/.test(rest)) { kind = 0; order = RUSSIAN.indexOf(rest); caption = rest; }
+    else if (/^\d+$/.test(rest)) { kind = 3; order = Number(rest); caption = rest; }
+    else {
+      kind = 4; order = 0;
+      const sign = SIGNS[rest.toLowerCase()] || SIGNS[`${rest} ${variant}`.toLowerCase()];
+      caption = sign || (variant && !lower && !variant.includes("uppercase") ? `${rest} (${variant})` : rest);
+    }
+    return { n, kind, order, caption, name };
+  });
+  // The Russian alphabet in full: the Latin twin stands in for a letter the font leaves out.
+  const latin = new Map(items.filter((i) => i.kind === 1).map((i) => [i.caption, i]));
+  const russian = new Map(items.filter((i) => i.kind === 0).map((i) => [i.caption, i]));
+  const out = [], used = new Set();
+  const take = (item, caption) => { if (!used.has(item.n)) { used.add(item.n); out.push([item.n, caption]); } };
+  if (russian.size) {
+    for (const letter of RUSSIAN) {
+      const own = russian.get(letter), twin = latin.get(LOOKALIKE[letter]);
+      if (own) take(own, letter);
+      else if (twin) take(twin, `${letter} · ${twin.caption}`);
+    }
+  }
+  const rest = items.filter((i) => !used.has(i.n))
+    .sort((a, b) => a.kind - b.kind || a.order - b.order || a.caption.localeCompare(b.caption) || a.n - b.n);
+  for (const item of rest) take(item, item.caption);
+  return out;
+}

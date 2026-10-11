@@ -14,6 +14,8 @@
 export const GROUPS = [
   { id: "pdd", name: ["Russian road signs", "Знаки ПДД РФ"] },
   { id: "blocks", name: ["Mini blocks", "Мини-блоки"] },
+  { id: "letters-colour", name: ["Letters on colours", "Буквы: цветные подложки"] },
+  { id: "letters-material", name: ["Letters on materials", "Буквы: материалы"] },
   { id: "street", name: ["Street", "Улица"] },
 ];
 
@@ -753,3 +755,41 @@ export const THEMES = [
     categories: ["flags"],
   },
 ];
+
+// Letters: the catalogue's fonts, a set of heads each (tag "font-…"), with
+// letters, digits and signs on one background. A selection lists the Russian
+// alphabet first, then the Latin one, digits and signs; see fontHeads in
+// search.js. [tag, English name, Russian name]; fonts without Cyrillic say so.
+const COLOUR_FONTS = [
+  ["white", "White", "Белый"], ["light-gray", "Light gray", "Светло-серый"], ["gray", "Gray", "Серый"],
+  ["black", "Black", "Чёрный"], ["brown", "Brown", "Коричневый"], ["red", "Red", "Красный"],
+  ["orange", "Orange", "Оранжевый"], ["yellow", "Yellow", "Жёлтый"], ["lime", "Lime", "Лаймовый"],
+  ["green", "Green", "Зелёный"], ["forest-green", "Forest green", "Тёмно-зелёный"], ["cyan", "Cyan", "Бирюзовый"],
+  ["light-blue", "Light blue", "Голубой"], ["blue", "Blue", "Синий"], ["purple", "Purple", "Фиолетовый"],
+  ["magenta", "Magenta", "Пурпурный"], ["pink", "Pink", "Розовый"], ["rainbow", "Rainbow", "Радуга"],
+  ["dark-blue", "Dark blue (Latin only)", "Тёмно-синий (только латиница)"], ["sky", "Sky (Latin only)", "Небо (только латиница)"],
+];
+const MATERIAL_FONTS = [
+  ["oak", "Oak", "Дуб"], ["oak-log", "Oak log", "Дубовое бревно"], ["birch", "Birch", "Берёза"],
+  ["spruce", "Spruce", "Ель"], ["jungle", "Jungle", "Тропическое дерево"], ["mangrove-planks", "Mangrove planks", "Мангровые доски"],
+  ["cherry-planks", "Cherry planks", "Вишнёвые доски"], ["cleanstone", "Stone", "Камень"], ["cobblestone", "Cobblestone", "Булыжник"],
+  ["quartz", "Quartz", "Кварц"], ["dirt", "Dirt", "Земля"], ["ice", "Ice", "Лёд"], ["gold", "Gold", "Золото"],
+  ["diamond", "Diamond", "Алмаз"], ["emerald", "Emerald", "Изумруд"], ["redstone-block", "Redstone block", "Блок редстоуна"],
+  ["geode", "Amethyst geode", "Аметистовая жеода"], ["sculk-sensor", "Sculk sensor", "Скалк-сенсор"],
+  ["pumpkin", "Pumpkin", "Тыква"], ["watermelon", "Watermelon", "Арбуз"], ["plush", "Plush", "Плюш"],
+  ["monitor", "Monitor", "Монитор"], ["lettercube", "Letter cube", "Буквенный куб"],
+  ["chat", "Chat (Latin only)", "Чат (только латиница)"], ["chiseled-sandstone", "Chiseled sandstone (Latin only)", "Резной песчаник (только латиница)"],
+  ["red-chiseled-sandstone", "Chiseled red sandstone (Latin only)", "Резной красный песчаник (только латиница)"],
+  ["smooth-sandstone", "Smooth sandstone (Latin, Hebrew)", "Гладкий песчаник (латиница, иврит)"],
+  ["gilded-blackstone", "Gilded blackstone (Latin only)", "Позолоченный чернокамень (только латиница)"],
+  ["netherite", "Netherite (Latin only)", "Незерит (только латиница)"], ["blood", "Blood (Latin only)", "Кровь (только латиница)"],
+  ["gui", "Interface (Latin only)", "Интерфейс (только латиница)"], ["monitor-2", "Monitor 2 (Latin only)", "Монитор 2 (только латиница)"],
+  ["mangrove-planks-2", "Mangrove wood (Latin only)", "Мангровая древесина (только латиница)"],
+  ["minecraft", "Minecraft (Latin only)", "Майнкрафт (только латиница)"], ["ocean-gradient", "Ocean gradient (Latin only)", "Океанский градиент (только латиница)"],
+  ["obsidian", "Standard Galactic", "Стандартный галактический"], ["dripstone", "Braille", "Шрифт Брайля"], ["iron", "Iron (digits)", "Железо (цифры)"],
+];
+for (const [fonts, group] of [[COLOUR_FONTS, "letters-colour"], [MATERIAL_FONTS, "letters-material"]]) {
+  for (const [tag, en, ru] of fonts) {
+    THEMES.push({ id: `font-${tag}`, name: [`Letters: ${en}`, `Буквы: ${ru}`], group, short: [en, ru], font: `font-${tag}` });
+  }
+}

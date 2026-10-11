@@ -309,13 +309,15 @@ function renderResults(from = 0) {
 /** The selections from themes.js as read-only collections, named in the page's language. */
 function city() {
   const heads = new Map((state.meta?.themes || []).map((item) => [item.id, item.heads]));
+  const captions = new Map((state.meta?.themes || []).filter((item) => item.captions)
+    .map((item) => [item.id, new Map(item.heads.map((id, i) => [id, item.captions[i]]))]));
   const lang = state.lang === "ru" ? 1 : 0;
   return THEMES.filter((theme) => heads.get(theme.id)?.length).map((theme) => ({
     name: theme.name[lang],
     short: theme.short?.[lang] || theme.name[lang],
     group: theme.group,
     heads: heads.get(theme.id),
-    captions: theme.heads ? new Map(theme.heads) : null,
+    captions: theme.heads ? new Map(theme.heads) : captions.get(theme.id) || null,
   }));
 }
 

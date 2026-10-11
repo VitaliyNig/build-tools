@@ -319,7 +319,12 @@ search is English only and hard to browse.
   captioned with them), mini blocks (344 heads, one for every full block
   of the game the catalogue has: the head of that name closest in colour to
   the block, captioned with its name in the Russian game, in five groups:
-  wood, stone and others, concrete, terracotta, wool), road signs, traffic lights, road and pavement
+  wood, stone and others, concrete, terracotta, wool), letters (the
+  catalogue's 58 fonts, each a set of letters, digits and signs on one
+  coloured or material background, in two groups; each lists the full
+  Russian alphabet first, where the Latin head stands in for А, В, Е, К, М,
+  Н, О, Р, С, Т, Х that the fonts leave out, then Latin letters, digits and
+  signs, each captioned with its character), road signs, traffic lights, road and pavement
   (cones, hydrants, parking meters, crossings), street lamps, bins, post,
   boxes and crates, things on walls (air conditioners, cameras, vents, pipes,
   clocks), street furniture, potted plants, vehicles, birds and flags. They
