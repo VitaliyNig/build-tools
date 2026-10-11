@@ -316,7 +316,10 @@ search is English only and hard to browse.
   to the project standards: Russian road signs in the seven groups of the
   Russian traffic rules (168 catalogue heads matched to sign numbers 1.1 to
   7.18, with every weight, height and speed value the catalogue has, and
-  captioned with them), road signs, traffic lights, road and pavement
+  captioned with them), mini blocks (344 heads, one for every full block
+  of the game the catalogue has: the head of that name closest in colour to
+  the block, captioned with its name in the Russian game, in five groups:
+  wood, stone and others, concrete, terracotta, wool), road signs, traffic lights, road and pavement
   (cones, hydrants, parking meters, crossings), street lamps, bins, post,
   boxes and crates, things on walls (air conditioners, cameras, vents, pipes,
   clocks), street furniture, potted plants, vehicles, birds and flags. They
