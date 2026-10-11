@@ -19,9 +19,12 @@ function uuid(hash) {
 }
 const dashed = (hex) => `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 
-/** The command for one head in a format from FORMATS. */
+/**
+ * The command for one head in a format from FORMATS. A head the catalogue
+ * lacks (custom) has no HeadDB id, so it gets the newest vanilla /give.
+ */
 export function command(head, format) {
-  if (format === "hdb") return `/hdb give ${head.id}`;
+  if (format === "hdb") return head.custom ? command(head, "1.20.5") : `/hdb give ${head.id}`;
   const value = textureValue(head.texture);
   const { hex, ints } = uuid(head.texture);
   switch (format) {

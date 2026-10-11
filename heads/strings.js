@@ -59,6 +59,12 @@ export const STRINGS = {
   inCollection: ["in the collection", "в коллекции"],
   // Details
   idLabel: ["ID", "ID"],
+  customHead: ["Custom head", "Своя голова"],
+  customId: ["not in HeadDB", "нет в HeadDB"],
+  customNote: [
+    "Not in the HeadDB catalogue: /hdb give cannot give it, use /give with the texture.",
+    "Нет в каталоге HeadDB: /hdb give её не выдаст, используйте /give с текстурой.",
+  ],
   tags: ["Tags", "Теги"],
   collectionsOf: ["Collections of the catalogue", "Подборки каталога"],
   commands: ["Commands", "Команды"],

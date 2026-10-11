@@ -389,11 +389,15 @@ search is English only and hard to browse.
 
 A head is an id, or an object with an `id`; its `name`, if any, captions the
 head on the cards instead of the catalogue name (a head listed twice gets
-both captions). The standards now hold the project's road signs in the
-eight groups of the Russian traffic rules, read from the signs wall
-(blueprint `znaki_1`): 165 heads, each captioned from the sign next to it;
-the few of the wall's heads the catalogue lacks are named in the
-descriptions.
+both captions). A head the catalogue lacks, such as one the project drew
+itself, is an object with a `texture` (the hash or the skin URL) instead of
+an `id`: it is shown as "not in HeadDB" and given by vanilla `/give`, since
+`/hdb give` cannot give it; links carry it as `_<hash>`. The standards now
+hold the project's road signs in the eight groups of the Russian traffic
+rules, read from the signs wall (blueprint `znaki_1`): 172 heads, each
+captioned from the sign next to it, 7 of them custom; and the 30 custom
+heads of the wall "Кастомные головы Егор_Swan" (blueprint `znaki_2`):
+shop signs and sign plates.
 
 The catalogue is read the way the plugin reads it: a manifest at
 `data.headsdb.com` names the current files, which are Zstandard-compressed

@@ -167,9 +167,18 @@ const newId = () => `c${Date.now().toString(36)}${Math.random().toString(36).sli
 /** A head's caption in a collection, if it has one: captions are a Map (selections) or an object (stored collections). */
 const captionOf = (collection, id) => (collection.captions instanceof Map ? collection.captions.get(id) : collection.captions?.[id]);
 
+// A head the catalogue lacks, such as one a project drew itself, is kept by its texture: "t:<hash>".
+const CUSTOM = "t:";
+const isCustom = (key) => typeof key === "string" && key.startsWith(CUSTOM);
+/** A head's key from a card or an object key: a catalogue id, or "t:<hash>". */
+const headKey = (value) => (isCustom(value) ? value : Number(value));
+const customHead = (key) => ({ id: key, custom: true, texture: key.slice(CUSTOM.length), name: t("customHead"), category: null, tags: [], collections: [] });
+/** The texture hash in a skin URL or a bare hash. */
+const textureHash = (text) => /(?:^|texture\/)([0-9a-f]{32,})$/i.exec(String(text || "").trim())?.[1].toLowerCase();
+
 function createCollection(name, heads = [], description = "", captions = null) {
   const kept = captions ? Object.fromEntries([...(captions instanceof Map ? captions : Object.entries(captions))]
-    .filter(([id]) => heads.includes(Number(id)))) : null;
+    .filter(([id]) => heads.includes(headKey(id)))) : null;
   const collection = {
     id: newId(), name, heads: [...new Set(heads)],
     ...(description ? { description } : {}),
@@ -260,7 +269,7 @@ function card(head, caption = "") {
   open.className = "open";
   open.title = caption ? `${caption}\n${head.name}` : head.name;
   const name = Object.assign(document.createElement("span"), { className: "name", textContent: caption || head.name });
-  const id = Object.assign(document.createElement("span"), { className: "id", textContent: `#${head.id}` });
+  const id = Object.assign(document.createElement("span"), { className: "id", textContent: head.custom ? t("customId") : `#${head.id}` });
   open.append(headCanvas(head, THUMB), name, id);
   open.addEventListener("click", () => openDetails(head));
   const copyButton = Object.assign(document.createElement("button"), { type: "button", className: "copy", textContent: t("copy"), title: t("copyCommand") });
@@ -276,7 +285,7 @@ function card(head, caption = "") {
 
 /** Show on a card whether its head is in the collection the + adds to. */
 function mark(item) {
-  const on = Boolean(target()?.heads.includes(Number(item.dataset.id)));
+  const on = Boolean(target()?.heads.includes(headKey(item.dataset.id)));
   const add = item.querySelector(".add");
   add.textContent = on ? "✓" : "+";
   add.setAttribute("aria-pressed", on);
@@ -374,7 +383,7 @@ function renderDetails() {
   paint(canvas, head.texture);
   $("detailsName").textContent = head.name;
   const category = state.meta.categories.find((c) => c.id === head.category);
-  $("detailsMeta").textContent = `${t("idLabel")} ${head.id}${category ? ` · ${label(category)}` : ""}`;
+  $("detailsMeta").textContent = head.custom ? t("customNote") : `${t("idLabel")} ${head.id}${category ? ` · ${label(category)}` : ""}`;
   $("detailsTags").replaceChildren(...head.tags.map((tag) => chip(`#${state.tagNames.get(tag) || tag}`, () => {
     $("query").value = state.tagNames.get(tag) || tag;
     showTab("catalog");
@@ -387,7 +396,7 @@ function renderDetails() {
       showTab("catalog");
       runSearch();
     })));
-  $("detailsCommands").replaceChildren(...FORMATS.map((f) => {
+  $("detailsCommands").replaceChildren(...FORMATS.filter((f) => f !== "hdb" || !head.custom).map((f) => {
     const text = command(head, f);
     const note = f === "hdb" ? t("hdbNote") : text.length > CHAT_LIMIT ? t("tooLong", text.length) : "";
     return commandRow(t(`format_${f}`), text, note);
@@ -581,9 +590,9 @@ async function renderCollection() {
 /** The records of these heads, in this order; heads the catalogue lacks are left out. */
 async function headsOf(ids) {
   if (!state.meta) return [];
-  const unknown = ids.filter((id) => !state.heads.has(id));
+  const unknown = ids.filter((id) => !isCustom(id) && !state.heads.has(id));
   if (unknown.length) remember((await ask({ type: "get", ids: unknown })).items);
-  return ids.map((id) => state.heads.get(id)).filter(Boolean);
+  return ids.map((id) => (isCustom(id) ? customHead(id) : state.heads.get(id))).filter(Boolean);
 }
 
 async function copyAll(collection) {
@@ -726,19 +735,21 @@ async function findFromFile(file) {
   }
 }
 
-// A collection in a link: #c=<name>~<ids in base 36, joined by dots>.
+// A collection in a link: #c=<name>~<ids in base 36, joined by dots>; a head not in the catalogue is "_<texture hash>".
 function shareLink(collection) {
   const url = new URL(location.href);
-  url.hash = `c=${encodeURIComponent(collection.name)}~${collection.heads.map((id) => id.toString(36)).join(".")}`;
+  url.hash = `c=${encodeURIComponent(collection.name)}~${collection.heads.map((id) => (isCustom(id) ? `_${id.slice(CUSTOM.length)}` : id.toString(36))).join(".")}`;
   return url.href;
 }
 
 /** Every collection link in a text: [{ name, heads }]. */
 function parseLinks(text) {
-  return [...text.matchAll(/#c=([^~\s]*)~([0-9a-z.]*)/g)].map(([, encoded, ids]) => {
+  return [...text.matchAll(/#c=([^~\s]*)~([0-9a-z._]*)/g)].map(([, encoded, ids]) => {
     let name;
     try { name = decodeURIComponent(encoded); } catch { name = encoded; }
-    const heads = [...new Set(ids.split(".").filter(Boolean).map((id) => parseInt(id, 36)).filter(Number.isFinite))];
+    const heads = [...new Set(ids.split(".").filter(Boolean)
+      .map((id) => (id.startsWith("_") ? (textureHash(id.slice(1)) ? CUSTOM + textureHash(id.slice(1)) : NaN) : parseInt(id, 36)))
+      .filter((id) => isCustom(id) || Number.isFinite(id)))];
     return { name: name || t("shared"), description: "", heads };
   }).filter((c) => c.heads.length);
 }
@@ -762,7 +773,8 @@ async function collectionData(collection) {
     ...(collection.description ? { description: collection.description } : {}),
     heads: collection.heads.map((id) => {
       const name = captionOf(collection, id) || state.heads.get(id)?.name;
-      return name ? { id, name } : { id };
+      const head = isCustom(id) ? { texture: id.slice(CUSTOM.length) } : { id };
+      return name ? { ...head, name } : head;
     }),
   };
 }
@@ -792,22 +804,31 @@ async function exportAll() {
 
 /**
  * Collections from JSON: one collection {name, heads}, a list of them, or
- * {collections: [...]} as in standards.json. A head is an id or {id, ...}.
+ * {collections: [...]} as in standards.json. A head is an id, {id, ...}, or
+ * {texture, ...} for one the catalogue lacks: the hash or the skin URL.
  */
 function parseCollections(data) {
   const list = Array.isArray(data) ? data : Array.isArray(data?.collections) ? data.collections : [data];
+  const keyOf = (h) => {
+    if (h && typeof h === "object") {
+      if (h.id === undefined) return textureHash(h.texture) ? CUSTOM + textureHash(h.texture) : NaN;
+      return Number(h.id);
+    }
+    return isCustom(h) ? h : Number(h);
+  };
+  const valid = (key) => isCustom(key) || Number.isInteger(key);
   return list.filter((c) => c && Array.isArray(c.heads)).map((c) => {
-    // A head given as {id, name} keeps the name as its caption; one head under two names gets both.
+    // A head given with a name keeps the name as its caption; one head under two names gets both.
     const captions = new Map();
     for (const h of c.heads) {
-      const id = Number(h?.id);
-      if (!h || typeof h !== "object" || !Number.isInteger(id) || typeof h.name !== "string" || !h.name) continue;
+      const id = keyOf(h);
+      if (!h || typeof h !== "object" || !valid(id) || typeof h.name !== "string" || !h.name) continue;
       captions.set(id, captions.has(id) ? `${captions.get(id)} / ${h.name}` : h.name);
     }
     return {
       name: String(c.name || t("defaultName")),
       description: typeof c.description === "string" ? c.description : "",
-      heads: [...new Set(c.heads.map((h) => Number(typeof h === "object" && h ? h.id : h)).filter(Number.isInteger))],
+      heads: [...new Set(c.heads.map(keyOf).filter(valid))],
       captions: captions.size ? captions : null,
     };
   });
