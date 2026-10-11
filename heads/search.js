@@ -345,6 +345,7 @@ function named(index, name) {
 
 /** The heads of a selection from themes.js, in the order of its terms. */
 export function themeHeads(index, theme) {
+  if (theme.heads) return theme.heads.map(([id]) => index.byId.get(id)).filter((n) => n !== undefined);
   const heads = index.heads;
   const allowed = (n) => !theme.categories || theme.categories.includes(heads[n].category);
   const exclude = (theme.exclude || []).map((phrase) => ` ${normalize(phrase)} `);

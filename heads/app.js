@@ -235,15 +235,16 @@ function headCanvas(head, size) {
 }
 
 // ---------- cards ----------
-function card(head) {
+/** A head's card; `caption` replaces its catalogue name, which then shows on hover. */
+function card(head, caption = "") {
   const item = document.createElement("div");
   item.className = "card";
   item.dataset.id = head.id;
   const open = document.createElement("button");
   open.type = "button";
   open.className = "open";
-  open.title = head.name;
-  const name = Object.assign(document.createElement("span"), { className: "name", textContent: head.name });
+  open.title = caption ? `${caption}\n${head.name}` : head.name;
+  const name = Object.assign(document.createElement("span"), { className: "name", textContent: caption || head.name });
   const id = Object.assign(document.createElement("span"), { className: "id", textContent: `#${head.id}` });
   open.append(headCanvas(head, THUMB), name, id);
   open.addEventListener("click", () => openDetails(head));
@@ -307,8 +308,11 @@ function renderResults(from = 0) {
 /** The selections from themes.js as read-only collections, named in the page's language. */
 function city() {
   const heads = new Map((state.meta?.themes || []).map((item) => [item.id, item.heads]));
-  return THEMES.filter((theme) => heads.get(theme.id)?.length)
-    .map((theme) => ({ name: theme.name[state.lang === "ru" ? 1 : 0], heads: heads.get(theme.id) }));
+  return THEMES.filter((theme) => heads.get(theme.id)?.length).map((theme) => ({
+    name: theme.name[state.lang === "ru" ? 1 : 0],
+    heads: heads.get(theme.id),
+    captions: theme.heads ? new Map(theme.heads) : null,
+  }));
 }
 
 function renderSource() {
@@ -513,7 +517,7 @@ async function renderCollection() {
   const which = `${kind}:${state.selected.index}`;
   if (state.shownOf !== which) { state.shownOf = which; state.shown = 0; }
   state.shown = Math.min(heads.length, Math.max(state.shown, PAGE * 2));
-  const grid = heads.slice(0, state.shown).map(card);
+  const grid = heads.slice(0, state.shown).map((head) => card(head, collection.captions?.get(head.id)));
   if (missing > 0 && state.meta) grid.push(Object.assign(document.createElement("p"), { className: "hint missing", textContent: t("missing", missing) }));
   $("collectionGrid").replaceChildren(...grid);
   const left = heads.length - state.shown;
@@ -604,7 +608,10 @@ async function collectionData(collection) {
   return {
     name: collection.name,
     ...(collection.description ? { description: collection.description } : {}),
-    heads: collection.heads.map((id) => (state.heads.has(id) ? { id, name: state.heads.get(id).name } : { id })),
+    heads: collection.heads.map((id) => {
+      const name = collection.captions?.get(id) || state.heads.get(id)?.name;
+      return name ? { id, name } : { id };
+    }),
   };
 }
 
