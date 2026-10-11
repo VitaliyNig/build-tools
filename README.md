@@ -349,7 +349,8 @@ search is English only and hard to browse.
 - **Ids of heads already in the world.** `/hdb info` only knows heads that
   HeadDB 2 gave and that are still items, so placed heads are found by
   their texture instead, which is the same in the world and in the
-  catalogue. "Find ids of heads from the game" takes a WorldEdit schematic
+  catalogue. "Find ids of heads from the game" takes an Axiom blueprint
+  (`.bp`, saved on the player's own computer), a WorldEdit schematic
   (`//copy`, `//schem save`), a Litematica or structure block file, or
   pasted text: F3+I lines (the game puts the texture in them only for
   players allowed to read block data), `/give` and `/setblock` commands,

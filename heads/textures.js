@@ -43,11 +43,51 @@ export function findInText(text) {
 }
 
 // ---------- structure files ----------
-/** Bytes of a file, unpacked if it is gzip (as .schem, .schematic, .litematic and .nbt files are). */
-async function unpack(bytes) {
-  if (bytes[0] !== 0x1f || bytes[1] !== 0x8b) return bytes;
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
+const isGzip = (bytes, at = 0) => bytes[at] === 0x1f && bytes[at + 1] === 0x8b && bytes[at + 2] === 0x08;
+
+/**
+ * Unpack gzip data that starts at the beginning of `bytes`. Whatever follows
+ * the compressed data is ignored, as are damaged ends: what was unpacked
+ * until then is kept.
+ */
+async function gunzip(bytes) {
+  const reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip")).getReader();
+  const parts = [];
+  let size = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      parts.push(value);
+      size += value.length;
+    }
+  } catch { /* trailing bytes or a damaged end */ }
+  const out = new Uint8Array(size);
+  let at = 0;
+  for (const part of parts) { out.set(part, at); at += part.length; }
+  return out;
+}
+
+/**
+ * The NBT data in a file. .schem, .schematic, .litematic and .nbt files are
+ * gzip-compressed NBT. Others, as Axiom's .bp blueprints, put a header and a
+ * picture before compressed block data, each section after its length: every
+ * gzip stream in them is read.
+ */
+async function nbtParts(bytes) {
+  if (isGzip(bytes)) return [await gunzip(bytes)];
+  // Plain NBT, or a header that only looks like it (Axiom's magic number starts with the same byte).
+  const parts = bytes[0] === 10 ? [bytes] : [];
+  for (let at = 1; at < bytes.length - 3 && parts.length < 65; at++) {
+    if (!isGzip(bytes, at)) continue;
+    // Axiom writes the length of each section before it; the stream has to end
+    // exactly where the data does, or decompression gives nothing.
+    const length = at >= 4 ? new DataView(bytes.buffer, bytes.byteOffset + at - 4, 4).getInt32(0) : 0;
+    const end = length > 0 && at + length <= bytes.length ? at + length : bytes.length;
+    const part = await gunzip(bytes.subarray(at, end));
+    if (part.length) parts.push(part);
+  }
+  return parts;
 }
 
 /**
@@ -56,9 +96,14 @@ async function unpack(bytes) {
  * strings are read instead of following any one layout.
  */
 function nbtStrings(bytes) {
+  const strings = [];
+  try { readNbt(bytes, strings); } catch { /* cut short: keep the strings read so far */ }
+  return strings;
+}
+
+function readNbt(bytes, strings) {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const decoder = new TextDecoder();
-  const strings = [];
   let at = 0;
   const string = () => {
     const length = view.getUint16(at);
@@ -99,18 +144,15 @@ function nbtStrings(bytes) {
   if (root !== 10) throw new Error("not an NBT file");
   string();
   payload(10);
-  return strings;
 }
 
 /** The heads in a structure file: how often each texture occurs, and the textures in order. */
 export async function findInFile(file) {
-  const bytes = await unpack(new Uint8Array(await file.arrayBuffer()));
-  let text;
-  try {
-    text = nbtStrings(bytes).join("\n");
-  } catch {
-    text = new TextDecoder().decode(bytes); // not NBT: maybe a text file with commands
-  }
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const strings = [];
+  for (const part of await nbtParts(bytes)) strings.push(...nbtStrings(part));
+  // Not NBT at all: maybe a text file with commands.
+  const text = strings.length ? strings.join("\n") : new TextDecoder().decode(bytes);
   const counts = new Map();
   for (const line of text.split("\n")) {
     for (const hash of findInText(line).textures) counts.set(hash, (counts.get(hash) || 0) + 1);

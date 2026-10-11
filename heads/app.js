@@ -767,7 +767,7 @@ document.addEventListener("drop", (event) => {
   dragDepth = 0;
   $("drop").hidden = true;
   const all = [...event.dataTransfer.files];
-  const structure = all.find((file) => /\.(schem|schematic|litematic|nbt)$/i.test(file.name));
+  const structure = all.find((file) => /\.(schem|schematic|litematic|nbt|bp)$/i.test(file.name));
   if (structure) { findFromFile(structure); return; }
   const files = all.filter((file) => /\.json$/i.test(file.name) || file.type === "application/json");
   if (files.length) importFiles(files); else setStatus("errImport");

@@ -76,8 +76,8 @@ export const STRINGS = {
   idButton: ["Find ids of heads from the game…", "Узнать ID голов из игры…"],
   idTitle: ["Which heads are these?", "Какие это головы?"],
   idWaySchem: [
-    "Many at once: select them with WorldEdit, //copy, //schem save <name>, and load the .schem file here. Litematica (.litematic) and structure block (.nbt) files work too.",
-    "Сразу много: выделите их WorldEdit, затем //copy и //schem save <имя>, и загрузите сюда файл .schem. Подойдут и файлы Litematica (.litematic) и структурного блока (.nbt).",
+    "Many at once: with Axiom, select them and save a blueprint, then load its .bp file from .minecraft/axiom/blueprints; it stays on your computer, no server access needed. Or with WorldEdit: //copy, //schem save <name>, and the .schem file from the server. Litematica (.litematic) and structure block (.nbt) files work too.",
+    "Сразу много: в Axiom выделите их и сохраните чертёж (blueprint), затем загрузите сюда его файл .bp из .minecraft/axiom/blueprints — он сохраняется у вас на компьютере, доступ к серверу не нужен. Или WorldEdit: //copy, //schem save <имя> и файл .schem с сервера. Подойдут и файлы Litematica (.litematic) и структурного блока (.nbt).",
   ],
   idWayF3: [
     "One by one: look at a head, press F3+I and paste here; lines can pile up. The game copies the texture only for players allowed to read block data (usually operators); otherwise the line has no texture in it.",
