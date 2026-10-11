@@ -313,9 +313,10 @@ search is English only and hard to browse.
   keyboard layout («cnek») is read in the other one («стул»). A number finds
   the head with that id.
 - **City selections** for BuildTheEarth streets, in the Collections tab next
-  to the project standards: Russian road signs (149 catalogue heads matched
-  to the numbers of the Russian traffic rules, 1.1 to 7.18, and captioned
-  with them), road signs, traffic lights, road and pavement
+  to the project standards: Russian road signs in the seven groups of the
+  Russian traffic rules (168 catalogue heads matched to sign numbers 1.1 to
+  7.18, with every weight, height and speed value the catalogue has, and
+  captioned with them), road signs, traffic lights, road and pavement
   (cones, hydrants, parking meters, crossings), street lamps, bins, post,
   boxes and crates, things on walls (air conditioners, cameras, vents, pipes,
   clocks), street furniture, potted plants, vehicles, birds and flags. They
