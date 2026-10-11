@@ -49,11 +49,16 @@ export const STRINGS = {
   export: ["Export", "Экспорт"],
   mcVersion: ["MC version", "Версия MC"],
   exportTip: [
-    "The export uses the generated result's Minecraft version.\nFor another version, select its palette and click Generate again.\n1.13+: Sponge .schem (WorldEdit 7, FAWE, Litematica, Axiom).\n1.12 and older: MCEdit .schematic (WorldEdit 6, Schematica).",
-    "Экспорт использует версию Minecraft готового результата.\nДля другой версии выберите её палитру и снова нажмите «Создать».\n1.13+: Sponge .schem (WorldEdit 7, FAWE, Litematica, Axiom).\n1.12 и старше: MCEdit .schematic (WorldEdit 6, Schematica).",
+    "The export uses the generated result's Minecraft version.\nFor another version, select its palette and click Generate again.\n1.13+: Sponge .schem (WorldEdit 7, FAWE, Litematica, Axiom) or an Axiom blueprint (.bp).\n1.12 and older: MCEdit .schematic (WorldEdit 6, Schematica).",
+    "Экспорт использует версию Minecraft готового результата.\nДля другой версии выберите её палитру и снова нажмите «Создать».\n1.13+: Sponge .schem (WorldEdit 7, FAWE, Litematica, Axiom) или чертёж Axiom (.bp).\n1.12 и старше: MCEdit .schematic (WorldEdit 6, Schematica).",
   ],
   exportSchem: ["Export .schem", "Экспорт .schem"],
   exportSchematic: ["Export .schematic", "Экспорт .schematic"],
+  exportBp: ["Export .bp (Axiom)", "Экспорт .bp (Axiom)"],
+  exportBpTip: [
+    "An Axiom blueprint. Put the file into .minecraft/config/axiom/blueprints: it appears in Axiom's blueprint browser.",
+    "Чертёж Axiom. Положите файл в .minecraft/config/axiom/blueprints — он появится в браузере чертежей Axiom.",
+  ],
   exportPng: ["Export PNG mockup", "Экспорт PNG"],
   pickerTitle: ["Choose blocks", "Выбор блоков"],
   pickerSearch: ["Search blocks…", "Поиск блоков…"],
@@ -77,6 +82,10 @@ export const STRINGS = {
   statusSchem: [
     (w, h, n) => `Saved ${w}×${h} schematic (${n} block types).`,
     (w, h, n) => `Сохранена схема ${w}×${h} (${n} типов блоков).`,
+  ],
+  statusBp: [
+    (w, h, n) => `Saved ${w}×${h} Axiom blueprint (${n} block types).`,
+    (w, h, n) => `Сохранён чертёж Axiom ${w}×${h} (${n} типов блоков).`,
   ],
   statusPng: ["Saved textured PNG mockup.", "PNG с текстурами сохранён."],
   statusJar: [(p) => `Reading JAR… ${p}`, (p) => `Чтение JAR… ${p}`],

@@ -82,7 +82,8 @@ are never uploaded.
 - **Block filter** — enable/disable blocks by category.
 - **Preview + material list** — the mosaic is drawn with the real block textures,
   plus a per-block count table.
-- **Export** — a schematic for the result's Minecraft version and a PNG mockup.
+- **Export** — a schematic for the result's Minecraft version, an Axiom
+  blueprint and a PNG mockup.
 - English and Russian interface.
 
 ### Typical workflow
@@ -105,6 +106,13 @@ follows the version of the palette the result was generated with:
 |-----------|------|--------|----------|
 | 1.13 and newer | `graffiti.schem` | Sponge Schematic v2 | WorldEdit 7+, FAWE, Litematica, Axiom |
 | 1.12 and older | `graffiti.schematic` | MCEdit (numeric block ids) | WorldEdit 6, Schematica |
+
+For 1.13 and newer there is also **Export .bp (Axiom)**: `graffiti.bp`, an Axiom
+blueprint of the same wall, centred on its origin, with the picture as its
+thumbnail. Put it into `.minecraft/config/axiom/blueprints` and it appears in
+Axiom's blueprint browser. It is written in the blueprints' first layout
+(`Version` 1, structure void for empty cells), which newer Axiom versions read
+too.
 
 Sponge v2 is used rather than v3 because every reader of v3 also reads v2.
 Versions before 1.13 cannot load `.schem`, and their blockstate names are model
@@ -172,6 +180,7 @@ graffiti/
     quantize.js           nearest block, dithering, material counts
     texture.js            texture-aware matching
     schematic.js          .schem and .schematic writers
+    blueprint.js          Axiom .bp writer
 
 shared/mc/                shared with Palette
   palettes.js             bundled palettes + JARs imported into IndexedDB

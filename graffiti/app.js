@@ -5,6 +5,7 @@ import { applyAdjustments, isNeutral, rotate90 } from "./core/imageops.js";
 import { categoryMap, subset, TILE_BYTES, TILE_PX } from "../shared/mc/palette.js";
 import { materialCounts } from "./core/quantize.js";
 import { isLegacy } from "../shared/mc/legacy.js";
+import { buildBlueprint } from "./core/blueprint.js";
 import { buildSchematic } from "./core/schematic.js";
 import { atlasStyle, importJarFile, listPalettes, loadPalette, tileIcon } from "../shared/mc/palettes.js";
 import { PanZoom } from "../shared/panzoom.js";
@@ -13,6 +14,8 @@ import { CATEGORIES, STRINGS } from "./strings.js";
 const MAX_SOURCE_SIDE = 4096;   // larger images are downscaled on load
 const MAX_PREVIEW_SIDE = 1600;  // the edit canvas shows at most this many pixels per side
 const MAX_PNG_SIDE = 8192;
+// Side of the picture a blueprint shows in Axiom's browser, as Axiom makes them.
+const BP_THUMB = 96;
 
 const $ = (id) => document.getElementById(id);
 const factor = (v) => (v / 100).toFixed(2);
@@ -519,6 +522,29 @@ async function exportSchem() {
   }
 }
 
+/** The result fitted into a square PNG, for a blueprint's thumbnail. */
+async function thumbnail() {
+  const canvas = Object.assign(document.createElement("canvas"), { width: BP_THUMB, height: BP_THUMB });
+  const scale = BP_THUMB / Math.max(resultCanvas.width, resultCanvas.height);
+  const w = Math.max(1, Math.round(resultCanvas.width * scale)), h = Math.max(1, Math.round(resultCanvas.height * scale));
+  canvas.getContext("2d").drawImage(resultCanvas, (BP_THUMB - w) >> 1, (BP_THUMB - h) >> 1, w, h);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  if (!blob) throw new Error("PNG");
+  return new Uint8Array(await blob.arrayBuffer());
+}
+
+async function exportBp() {
+  const r = state.result;
+  if (!r) return;
+  try {
+    const { bytes, paletteSize } = await buildBlueprint(r.idx, r.w, r.h, r.palette, await thumbnail());
+    download(new Blob([bytes]), "graffiti.bp");
+    setStatus("statusBp", r.w, r.h, paletteSize);
+  } catch (error) {
+    setStatus("errExport", error.message);
+  }
+}
+
 function exportPng() {
   const r = state.result;
   if (!r) return;
@@ -549,6 +575,8 @@ function updateActions() {
   $("exportSchem").textContent = t(legacy ? "exportSchematic" : "exportSchem");
   $("generate").disabled = !state.source || !state.palette || state.busy;
   $("exportSchem").disabled = $("exportPng").disabled = !hasResult || state.busy;
+  // Axiom has no versions that old.
+  $("exportBp").disabled = !hasResult || state.busy || legacy;
   $("chooseBlocks").disabled = !state.palette;
   $("addJar").disabled = $("paletteVersion").disabled = state.busy;
 }
@@ -598,6 +626,7 @@ function wire() {
 
   $("generate").addEventListener("click", generate);
   $("exportSchem").addEventListener("click", exportSchem);
+  $("exportBp").addEventListener("click", exportBp);
   $("exportPng").addEventListener("click", exportPng);
 
   $("zoomIn").addEventListener("click", () => resultView.zoomBy(1.25));

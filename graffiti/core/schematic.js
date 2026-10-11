@@ -9,10 +9,10 @@
 // rows, Length (depth) = 1.
 import { isLegacy, legacyBlock } from "../../shared/mc/legacy.js";
 
-const TAG = { END: 0, SHORT: 2, INT: 3, BYTE_ARRAY: 7, STRING: 8, LIST: 9, COMPOUND: 10, INT_ARRAY: 11 };
+export const TAG = { END: 0, BYTE: 1, SHORT: 2, INT: 3, LONG: 4, FLOAT: 5, BYTE_ARRAY: 7, STRING: 8, LIST: 9, COMPOUND: 10, INT_ARRAY: 11, LONG_ARRAY: 12 };
 const encoder = new TextEncoder();
 
-class NbtWriter {
+export class NbtWriter {
   constructor() { this.bytes = []; }
   u8(v) { this.bytes.push(v & 0xff); }
   i16(v) { this.u8(v >> 8); this.u8(v); }
@@ -38,6 +38,23 @@ class NbtWriter {
     for (const b of utf8) this.bytes.push(b);
   }
   emptyList(name) { this.header(TAG.LIST, name); this.u8(TAG.COMPOUND); this.i32(0); }
+  byte(name, v) { this.header(TAG.BYTE, name); this.u8(v); }
+  /** A long that fits in 32 bits. */
+  long(name, v) { this.header(TAG.LONG, name); this.i32(v < 0 ? -1 : 0); this.i32(v); }
+  float(name, v) {
+    this.header(TAG.FLOAT, name);
+    const view = new DataView(new ArrayBuffer(4));
+    view.setFloat32(0, v);
+    for (let i = 0; i < 4; i++) this.u8(view.getUint8(i));
+  }
+  /** values: BigUint64Array. */
+  longArray(name, values) {
+    this.header(TAG.LONG_ARRAY, name); this.i32(values.length);
+    for (const v of values) { this.i32(Number(v >> 32n)); this.i32(Number(v & 0xffffffffn)); }
+  }
+  /** A list of `length` compounds: write each one's tags and close it with end(). */
+  compoundList(name, length) { this.header(TAG.LIST, name); this.u8(TAG.COMPOUND); this.i32(length); }
+  end() { this.u8(TAG.END); }
   compound(name, body) { this.header(TAG.COMPOUND, name); body(); this.u8(TAG.END); }
 }
 
