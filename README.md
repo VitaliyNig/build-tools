@@ -395,9 +395,9 @@ an `id`: it is shown as "not in HeadDB" and given by vanilla `/give`, since
 `/hdb give` cannot give it; links carry it as `_<hash>`. The standards now
 hold the project's road signs in the eight groups of the Russian traffic
 rules, read from the signs wall (blueprint `znaki_1`): 172 heads, each
-captioned from the sign next to it, 7 of them custom; and the 30 custom
-heads of the wall "Кастомные головы Егор_Swan" (blueprint `znaki_2`):
-shop signs and sign plates.
+captioned from the sign next to it, 7 of them custom; and the custom
+heads of the wall "Кастомные головы Егор_Swan" (blueprints `znaki_2` and
+`znaki_3`), in the wall's order: 12 shop signs and 21 road signs and plates.
 
 The catalogue is read the way the plugin reads it: a manifest at
 `data.headsdb.com` names the current files, which are Zstandard-compressed
