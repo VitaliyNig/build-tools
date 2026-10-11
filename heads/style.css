@@ -44,7 +44,8 @@ canvas.broken { background: repeating-linear-gradient(45deg, var(--surface-2) 0 
 .card .id { color: var(--muted); font-size: 12px; }
 .card .actions { display: flex; gap: 4px; padding: 0 6px 6px; }
 .card .actions button { padding: 4px 6px; font-size: 12px; }
-.card .copy { flex: 1; }
+.card .copy { flex: 1; transition: background-color 0.15s, border-color 0.15s, color 0.15s; }
+.card .copy.copied { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
 .card .add { flex: none; width: 34px; font-weight: 700; }
 .card .add[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
 .more { align-self: center; margin-top: 12px; }

@@ -273,7 +273,13 @@ function card(head, caption = "") {
   open.append(headCanvas(head, THUMB), name, id);
   open.addEventListener("click", () => openDetails(head));
   const copyButton = Object.assign(document.createElement("button"), { type: "button", className: "copy", textContent: t("copy"), title: t("copyCommand") });
-  copyButton.addEventListener("click", () => copy(command(head, format()), "statusCopied", head.name));
+  let flash = 0;
+  copyButton.addEventListener("click", async () => {
+    if (!await copy(command(head, format()), "statusCopied", head.name)) return;
+    copyButton.classList.add("copied");
+    clearTimeout(flash);
+    flash = setTimeout(() => copyButton.classList.remove("copied"), 1200);
+  });
   const add = Object.assign(document.createElement("button"), { type: "button", className: "add" });
   add.addEventListener("click", () => toggleInTarget(head));
   const actions = Object.assign(document.createElement("div"), { className: "actions" });
@@ -318,7 +324,7 @@ function renderResults(from = 0) {
   if (!state.meta) return;
   const grid = $("grid");
   if (!from) grid.replaceChildren();
-  grid.append(...state.results.slice(from).map(card));
+  grid.append(...state.results.slice(from).map((head) => card(head)));
   const filtered = $("query").value.trim() || $("category").value || $("collection").value;
   $("info").textContent = [    state.corrected ? t("corrected", state.corrected) : "",
     state.total ? t(filtered ? "found" : "all", state.total) : t("nothing"),
