@@ -164,8 +164,17 @@ function saveCollections() {
 
 const newId = () => `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
-function createCollection(name, heads = [], description = "") {
-  const collection = { id: newId(), name, heads: [...new Set(heads)], ...(description ? { description } : {}) };
+/** A head's caption in a collection, if it has one: captions are a Map (selections) or an object (stored collections). */
+const captionOf = (collection, id) => (collection.captions instanceof Map ? collection.captions.get(id) : collection.captions?.[id]);
+
+function createCollection(name, heads = [], description = "", captions = null) {
+  const kept = captions ? Object.fromEntries([...(captions instanceof Map ? captions : Object.entries(captions))]
+    .filter(([id]) => heads.includes(Number(id)))) : null;
+  const collection = {
+    id: newId(), name, heads: [...new Set(heads)],
+    ...(description ? { description } : {}),
+    ...(kept && Object.keys(kept).length ? { captions: kept } : {}),
+  };
   state.collections.push(collection);
   saveCollections();
   fillTargets();
@@ -546,7 +555,7 @@ async function renderCollection() {
   } else {
     if (kind === "found" && collection.missing.length) actions.push(action("copyMissing", () => copyMissing(collection)));
     actions.unshift(action("saveCopy", () => {
-      createCollection(collection.name, collection.heads, collection.description);
+      createCollection(collection.name, collection.heads, collection.description, collection.captions);
       state.selected = { kind: "mine", index: state.collections.length - 1 };
       refreshMarks();
       renderCollections();
@@ -561,7 +570,7 @@ async function renderCollection() {
   const which = `${kind}:${state.selected.index}`;
   if (state.shownOf !== which) { state.shownOf = which; state.shown = 0; }
   state.shown = Math.min(heads.length, Math.max(state.shown, PAGE * 2));
-  const grid = heads.slice(0, state.shown).map((head) => card(head, collection.captions?.get(head.id)));
+  const grid = heads.slice(0, state.shown).map((head) => card(head, captionOf(collection, head.id)));
   if (missing > 0 && state.meta) grid.push(Object.assign(document.createElement("p"), { className: "hint missing", textContent: t("missing", missing) }));
   $("collectionGrid").replaceChildren(...grid);
   const left = heads.length - state.shown;
@@ -752,7 +761,7 @@ async function collectionData(collection) {
     name: collection.name,
     ...(collection.description ? { description: collection.description } : {}),
     heads: collection.heads.map((id) => {
-      const name = collection.captions?.get(id) || state.heads.get(id)?.name;
+      const name = captionOf(collection, id) || state.heads.get(id)?.name;
       return name ? { id, name } : { id };
     }),
   };
@@ -787,11 +796,21 @@ async function exportAll() {
  */
 function parseCollections(data) {
   const list = Array.isArray(data) ? data : Array.isArray(data?.collections) ? data.collections : [data];
-  return list.filter((c) => c && Array.isArray(c.heads)).map((c) => ({
-    name: String(c.name || t("defaultName")),
-    description: typeof c.description === "string" ? c.description : "",
-    heads: [...new Set(c.heads.map((h) => Number(typeof h === "object" && h ? h.id : h)).filter(Number.isInteger))],
-  }));
+  return list.filter((c) => c && Array.isArray(c.heads)).map((c) => {
+    // A head given as {id, name} keeps the name as its caption; one head under two names gets both.
+    const captions = new Map();
+    for (const h of c.heads) {
+      const id = Number(h?.id);
+      if (!h || typeof h !== "object" || !Number.isInteger(id) || typeof h.name !== "string" || !h.name) continue;
+      captions.set(id, captions.has(id) ? `${captions.get(id)} / ${h.name}` : h.name);
+    }
+    return {
+      name: String(c.name || t("defaultName")),
+      description: typeof c.description === "string" ? c.description : "",
+      heads: [...new Set(c.heads.map((h) => Number(typeof h === "object" && h ? h.id : h)).filter(Number.isInteger))],
+      captions: captions.size ? captions : null,
+    };
+  });
 }
 
 const sameHeads = (a, b) => a.length === b.length && a.every((id) => b.includes(id));
@@ -807,7 +826,7 @@ function addCollections(collections) {
     if (state.collections.some((mine) => mine.name === c.name && sameHeads(mine.heads, c.heads))) { same++; continue; }
     let name = c.name;
     for (let n = 2; state.collections.some((mine) => mine.name === name); n++) name = `${c.name} (${n})`;
-    createCollection(name, c.heads, c.description);
+    createCollection(name, c.heads, c.description, c.captions);
     added++;
   }
   if (added) state.selected = { kind: "mine", index: state.collections.length - 1 };

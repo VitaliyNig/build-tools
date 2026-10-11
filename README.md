@@ -313,10 +313,7 @@ search is English only and hard to browse.
   keyboard layout («cnek») is read in the other one («стул»). A number finds
   the head with that id.
 - **City selections** for BuildTheEarth streets, in the Collections tab next
-  to the project standards: Russian road signs in the seven groups of the
-  Russian traffic rules (168 catalogue heads matched to sign numbers 1.1 to
-  7.18, with every weight, height and speed value the catalogue has, and
-  captioned with them), mini blocks (344 heads, one for every full block
+  to the project standards: mini blocks (344 heads, one for every full block
   of the game the catalogue has: the head of that name closest in colour to
   the block, captioned with its name in the Russian game, in five groups:
   wood, stone and others, concrete, terracotta, wool), letters (the
@@ -390,8 +387,13 @@ search is English only and hard to browse.
 }
 ```
 
-A head is an id, or an object with an `id`; the other fields are only for
-the people reading the file.
+A head is an id, or an object with an `id`; its `name`, if any, captions the
+head on the cards instead of the catalogue name (a head listed twice gets
+both captions). The standards now hold the project's road signs in the
+eight groups of the Russian traffic rules, read from the signs wall
+(blueprint `znaki_1`): 165 heads, each captioned from the sign next to it;
+the few of the wall's heads the catalogue lacks are named in the
+descriptions.
 
 The catalogue is read the way the plugin reads it: a manifest at
 `data.headsdb.com` names the current files, which are Zstandard-compressed
