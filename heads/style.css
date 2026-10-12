@@ -9,10 +9,35 @@ main { flex: 1; display: flex; flex-direction: column; gap: 14px; width: 100%; m
   display: flex; flex-direction: column; gap: 10px; padding: 14px;
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
 }
-.search input[type="search"] { width: 100%; font-size: 18px; padding: 10px 12px; }
+#query { width: 100%; font-size: 18px; padding: 10px 12px; }
 .options { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
 .field { display: inline-flex; align-items: center; gap: 6px; }
 .field select { max-width: 260px; }
+/* The chosen tags, each with its ×, and whether a head needs all of them or any. */
+.tag-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.tag-row .chips { margin: 0; }
+.chip .x { margin-left: 6px; color: var(--muted); }
+/* Reset filters: in the danger colour, apart from the other buttons. */
+#resetFilters {
+  color: var(--danger); border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+}
+#resetFilters:hover { color: #fff; background: var(--danger); }
+
+/* Colour: the button that opens the panel, the panel with its blocks, and swatches. */
+.swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border); vertical-align: -2px; }
+.swatch.none { background: repeating-linear-gradient(45deg, var(--surface-2) 0 3px, transparent 3px 6px); }
+.colour-button { display: inline-flex; align-items: center; gap: 6px; }
+.colour-button[aria-expanded="true"] { border-color: var(--accent); }
+.colour-panel { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); }
+.colour-panel input[type="color"] { width: 44px; height: 32px; padding: 0 2px; border: 1px solid var(--border); border-radius: 6px; background: none; }
+.colour-panel .hex { width: 90px; font-family: ui-monospace, Consolas, monospace; }
+.colour-panel output { min-width: 2ch; color: var(--muted); }
+.block-tiles { display: flex; flex-wrap: wrap; gap: 3px; max-height: 196px; overflow-y: auto; }
+.block-tiles button { padding: 2px; border-radius: 4px; line-height: 0; background: var(--surface); }
+.block-tiles button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.block-tiles canvas { width: 32px; height: 32px; image-rendering: pixelated; }
+.chip .swatch { margin-right: 6px; }
 
 /* Catalogue and collections. */
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
@@ -150,7 +175,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
   .topbar .subtitle { display: none; }
   .grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
   .field { width: 100%; justify-content: space-between; }
-  .field select { flex: 1; max-width: none; min-width: 0; }
+  .field select, .field .small-input { flex: 1; max-width: none; min-width: 0; }
   #collectionsView:not([hidden]) { grid-template-columns: 1fr; }
   .head-view { flex-direction: column; align-items: center; text-align: center; padding-right: 0; }
   .head-view .chips { justify-content: center; }
