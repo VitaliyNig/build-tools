@@ -17,6 +17,12 @@ main { flex: 1; display: flex; flex-direction: column; gap: 14px; width: 100%; m
 .tag-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
 .tag-row .chips { margin: 0; }
 .chip .x { margin-left: 6px; color: var(--muted); }
+/* Reset filters: in the danger colour, apart from the other buttons. */
+#resetFilters {
+  color: var(--danger); border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+}
+#resetFilters:hover { color: #fff; background: var(--danger); }
 
 /* Colour: the button that opens the panel, the panel with its blocks, and swatches. */
 .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border); vertical-align: -2px; }
