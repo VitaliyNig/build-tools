@@ -24,8 +24,26 @@
         <label class="field"><span data-i18n="category"></span> <select id="category"></select></label>
         <label class="field"><span data-i18n="collection"></span> <select id="collection"></select></label>
         <label class="field"><span data-i18n="tagsFilter"></span> <input type="text" id="tagInput" class="small-input" list="tagList" spellcheck="false" autocomplete="off"></label>
+        <div class="field" id="colourField" hidden><span data-i18n="colour"></span> <button type="button" id="colourButton" class="colour-button" aria-expanded="false" aria-controls="colourPanel"><i class="swatch" id="colourSwatch"></i><span id="colourLabel"></span></button></div>
         <label class="field"><span data-i18n="format"></span> <select id="format"></select></label>
         <label class="field"><span data-i18n="addTo"></span> <select id="target"></select></label>
+      </div>
+      <div class="colour-panel" id="colourPanel" hidden>
+        <div class="options">
+          <input type="color" id="colourInput" value="#a0522d" aria-label="Colour">
+          <input type="text" id="colourHex" class="small-input hex" maxlength="7" spellcheck="false" autocomplete="off" aria-label="HEX">
+          <label class="field"><span data-i18n="colourMode"></span> <select id="colourMode"></select></label>
+          <label class="field" data-i18n-title="colourSpreadTip"><span data-i18n="colourSpread"></span>
+            <input type="range" id="colourSpread" min="5" max="60" value="20"> <output id="colourSpreadValue">20</output></label>
+          <button type="button" id="colourClear" data-i18n="colourClear"></button>
+        </div>
+        <div class="options">
+          <span data-i18n="colourFromBlock"></span>
+          <select id="blockVersion" aria-label="Minecraft"></select>
+          <input type="search" id="blockSearch" class="small-input" spellcheck="false" autocomplete="off">
+        </div>
+        <div class="block-tiles" id="blockTiles"></div>
+        <p class="hint" data-i18n="colourHint"></p>
       </div>
       <datalist id="tagList"></datalist>
       <div class="tag-row" id="tagRow" hidden>
@@ -137,6 +155,7 @@
         <div>
           <h2 id="detailsName"></h2>
           <p class="meta" id="detailsMeta"></p>
+          <div class="chips" id="detailsColours"></div>
           <div class="chips" id="detailsTags"></div>
           <div class="chips" id="detailsCollections"></div>
         </div>

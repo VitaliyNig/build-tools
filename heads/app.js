@@ -10,6 +10,7 @@ import { findInFile, findInText } from "./textures.js";
 const COLLECTIONS_KEY = "heads.collections", TARGET_KEY = "heads.target", FORMAT_KEY = "heads.format";
 const OPEN_GROUPS_KEY = "heads.openGroups";
 const WORD_KEY = "heads.word", WORD_FONT_KEY = "heads.wordFont", PLAYER_KEY = "heads.player";
+const BLOCK_VERSION_KEY = "heads.blockVersion";
 // Cards shown at a time; "show more" adds as many again.
 const PAGE = 60;
 // Size of a head picture on a card, in CSS pixels.
@@ -23,6 +24,8 @@ const state = {
   meta: null,                  // the catalogue: revision, categories, collections, tags
   tagNames: new Map(),         // tag id → name
   tags: [],                    // the tag filter: tag ids a head needs
+  colour: null,                // the colour filter: { rgb, block: the block entry it was taken from, or null }
+  blocks: null,                // blocks to take a colour from: { palette, entries }, loaded when first asked for
   query: "", results: [], total: 0, corrected: null,
   heads: new Map(),            // head id → record, for every head seen
   collections: loadCollections(),
@@ -59,6 +62,7 @@ function retranslate() {
   $("wordText").placeholder = t("wordPlaceholder");
   $("idText").placeholder = t("idPlaceholder");
   $("tagInput").placeholder = t("tagPlaceholder");
+  $("blockSearch").placeholder = t("colourBlockSearch");
   if (state.status) $("status").textContent = t(...state.status);
   fillFormats();
   fillFilters();
@@ -134,7 +138,9 @@ function fillFilters() {
   fillSelect($("category"), [["", t("any")], ...(meta ? [...meta.categories].sort(byName).map((c) => [c.id, label(c)]) : [])], $("category").value);
   fillSelect($("collection"), [["", t("any")], ...(meta ? [...meta.collections].sort(byName).map((c) => [c.id, `${label(c)} (${c.count})`]) : [])], $("collection").value);
   fillSelect($("tagMatch"), [["all", t("tagMatchAll")], ["any", t("tagMatchAny")]], $("tagMatch").value);
-  renderTags();
+  fillSelect($("colourMode"), [["mostly", t("colourMostly")], ["has", t("colourHas")]], $("colourMode").value);
+  $("colourField").hidden = !meta?.coloured;
+  renderFilters();
 }
 
 // ---------- tag filter ----------
@@ -155,11 +161,19 @@ function tagByName(name) {
   return best;
 }
 
-/** The chosen tags as chips; a chip's × drops its tag. */
-function renderTags() {
-  $("tagRow").hidden = !state.tags.length;
+/** The chosen colour and tags as chips; a chip's × drops its filter. */
+function renderFilters() {
+  $("tagRow").hidden = !state.tags.length && !state.colour;
   $("tagMatch").hidden = state.tags.length < 2;
-  $("tagChips").replaceChildren(...state.tags.map((id) => {
+  renderColourButton();
+  const colourChip = [];
+  if (state.colour) {
+    const button = Object.assign(document.createElement("button"), { type: "button", className: "chip", title: t("colourRemove") });
+    button.append(swatch(state.colour.rgb), colourName(), Object.assign(document.createElement("span"), { className: "x", textContent: "×" }));
+    button.addEventListener("click", () => setColour(null));
+    colourChip.push(button);
+  }
+  $("tagChips").replaceChildren(...colourChip, ...state.tags.map((id) => {
     const name = state.tagNames.get(id) || id;
     const button = Object.assign(document.createElement("button"), { type: "button", className: "chip", title: t("tagRemove", name) });
     button.append(`#${name}`, Object.assign(document.createElement("span"), { className: "x", textContent: "×" }));
@@ -170,7 +184,7 @@ function renderTags() {
 
 function setTags(tags) {
   state.tags = [...new Set(tags)];
-  renderTags();
+  renderFilters();
   showTab("catalog");
   runSearch();
 }
@@ -186,6 +200,89 @@ function addTypedTag(quiet) {
   $("tagInput").value = "";
   if (state.status?.[0] === "errTag") setStatus(null);
   setTags([...state.tags, tag.id]);
+}
+
+// ---------- colour filter ----------
+const toHex = (rgb) => `#${rgb.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+function fromHex(text) {
+  const match = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(text.trim());
+  if (!match) return null;
+  const hex = match[1].length === 3 ? [...match[1]].map((c) => c + c).join("") : match[1];
+  return [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+}
+
+/** A small square of a colour; without one, a hatched square. */
+function swatch(rgb) {
+  const box = Object.assign(document.createElement("i"), { className: rgb ? "swatch" : "swatch none" });
+  if (rgb) box.style.background = toHex(rgb);
+  return box;
+}
+
+/** The chosen colour in words: the block it came from, or its hex code. */
+const colourName = () => (state.colour?.block ? t("colourOfBlock", state.colour.block.name) : toHex(state.colour.rgb));
+
+function renderColourButton() {
+  $("colourSwatch").replaceWith(Object.assign(swatch(state.colour?.rgb), { id: "colourSwatch" }));
+  $("colourLabel").textContent = state.colour ? colourName() : t("colourAny");
+  $("colourButton").setAttribute("aria-expanded", !$("colourPanel").hidden);
+}
+
+let colourTimer = 0;
+/** Filter by a colour (an [r, g, b], or null for none), taken from `block` if it came from one. */
+function setColour(rgb, block = null) {
+  state.colour = rgb ? { rgb, block } : null;
+  if (rgb) {
+    $("colourInput").value = $("colourHex").value = toHex(rgb);
+  } else {
+    $("colourHex").value = "";
+  }
+  renderFilters();
+  for (const button of $("blockTiles").children) button.setAttribute("aria-pressed", button.entry === block);
+  showTab("catalog");
+  // Dragging over the colour picker sends a stream of colours: search once it settles.
+  clearTimeout(colourTimer);
+  colourTimer = setTimeout(runSearch, 120);
+}
+
+async function toggleColourPanel() {
+  $("colourPanel").hidden = !$("colourPanel").hidden;
+  renderColourButton();
+  if (!$("colourPanel").hidden && !state.blocks) await loadBlocks();
+}
+
+/** The blocks of a Minecraft version, as in Palette: full cubes and their other sides, technical blocks aside. */
+async function loadBlocks(key = null) {
+  try {
+    const { listPalettes, loadPalette } = await import("../shared/mc/palettes.js");
+    const { listEntries } = await import("../palette/core.js");
+    const { entries, defaultKey } = await listPalettes();
+    key ||= [load(BLOCK_VERSION_KEY), defaultKey].find((k) => entries.some((entry) => entry.key === k));
+    fillSelect($("blockVersion"), entries.map((entry) => [entry.key, entry.version]), key);
+    const palette = await loadPalette(key);
+    state.blocks = {
+      palette,
+      entries: listEntries(palette).filter((entry) => entry.kind !== "deco" && !entry.hidden && !entry.technical)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    };
+    renderBlocks();
+  } catch (error) {
+    setStatus("errBlocks", error.message);
+  }
+}
+
+async function renderBlocks() {
+  if (!state.blocks) return;
+  const { tileCanvas } = await import("../shared/mc/palettes.js");
+  const query = $("blockSearch").value.trim().toLowerCase();
+  const shown = state.blocks.entries.filter((entry) => !query
+    || [entry.name, entry.id, ...(entry.also || [])].some((name) => name.toLowerCase().includes(query)));
+  $("blockTiles").replaceChildren(...shown.map((entry) => {
+    const button = Object.assign(document.createElement("button"), { type: "button", title: [entry.name, ...(entry.also || [])].join("\n"), entry });
+    button.setAttribute("aria-pressed", state.colour?.block?.id === entry.id);
+    button.append(tileCanvas(state.blocks.palette, entry.kind, entry.index));
+    button.addEventListener("click", () => setColour(entry.rgb, entry));
+    return button;
+  }));
 }
 
 /** The collection the + buttons add to. */
@@ -367,6 +464,7 @@ async function runSearch(append = false) {
   const answer = await ask({
     type: "search", query: $("query").value, category: $("category").value, collection: $("collection").value,
     tags: state.tags, match: $("tagMatch").value,
+    colour: state.colour?.rgb || null, colourMode: $("colourMode").value, spread: Number($("colourSpread").value),
     offset, limit: PAGE,
   });
   if (seq !== searchSeq) return;
@@ -382,7 +480,7 @@ function renderResults(from = 0) {
   const grid = $("grid");
   if (!from) grid.replaceChildren();
   grid.append(...state.results.slice(from).map((head) => card(head)));
-  const filtered = $("query").value.trim() || $("category").value || $("collection").value || state.tags.length;
+  const filtered = $("query").value.trim() || $("category").value || $("collection").value || state.tags.length || state.colour;
   $("info").textContent = [    state.corrected ? t("corrected", state.corrected) : "",
     state.total ? t(filtered ? "found" : "all", state.total) : t("nothing"),
   ].filter(Boolean).join(" ");
@@ -447,6 +545,13 @@ function renderDetails() {
   $("detailsName").textContent = head.name;
   const category = state.meta.categories.find((c) => c.id === head.category);
   $("detailsMeta").textContent = head.custom ? t("customNote") : `${t("idLabel")} ${head.id}${category ? ` · ${label(category)}` : ""}`;
+  $("detailsColours").replaceChildren(...(head.colours || []).map(({ rgb, weight }) => {
+    const percent = Math.round(weight * 100);
+    const button = chip(`${percent}%`, () => setColour(rgb));
+    button.prepend(swatch(rgb));
+    button.title = t("colourShare", percent);
+    return button;
+  }));
   $("detailsTags").replaceChildren(...head.tags.map((tag) => chip(`#${state.tagNames.get(tag) || tag}`, () => {
     $("query").value = "";
     setTags([tag]);
@@ -958,6 +1063,25 @@ $("query").addEventListener("keydown", (event) => {
 $("query").addEventListener("focus", () => showTab("catalog"));
 for (const id of ["category", "collection"]) $(id).addEventListener("change", () => { showTab("catalog"); runSearch(); });
 $("tagMatch").addEventListener("change", () => { showTab("catalog"); runSearch(); });
+$("colourButton").addEventListener("click", toggleColourPanel);
+$("colourInput").addEventListener("input", () => setColour(fromHex($("colourInput").value)));
+$("colourHex").addEventListener("change", () => {
+  const rgb = fromHex($("colourHex").value);
+  if (rgb) setColour(rgb); else $("colourHex").value = state.colour ? toHex(state.colour.rgb) : "";
+});
+$("colourMode").addEventListener("change", () => { if (state.colour) { showTab("catalog"); runSearch(); } });
+$("colourSpread").addEventListener("input", () => {
+  $("colourSpreadValue").textContent = $("colourSpread").value;
+  if (!state.colour) return;
+  clearTimeout(colourTimer);
+  colourTimer = setTimeout(runSearch, 120);
+});
+$("colourClear").addEventListener("click", () => setColour(null));
+$("blockSearch").addEventListener("input", renderBlocks);
+$("blockVersion").addEventListener("change", () => {
+  store(BLOCK_VERSION_KEY, $("blockVersion").value);
+  loadBlocks($("blockVersion").value);
+});
 // A tag picked from the list comes in whole, without typing: add it at once.
 $("tagInput").addEventListener("input", (event) => { if (!event.inputType || event.inputType === "insertReplacementText") addTypedTag(true); });
 $("tagInput").addEventListener("keydown", (event) => {

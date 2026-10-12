@@ -15,7 +15,7 @@ and are remembered in the browser (`localStorage`), like the chosen language.
 | **Image2Banners** | `image2banners/` | Image to Minecraft banner art; web port of the app by MARSTeamMC |
 | **GeoToSchematic** | external link | KML/GeoJSON outlines to schematics, by reyysun ([site](https://reyysun.github.io/geo-to-schematic/)) |
 | **Big Signs** | `bigsigns/` | Big letters for Minecraft signs, one per sign, Latin and Cyrillic; after an idea by SuperFromND ([site](https://superfromnd.gitlab.io/bigsigns/)) |
-| **Heads** | `heads/` | Search the HeadDB catalogue of 116,000 heads in Russian or English, filter by tags, keep collections, copy `/hdb give` or `/give` commands |
+| **Heads** | `heads/` | Search the HeadDB catalogue of 116,000 heads in Russian or English, filter by tags or by colour (also a block's colour), keep collections, copy `/hdb give` or `/give` commands |
 
 ```
 index.html     hub page, built from shared/tools.js
@@ -29,7 +29,8 @@ palette/       the Palette tool
 image2banners/ the Image2Banners tool
 bigsigns/      the Big Signs tool
 heads/         the Heads tool
-tools/         build-palettes.mjs, a Node script that rebuilds the bundled palettes
+tools/         build-palettes.mjs, a Node script that rebuilds the bundled palettes;
+               build-head-colors.mjs, which rebuilds the colours of the heads
 .nojekyll      turns GitHub's Jekyll processing off
 ```
 
@@ -323,6 +324,27 @@ search is English only and hard to browse.
   translated are tried in Latin letters, and a query typed in the wrong
   keyboard layout («cnek») is read in the other one («стул»). A number finds
   the head with that id.
+- **Tags.** The tag field suggests the catalogue's tags, the commonest first;
+  chosen tags show as chips, and with two or more a head needs all of them or
+  any one. A tag in a head's details sets the filter.
+- **Colour.** Pick a colour, or the colour of a block as in Palette (any
+  bundled or imported version), and the heads closest to it come first, within
+  a range in ΔE. «Mostly this colour» averages over the head, so heads that
+  blend with the block win; «has this colour» also finds heads where it is
+  only a part. A head's details show its main colours; a click searches for
+  one. The colours are in `heads/colors.bin`: up to three main colours of the
+  top and sides of each head (the hat layer over the head, as the game shows
+  it) with the share of each, found by k-means in CIE-Lab. A browser cannot
+  download 116,000 skins, so they are worked out beforehand:
+
+  ```bash
+  node tools/build-head-colors.mjs
+  ```
+
+  It reads the current catalogue, keeps heads whose texture has not changed
+  and downloads the skins of the rest (all of them, about 10 minutes, on the
+  first run). Run it after the catalogue changes: heads it has not seen yet
+  are left out of a colour search until then.
 - **City selections** for BuildTheEarth streets, in the Collections tab next
   to the project standards: mini blocks (344 heads, one for every full block
   of the game the catalogue has: the head of that name closest in colour to
@@ -430,6 +452,8 @@ heads/
   dictionary.js           Russian words for the catalogue's English words
   themes.js               city selections for BuildTheEarth
   textures.js             head textures in pasted text and structure files (NBT)
+  colors.js               main colours of a skin, colors.bin, closeness to a colour
+  colors.bin              main colours of every head (tools/build-head-colors.mjs)
   commands.js             /hdb give and /give for each game version
   render.js               a head as a cube, from its skin
   standards.json          the project's collections
