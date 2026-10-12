@@ -16,6 +16,7 @@ export const STRINGS = {
   tagMatchAny: ["any of the tags", "любой из тегов"],
   tagRemove: [(name) => `Remove the tag ${name}`, (name) => `Убрать тег ${name}`],
   errTag: [(name) => `No such tag: ${name}`, (name) => `Нет такого тега: ${name}`],
+  resetFilters: ["Reset filters", "Сбросить фильтры"],
   colour: ["Colour", "Цвет"],
   colourAny: ["any", "любой"],
   colourMode: ["Head", "Голова"],

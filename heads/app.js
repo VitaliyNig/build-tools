@@ -480,7 +480,8 @@ function renderResults(from = 0) {
   const grid = $("grid");
   if (!from) grid.replaceChildren();
   grid.append(...state.results.slice(from).map((head) => card(head)));
-  const filtered = $("query").value.trim() || $("category").value || $("collection").value || state.tags.length || state.colour;
+  const filtered = Boolean($("query").value.trim() || $("category").value || $("collection").value || state.tags.length || state.colour);
+  $("resetFilters").hidden = !filtered;
   $("info").textContent = [    state.corrected ? t("corrected", state.corrected) : "",
     state.total ? t(filtered ? "found" : "all", state.total) : t("nothing"),
   ].filter(Boolean).join(" ");
@@ -1077,6 +1078,18 @@ $("colourSpread").addEventListener("input", () => {
   colourTimer = setTimeout(runSearch, 120);
 });
 $("colourClear").addEventListener("click", () => setColour(null));
+// Back to the whole catalogue: no query, category, collection, tags or colour.
+$("resetFilters").addEventListener("click", () => {
+  $("query").value = $("category").value = $("collection").value = $("tagInput").value = "";
+  state.tags = [];
+  state.colour = null;
+  $("colourHex").value = "";
+  for (const button of $("blockTiles").children) button.setAttribute("aria-pressed", false);
+  renderFilters();
+  showTab("catalog");
+  runSearch();
+  $("query").focus();
+});
 $("blockSearch").addEventListener("input", renderBlocks);
 $("blockVersion").addEventListener("change", () => {
   store(BLOCK_VERSION_KEY, $("blockVersion").value);
