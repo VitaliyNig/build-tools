@@ -39,6 +39,9 @@ const state = {
 
 // ---------- i18n ----------
 function t(key, ...args) {
+  // A string missing from strings.js, as when the browser still holds the file
+  // from before an update, shows its key rather than stopping the page.
+  if (!STRINGS[key]) return key;
   const value = STRINGS[key][state.lang === "ru" ? 1 : 0];
   return typeof value === "function" ? value(...args) : value;
 }
