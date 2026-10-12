@@ -22,6 +22,7 @@ const state = {
   status: null,
   meta: null,                  // the catalogue: revision, categories, collections, tags
   tagNames: new Map(),         // tag id → name
+  tags: [],                    // the tag filter: tag ids a head needs
   query: "", results: [], total: 0, corrected: null,
   heads: new Map(),            // head id → record, for every head seen
   collections: loadCollections(),
@@ -57,6 +58,7 @@ function retranslate() {
   $("query").placeholder = t("placeholder");
   $("wordText").placeholder = t("wordPlaceholder");
   $("idText").placeholder = t("idPlaceholder");
+  $("tagInput").placeholder = t("tagPlaceholder");
   if (state.status) $("status").textContent = t(...state.status);
   fillFormats();
   fillFilters();
@@ -104,6 +106,7 @@ async function loadCatalog() {
     state.tagNames = new Map(state.meta.tags.map((tag) => [tag.id, tag.name]));
     $("loading").hidden = true;
     fillFilters();
+    fillTagList();
     fillWordFonts();
     renderSource();
     await runSearch();
@@ -130,6 +133,59 @@ function fillFilters() {
   const byName = (a, b) => label(a).localeCompare(label(b), state.lang);
   fillSelect($("category"), [["", t("any")], ...(meta ? [...meta.categories].sort(byName).map((c) => [c.id, label(c)]) : [])], $("category").value);
   fillSelect($("collection"), [["", t("any")], ...(meta ? [...meta.collections].sort(byName).map((c) => [c.id, `${label(c)} (${c.count})`]) : [])], $("collection").value);
+  fillSelect($("tagMatch"), [["all", t("tagMatchAll")], ["any", t("tagMatchAny")]], $("tagMatch").value);
+  renderTags();
+}
+
+// ---------- tag filter ----------
+/** Tags to pick from, the commonest first; filled once the catalogue is in. */
+function fillTagList() {
+  const tags = state.meta.tags.filter((tag) => tag.count).sort((a, b) => b.count - a.count);
+  $("tagList").replaceChildren(...tags.map((tag) => Object.assign(document.createElement("option"), { value: tag.name, label: `${tag.name} (${tag.count})` })));
+}
+
+/** The tag a typed name stands for, case aside; of tags named alike, the commonest. */
+function tagByName(name) {
+  const wanted = name.trim().replace(/^#/, "").toLowerCase();
+  if (!wanted || !state.meta) return null;
+  let best = null;
+  for (const tag of state.meta.tags) {
+    if (tag.count && (tag.name.toLowerCase() === wanted || tag.id === wanted) && (!best || tag.count > best.count)) best = tag;
+  }
+  return best;
+}
+
+/** The chosen tags as chips; a chip's × drops its tag. */
+function renderTags() {
+  $("tagRow").hidden = !state.tags.length;
+  $("tagMatch").hidden = state.tags.length < 2;
+  $("tagChips").replaceChildren(...state.tags.map((id) => {
+    const name = state.tagNames.get(id) || id;
+    const button = Object.assign(document.createElement("button"), { type: "button", className: "chip", title: t("tagRemove", name) });
+    button.append(`#${name}`, Object.assign(document.createElement("span"), { className: "x", textContent: "×" }));
+    button.addEventListener("click", () => setTags(state.tags.filter((tag) => tag !== id)));
+    return button;
+  }));
+}
+
+function setTags(tags) {
+  state.tags = [...new Set(tags)];
+  renderTags();
+  showTab("catalog");
+  runSearch();
+}
+
+/** Add the tag typed in the tag field; `quiet` leaves a name that is no tag (yet) alone. */
+function addTypedTag(quiet) {
+  const typed = $("tagInput").value;
+  const tag = tagByName(typed);
+  if (!tag) {
+    if (!quiet && typed.trim()) setStatus("errTag", typed.trim());
+    return;
+  }
+  $("tagInput").value = "";
+  if (state.status?.[0] === "errTag") setStatus(null);
+  setTags([...state.tags, tag.id]);
 }
 
 /** The collection the + buttons add to. */
@@ -310,6 +366,7 @@ async function runSearch(append = false) {
   const offset = append ? state.results.length : 0;
   const answer = await ask({
     type: "search", query: $("query").value, category: $("category").value, collection: $("collection").value,
+    tags: state.tags, match: $("tagMatch").value,
     offset, limit: PAGE,
   });
   if (seq !== searchSeq) return;
@@ -325,7 +382,7 @@ function renderResults(from = 0) {
   const grid = $("grid");
   if (!from) grid.replaceChildren();
   grid.append(...state.results.slice(from).map((head) => card(head)));
-  const filtered = $("query").value.trim() || $("category").value || $("collection").value;
+  const filtered = $("query").value.trim() || $("category").value || $("collection").value || state.tags.length;
   $("info").textContent = [    state.corrected ? t("corrected", state.corrected) : "",
     state.total ? t(filtered ? "found" : "all", state.total) : t("nothing"),
   ].filter(Boolean).join(" ");
@@ -391,9 +448,8 @@ function renderDetails() {
   const category = state.meta.categories.find((c) => c.id === head.category);
   $("detailsMeta").textContent = head.custom ? t("customNote") : `${t("idLabel")} ${head.id}${category ? ` · ${label(category)}` : ""}`;
   $("detailsTags").replaceChildren(...head.tags.map((tag) => chip(`#${state.tagNames.get(tag) || tag}`, () => {
-    $("query").value = state.tagNames.get(tag) || tag;
-    showTab("catalog");
-    runSearch();
+    $("query").value = "";
+    setTags([tag]);
   })));
   $("detailsCollections").replaceChildren(...head.collections.map((id) => state.meta.collections.find((c) => c.id === id))
     .filter(Boolean).map((c) => chip(label(c), () => {
@@ -901,6 +957,13 @@ $("query").addEventListener("keydown", (event) => {
 });
 $("query").addEventListener("focus", () => showTab("catalog"));
 for (const id of ["category", "collection"]) $(id).addEventListener("change", () => { showTab("catalog"); runSearch(); });
+$("tagMatch").addEventListener("change", () => { showTab("catalog"); runSearch(); });
+// A tag picked from the list comes in whole, without typing: add it at once.
+$("tagInput").addEventListener("input", (event) => { if (!event.inputType || event.inputType === "insertReplacementText") addTypedTag(true); });
+$("tagInput").addEventListener("keydown", (event) => {
+  if (event.key === "Enter") { event.preventDefault(); addTypedTag(false); }
+  else if (event.key === "Backspace" && !$("tagInput").value && state.tags.length) setTags(state.tags.slice(0, -1));
+});
 $("format").addEventListener("change", () => {
   store(FORMAT_KEY, format());
   if (!$("wordView").hidden) renderWord();

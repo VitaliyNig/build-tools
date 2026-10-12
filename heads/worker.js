@@ -34,6 +34,9 @@ async function load(id) {
   // How many heads each collection holds, for the filter list.
   const counts = {};
   for (const head of catalog.heads) for (const c of head.collections) counts[c] = (counts[c] || 0) + 1;
+  // And each tag, for the tag filter: tags no head has are left out.
+  const tagCounts = {};
+  for (const head of catalog.heads) for (const tag of head.tags) tagCounts[tag] = (tagCounts[tag] || 0) + 1;
   answer(id, {
     done: true,
     revision: catalog.revision,
@@ -47,17 +50,20 @@ async function load(id) {
       const items = fontHeads(index, theme);
       return { id: theme.id, heads: items.map(([n]) => catalog.heads[n].id), captions: items.map(([, caption]) => caption) };
     }),
-    tags: catalog.tags,
+    tags: catalog.tags.map((tag) => ({ ...tag, count: tagCounts[tag.id] || 0 })),
   });
 }
 
-function find({ query, category, collection, offset, limit }) {
-  const key = JSON.stringify([query, category, collection]);
+function find({ query, category, collection, tags = [], match = "all", offset, limit }) {
+  const key = JSON.stringify([query, category, collection, tags, match]);
   if (last.key !== key) {
-    const filter = category || collection
+    // Tags: a head needs all of them, or any one with match "any".
+    const tagged = match === "any" ? (head) => tags.some((tag) => head.tags.includes(tag)) : (head) => tags.every((tag) => head.tags.includes(tag));
+    const filter = category || collection || tags.length
       ? (n) => {
         const head = catalog.heads[n];
-        return (!category || head.category === category) && (!collection || head.collections.includes(collection));
+        return (!category || head.category === category) && (!collection || head.collections.includes(collection))
+          && (!tags.length || tagged(head));
       }
       : null;
     let found = search(index, dictionary, query, filter);

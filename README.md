@@ -15,7 +15,7 @@ and are remembered in the browser (`localStorage`), like the chosen language.
 | **Image2Banners** | `image2banners/` | Image to Minecraft banner art; web port of the app by MARSTeamMC |
 | **GeoToSchematic** | external link | KML/GeoJSON outlines to schematics, by reyysun ([site](https://reyysun.github.io/geo-to-schematic/)) |
 | **Big Signs** | `bigsigns/` | Big letters for Minecraft signs, one per sign, Latin and Cyrillic; after an idea by SuperFromND ([site](https://superfromnd.gitlab.io/bigsigns/)) |
-| **Heads** | `heads/` | Search the HeadDB catalogue of 116,000 heads in Russian or English, keep collections, copy `/hdb give` or `/give` commands |
+| **Heads** | `heads/` | Search the HeadDB catalogue of 116,000 heads in Russian or English, filter by tags, keep collections, copy `/hdb give` or `/give` commands |
 
 ```
 index.html     hub page, built from shared/tools.js

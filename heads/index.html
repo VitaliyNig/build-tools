@@ -23,8 +23,14 @@
       <div class="options">
         <label class="field"><span data-i18n="category"></span> <select id="category"></select></label>
         <label class="field"><span data-i18n="collection"></span> <select id="collection"></select></label>
+        <label class="field"><span data-i18n="tagsFilter"></span> <input type="text" id="tagInput" class="small-input" list="tagList" spellcheck="false" autocomplete="off"></label>
         <label class="field"><span data-i18n="format"></span> <select id="format"></select></label>
         <label class="field"><span data-i18n="addTo"></span> <select id="target"></select></label>
+      </div>
+      <datalist id="tagList"></datalist>
+      <div class="tag-row" id="tagRow" hidden>
+        <div class="chips" id="tagChips"></div>
+        <select id="tagMatch" aria-label="Tags"></select>
       </div>
     </section>
 
