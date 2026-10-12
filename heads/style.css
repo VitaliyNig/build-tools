@@ -9,7 +9,7 @@ main { flex: 1; display: flex; flex-direction: column; gap: 14px; width: 100%; m
   display: flex; flex-direction: column; gap: 10px; padding: 14px;
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
 }
-.search input[type="search"] { width: 100%; font-size: 18px; padding: 10px 12px; }
+#query { width: 100%; font-size: 18px; padding: 10px 12px; }
 .options { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
 .field { display: inline-flex; align-items: center; gap: 6px; }
 .field select { max-width: 260px; }

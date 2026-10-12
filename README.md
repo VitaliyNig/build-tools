@@ -329,9 +329,11 @@ search is English only and hard to browse.
   any one. A tag in a head's details sets the filter.
 - **Colour.** Pick a colour, or the colour of a block as in Palette (any
   bundled or imported version), and the heads closest to it come first, within
-  a range in ΔE. «Mostly this colour» averages over the head, so heads that
-  blend with the block win; «has this colour» also finds heads where it is
-  only a part. A head's details show its main colours; a click searches for
+  a range in ΔE. It narrows a search too: «ягоды» and purple show purple
+  berries. «Has this colour» (the default) takes the closest colour that
+  covers at least 15% of the head, larger shares first, so berries with green
+  leaves still count; «mostly this colour» averages over the head, so heads
+  that blend with the block win. A head's details show its main colours; a click searches for
   one. The colours are in `heads/colors.bin`: up to three main colours of the
   top and sides of each head (the hat layer over the head, as the game shows
   it) with the share of each, found by k-means in CIE-Lab. A browser cannot

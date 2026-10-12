@@ -82,7 +82,7 @@ async function load(id) {
   });
 }
 
-function find({ query, category, collection, tags = [], match = "all", colour = null, colourMode = "mostly", spread = 20, offset, limit }) {
+function find({ query, category, collection, tags = [], match = "all", colour = null, colourMode = "has", spread = 25, offset, limit }) {
   const key = JSON.stringify([query, category, collection, tags, match, colour, colourMode, spread]);
   if (last.key !== key) {
     // Tags: a head needs all of them, or any one with match "any".

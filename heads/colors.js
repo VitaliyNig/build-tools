@@ -171,18 +171,20 @@ export function prepare(colours) {
   return colours.map((c) => ({ lab: labOf(c.rgb), weight: c.weight / total }));
 }
 
-// A colour must cover this much of a head to count in the "has" mode.
-const MIN_SHARE = 0.15;
+// A colour must cover this much of a head to count in the "has" mode; a
+// smaller share costs up to SHARE_COST of ΔE, so heads with more of it come first.
+const MIN_SHARE = 0.15, SHARE_COST = 12;
 
 /**
- * How far a head is from a Lab colour, in ΔE. "mostly": the average over the
- * head's pixels, so a head all in that colour comes first; "has": the
- * closest of its colours that covers a fair part of it.
+ * How far a head is from a Lab colour, in ΔE. "has": the closest of its
+ * colours that covers a fair part of it, so purple berries with green leaves
+ * count as purple; "mostly": the average over the head's pixels, so a head
+ * all in that colour comes first.
  */
-export function colourDistance(prepared, lab, mode = "mostly") {
+export function colourDistance(prepared, lab, mode = "has") {
   if (mode === "has") {
     let best = Infinity;
-    for (const c of prepared) if (c.weight >= MIN_SHARE) best = Math.min(best, distance(c.lab, lab));
+    for (const c of prepared) if (c.weight >= MIN_SHARE) best = Math.min(best, distance(c.lab, lab) + SHARE_COST * (1 - c.weight));
     return best;
   }
   return prepared.reduce((sum, c) => sum + c.weight * distance(c.lab, lab), 0);

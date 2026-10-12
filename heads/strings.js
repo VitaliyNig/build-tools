@@ -31,8 +31,8 @@ export const STRINGS = {
   colourFromBlock: ["Colour of a block:", "Цвет блока:"],
   colourBlockSearch: ["block name: oak, brick…", "название блока: oak, brick…"],
   colourHint: [
-    "Pick a colour or a block: heads closest to it come first. “Mostly this colour” finds heads that blend with the block; “has this colour” also finds heads where it is only a part.",
-    "Выберите цвет или блок — первыми будут самые близкие головы. «В основном этого цвета» находит головы, которые сливаются с блоком; «есть этот цвет» — и те, где он только частью.",
+    "Pick a colour or a block; it works with the search too: “berries” and purple show purple berries. “Has this colour” finds heads where it is a fair part (berries with green leaves); “mostly this colour” only heads that are nearly all of it, to blend with a block.",
+    "Выберите цвет или блок; работает вместе с поиском: «ягоды» и фиолетовый покажут фиолетовые ягоды. «Есть этот цвет» находит головы, где он заметной частью (ягоды с зелёными листьями); «в основном этого цвета» — только почти целиком такие, чтобы слиться с блоком.",
   ],
   colourRemove: ["Remove the colour filter", "Убрать фильтр по цвету"],
   colourOfBlock: [(name) => `like ${name}`, (name) => `как ${name}`],

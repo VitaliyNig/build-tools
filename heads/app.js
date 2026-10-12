@@ -138,7 +138,7 @@ function fillFilters() {
   fillSelect($("category"), [["", t("any")], ...(meta ? [...meta.categories].sort(byName).map((c) => [c.id, label(c)]) : [])], $("category").value);
   fillSelect($("collection"), [["", t("any")], ...(meta ? [...meta.collections].sort(byName).map((c) => [c.id, `${label(c)} (${c.count})`]) : [])], $("collection").value);
   fillSelect($("tagMatch"), [["all", t("tagMatchAll")], ["any", t("tagMatchAny")]], $("tagMatch").value);
-  fillSelect($("colourMode"), [["mostly", t("colourMostly")], ["has", t("colourHas")]], $("colourMode").value);
+  fillSelect($("colourMode"), [["has", t("colourHas")], ["mostly", t("colourMostly")]], $("colourMode").value);
   $("colourField").hidden = !meta?.coloured;
   renderFilters();
 }
