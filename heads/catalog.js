@@ -118,3 +118,25 @@ export async function loadCatalog(onProgress = () => {}) {
     heads,
   };
 }
+
+/**
+ * Add the heads of minecraft-heads.com that headsdb.com lacks (mh-extra.json,
+ * from tools/build-mh-catalog.mjs) to a loaded catalogue, after its own heads.
+ * A head headsdb.com has since got is skipped. `headsdbCount` tells how many
+ * of the heads are headsdb.com's; `extra` holds the file's timestamp and count.
+ */
+export function addExtra(catalog, extra) {
+  catalog.headsdbCount = catalog.heads.length;
+  if (!extra || extra.schema !== 1) return catalog;
+  const known = new Set(catalog.heads.map((head) => head.id));
+  const tagIds = new Set(catalog.tags.map((tag) => tag.id));
+  for (const tag of extra.tags) if (!tagIds.has(tag.id)) catalog.tags.push(tag);
+  let added = 0;
+  for (const head of extra.heads) {
+    if (known.has(head.id)) continue;
+    catalog.heads.push({ ...head, collections: [] });
+    added++;
+  }
+  catalog.extra = { timestamp: extra.timestamp, count: added };
+  return catalog;
+}

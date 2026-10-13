@@ -10,7 +10,7 @@ import { findInFile, findInText } from "./textures.js";
 const COLLECTIONS_KEY = "heads.collections", TARGET_KEY = "heads.target", FORMAT_KEY = "heads.format";
 const OPEN_GROUPS_KEY = "heads.openGroups";
 const WORD_KEY = "heads.word", WORD_FONT_KEY = "heads.wordFont", PLAYER_KEY = "heads.player";
-const BLOCK_VERSION_KEY = "heads.blockVersion";
+const BLOCK_VERSION_KEY = "heads.blockVersion", SOURCE_KEY = "heads.source";
 // Cards shown at a time; "show more" adds as many again.
 const PAGE = 60;
 // Size of a head picture on a card, in CSS pixels.
@@ -143,7 +143,12 @@ function fillFilters() {
   fillSelect($("tagMatch"), [["all", t("tagMatchAll")], ["any", t("tagMatchAny")]], $("tagMatch").value);
   fillSelect($("colourMode"), [["has", t("colourHas")], ["mostly", t("colourMostly")]], $("colourMode").value);
   $("colourField").hidden = !meta?.coloured;
-  $("hdbOnlyField").hidden = !meta?.hdbKnown;
+  // The catalogue: minecraft-heads.com first, as the server's HeadDatabase uses it.
+  $("sourceField").hidden = !meta?.hdbKnown;
+  if (meta?.hdbKnown) {
+    fillSelect($("catalogueSource"), [["mh", t("source_mh", meta.hdbCount)], ["headsdb", t("source_headsdb", meta.headsdbCount)], ["all", t("source_all", meta.total)]],
+      $("catalogueSource").value || load(SOURCE_KEY) || "mh");
+  }
   renderFilters();
 }
 
@@ -470,7 +475,7 @@ async function runSearch(append = false) {
     type: "search", query: $("query").value, category: $("category").value, collection: $("collection").value,
     tags: state.tags, match: $("tagMatch").value,
     colour: state.colour?.rgb || null, colourMode: $("colourMode").value, spread: Number($("colourSpread").value),
-    hdbOnly: $("hdbOnly").checked,
+    source: $("catalogueSource").value || "all",
     offset, limit: PAGE,
   });
   if (seq !== searchSeq) return;
@@ -486,7 +491,7 @@ function renderResults(from = 0) {
   const grid = $("grid");
   if (!from) grid.replaceChildren();
   grid.append(...state.results.slice(from).map((head) => card(head)));
-  const filtered = Boolean($("query").value.trim() || $("category").value || $("collection").value || state.tags.length || state.colour || $("hdbOnly").checked);
+  const filtered = Boolean($("query").value.trim() || $("category").value || $("collection").value || state.tags.length || state.colour);
   $("resetFilters").hidden = !filtered;
   $("info").textContent = [    state.corrected ? t("corrected", state.corrected) : "",
     state.total ? t(filtered ? "found" : "all", state.total) : t("nothing"),
@@ -517,7 +522,8 @@ function city() {
 function renderSource() {
   if (!state.meta) return;
   const date = new Date(state.meta.timestamp).toLocaleDateString(state.lang);
-  $("source").textContent = t("source", state.meta.revision, date);
+  const extra = state.meta.extra?.count ? ` ${t("sourceExtra", state.meta.extra.count, new Date(state.meta.extra.timestamp).toLocaleDateString(state.lang))}` : "";
+  $("source").textContent = t("source", state.meta.revision, date) + extra;
 }
 
 // ---------- details ----------
@@ -572,7 +578,8 @@ function renderDetails() {
     })));
   $("detailsCommands").replaceChildren(...FORMATS.filter((f) => f !== "hdb" || !head.custom).map((f) => {
     const text = command(head, f);
-    const note = f === "hdb" ? (head.inHdb === false ? `${t("notInHdb")} ${t("hdbNote")}` : t("hdbNote"))
+    const note = f === "hdb"
+      ? [head.inHdb === false ? t("notInHdb") : "", head.inHeadsdb === false ? t("notInHeadsdb") : "", t("hdbNote")].filter(Boolean).join(" ")
       : text.length > CHAT_LIMIT ? t("tooLong", text.length) : "";
     return commandRow(t(`format_${f}`), text, note);
   }));
@@ -1071,7 +1078,11 @@ $("query").addEventListener("keydown", (event) => {
 $("query").addEventListener("focus", () => showTab("catalog"));
 for (const id of ["category", "collection"]) $(id).addEventListener("change", () => { showTab("catalog"); runSearch(); });
 $("tagMatch").addEventListener("change", () => { showTab("catalog"); runSearch(); });
-$("hdbOnly").addEventListener("change", () => { showTab("catalog"); runSearch(); });
+$("catalogueSource").addEventListener("change", () => {
+  store(SOURCE_KEY, $("catalogueSource").value);
+  showTab("catalog");
+  runSearch();
+});
 $("colourButton").addEventListener("click", toggleColourPanel);
 $("colourInput").addEventListener("input", () => setColour(fromHex($("colourInput").value)));
 $("colourHex").addEventListener("change", () => {
@@ -1089,7 +1100,6 @@ $("colourClear").addEventListener("click", () => setColour(null));
 // Back to the whole catalogue: no query, category, collection, tags or colour.
 $("resetFilters").addEventListener("click", () => {
   $("query").value = $("category").value = $("collection").value = $("tagInput").value = "";
-  $("hdbOnly").checked = false;
   state.tags = [];
   state.colour = null;
   $("colourHex").value = "";

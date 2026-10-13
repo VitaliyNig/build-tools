@@ -3,7 +3,8 @@
 //
 //   node tools/build-head-colors.mjs
 //
-// It reads the current catalogue from headsdb.com and downloads the skin of
+// It reads the current catalogue from headsdb.com, with the heads of
+// heads/mh-extra.json (tools/build-mh-catalog.mjs), and downloads the skin of
 // every head from textures.minecraft.net. Heads already in colors.bin with the
 // same texture are kept, so a later run only downloads new and changed heads.
 // A skin that fails to download is left out and tried again on the next run.
@@ -11,15 +12,17 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { decodePng } from "../shared/mc/png.js";
-import { loadCatalog } from "../heads/catalog.js";
+import { addExtra, loadCatalog } from "../heads/catalog.js";
 import { decodeColours, encodeColours, skinColours, textureCheck } from "../heads/colors.js";
 import { normalizeTexture } from "../heads/textures.js";
 
-const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "heads", "colors.bin");
+const HEADS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "heads");
+const OUT = path.join(HEADS, "colors.bin"), EXTRA = path.join(HEADS, "mh-extra.json");
 const SKINS = "https://textures.minecraft.net/texture/";
 const PARALLEL = 24, TRIES = 3;
 
-const catalog = await loadCatalog();
+// The heads of minecraft-heads.com that headsdb.com lacks get colours too.
+const catalog = addExtra(await loadCatalog(), fs.existsSync(EXTRA) ? JSON.parse(fs.readFileSync(EXTRA, "utf8")) : null);
 console.log(`catalogue revision ${catalog.revision}: ${catalog.heads.length} heads`);
 
 const known = new Map();
