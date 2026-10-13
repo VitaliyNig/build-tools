@@ -134,10 +134,7 @@ export const STRINGS = {
   standards: ["Project standards", "Стандарты проекта"],
   standardsHint: ["Kept in the repository (heads/standards.json); read-only here.", "Хранятся в репозитории (heads/standards.json), здесь только для чтения."],
   custom: ["Community", "Пользовательские"],
-  customHint: [
-    "Collections by the project's players, often with their own heads; read-only here. In heads/standards.json they are marked \"section\": \"custom\".",
-    "Подборки игроков проекта, часто со своими головами; здесь только для чтения. В heads/standards.json помечены \"section\": \"custom\".",
-  ],
+  customHint: ["Collections by the project's players, often with their own heads", "Подборки игроков проекта, часто со своими головами"],
   city: ["City (BuildTheEarth)", "Город (BuildTheEarth)"],
   cityHint: [
     "Ready selections of street things from the catalogue. Save one to your collections to add or drop heads.",
