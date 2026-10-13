@@ -17,6 +17,11 @@ export const STRINGS = {
   tagRemove: [(name) => `Remove the tag ${name}`, (name) => `Убрать тег ${name}`],
   errTag: [(name) => `No such tag: ${name}`, (name) => `Нет такого тега: ${name}`],
   resetFilters: ["Reset filters", "Сбросить фильтры"],
+  serverBefore: ["Our server runs the HeadDatabase plugin with the heads of", "На сервере стоит плагин HeadDatabase с головами с сайта"],
+  serverAfter: [
+    ". Heads marked ⚠ may be missing there: give them with /give, or tick “Only HeadDatabase heads”.",
+    ". Головы с ⚠ там может не быть — выдавайте их через /give или включите «Только из HeadDatabase».",
+  ],
   hdbOnly: ["Only HeadDatabase heads", "Только из HeadDatabase"],
   hdbOnlyTip: [
     "Only heads in the catalogue of minecraft-heads.com, which the HeadDatabase plugin by Arcaniax gives.",
@@ -48,7 +53,7 @@ export const STRINGS = {
   colourShare: [(percent) => `${percent}% of the head; find heads of this colour`, (percent) => `${percent}% головы; найти головы этого цвета`],
   errBlocks: [(e) => `Could not load the blocks: ${e}`, (e) => `Не удалось загрузить блоки: ${e}`],
   format: ["Command", "Команда"],
-  format_hdb: ["/hdb give — HeadDB / HeadDatabase plugin", "/hdb give — плагин HeadDB / HeadDatabase"],
+  format_hdb: ["/hdb give — HeadDatabase plugin", "/hdb give — плагин HeadDatabase"],
   "format_1.20.5": ["/give — Minecraft 1.20.5+", "/give — Minecraft 1.20.5+"],
   "format_1.16": ["/give — Minecraft 1.16–1.20.4", "/give — Minecraft 1.16–1.20.4"],
   "format_1.13": ["/give — Minecraft 1.13–1.15", "/give — Minecraft 1.13–1.15"],
