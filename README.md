@@ -429,8 +429,10 @@ search is English only and hard to browse.
   server's own heads) are counted, and their vanilla `/give` commands can
   be copied. Schematic files dropped on the page go the same way.
 - **Project standards**: the collections in `heads/standards.json` are shown
-  to everyone, read-only, and can be saved as one's own. To add one, export a
-  collection and move it into the file:
+  to everyone, read-only, and can be saved as one's own. A collection with
+  `"section": "custom"` is a player's (such as Егор_Swan's own heads) and is
+  listed apart, under «Community». To add one, export a collection and move
+  it into the file:
 
 ```json
 {

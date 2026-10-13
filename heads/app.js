@@ -684,8 +684,13 @@ function renderCollections() {
   }
   $("cityBox").hidden = !city().length;
   renderCityGroups();
-  $("standardsBox").hidden = !state.standards.length;
-  $("standardsList").replaceChildren(...state.standards.map((c, i) => listButton(c, "standard", i)));
+  // Project standards and players' collections both come from standards.json; each keeps its index there.
+  const standards = state.standards.map((c, i) => [c, i]);
+  const own = standards.filter(([c]) => c.section !== "custom"), custom = standards.filter(([c]) => c.section === "custom");
+  $("standardsBox").hidden = !own.length;
+  $("standardsList").replaceChildren(...own.map(([c, i]) => listButton(c, "standard", i)));
+  $("customBox").hidden = !custom.length;
+  $("customList").replaceChildren(...custom.map(([c, i]) => listButton(c, "standard", i)));
   $("foundBox").hidden = !state.found;
   $("foundList").replaceChildren(...(state.found ? [listButton(state.found, "found", 0)] : []));
   $("sharedBox").hidden = !state.shared;
@@ -952,6 +957,7 @@ async function collectionData(collection) {
   await headsOf(collection.heads);
   return {
     name: collection.name,
+    ...(collection.section ? { section: collection.section } : {}),
     ...(collection.description ? { description: collection.description } : {}),
     heads: collection.heads.map((id) => {
       const name = captionOf(collection, id) || state.heads.get(id)?.name;
@@ -1010,6 +1016,8 @@ function parseCollections(data) {
     return {
       name: String(c.name || t("defaultName")),
       description: typeof c.description === "string" ? c.description : "",
+      // "custom": a collection by a player, listed apart from the project standards.
+      ...(c.section === "custom" ? { section: "custom" } : {}),
       heads: [...new Set(c.heads.map(keyOf).filter(valid))],
       captions: captions.size ? captions : null,
     };
