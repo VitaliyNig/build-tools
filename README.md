@@ -353,7 +353,7 @@ search is English only and hard to browse.
   89,506 heads the two share by texture have the same id), so `/hdb give <id>`
   suits both plugins. The «Catalogue» list picks minecraft-heads.com (94,000
   heads, the default, as our server runs HeadDatabase), headsdb.com (116,000,
-  HeadDB 2) or both; the choice is remembered. About 26,700 heads of
+  HeadDB 2) or all of them; the choice is remembered. About 26,700 heads of
   headsdb.com are not in minecraft-heads.com's public catalogue: their cards
   carry a ⚠ and their details advise `/give`. The 4,581 newer heads of
   minecraft-heads.com that headsdb.com lacks are added to the catalogue, with

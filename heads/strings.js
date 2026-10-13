@@ -29,7 +29,7 @@ export const STRINGS = {
   ],
   source_mh: [(n) => `minecraft-heads.com, HeadDatabase (${n})`, (n) => `minecraft-heads.com, HeadDatabase (${n})`],
   source_headsdb: [(n) => `headsdb.com, HeadDB 2 (${n})`, (n) => `headsdb.com, HeadDB 2 (${n})`],
-  source_all: [(n) => `both (${n})`, (n) => `оба (${n})`],
+  source_all: [(n) => `all (${n})`, (n) => `все (${n})`],
   notInHeadsdb: [
     "Not in the catalogue of headsdb.com yet: HeadDB 2 does not give it; HeadDatabase does.",
     "Этой головы пока нет в каталоге headsdb.com: HeadDB 2 её не выдаст, HeadDatabase выдаст.",
