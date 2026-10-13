@@ -17,6 +17,27 @@ export const STRINGS = {
   tagRemove: [(name) => `Remove the tag ${name}`, (name) => `Убрать тег ${name}`],
   errTag: [(name) => `No such tag: ${name}`, (name) => `Нет такого тега: ${name}`],
   resetFilters: ["Reset filters", "Сбросить фильтры"],
+  serverBefore: ["Our server runs the HeadDatabase plugin with the heads of", "На сервере стоит плагин HeadDatabase с головами с сайта"],
+  serverAfter: [
+    ". The “Catalogue” list shows its heads first. In another catalogue heads marked ⚠ may be missing on the server: give them with /give.",
+    ". В списке «Каталог» он выбран по умолчанию. В другом каталоге головы с ⚠ на сервере может не быть — выдавайте их через /give.",
+  ],
+  sourceLabel: ["Catalogue", "Каталог"],
+  sourceTip: [
+    "minecraft-heads.com: what HeadDatabase by Arcaniax gives. headsdb.com: what HeadDB 2 gives. The ids are the same in both.",
+    "minecraft-heads.com — то, что выдаёт HeadDatabase от Arcaniax. headsdb.com — то, что выдаёт HeadDB 2. ID в них общие.",
+  ],
+  source_mh: [(n) => `minecraft-heads.com, HeadDatabase (${n})`, (n) => `minecraft-heads.com, HeadDatabase (${n})`],
+  source_headsdb: [(n) => `headsdb.com, HeadDB 2 (${n})`, (n) => `headsdb.com, HeadDB 2 (${n})`],
+  source_all: [(n) => `all (${n})`, (n) => `все (${n})`],
+  notInHeadsdb: [
+    "Not in the catalogue of headsdb.com yet: HeadDB 2 does not give it; HeadDatabase does.",
+    "Этой головы пока нет в каталоге headsdb.com: HeadDB 2 её не выдаст, HeadDatabase выдаст.",
+  ],
+  notInHdb: [
+    "Not in the catalogue of minecraft-heads.com: HeadDatabase by Arcaniax may not know it; give it with /give.",
+    "Нет в каталоге minecraft-heads.com: HeadDatabase от Arcaniax может её не знать — выдайте её через /give.",
+  ],
   colour: ["Colour", "Цвет"],
   colourAny: ["any", "любой"],
   colourMode: ["Head", "Голова"],
@@ -39,7 +60,7 @@ export const STRINGS = {
   colourShare: [(percent) => `${percent}% of the head; find heads of this colour`, (percent) => `${percent}% головы; найти головы этого цвета`],
   errBlocks: [(e) => `Could not load the blocks: ${e}`, (e) => `Не удалось загрузить блоки: ${e}`],
   format: ["Command", "Команда"],
-  format_hdb: ["/hdb give — HeadDB plugin", "/hdb give — плагин HeadDB"],
+  format_hdb: ["/hdb give — HeadDatabase", "/hdb give — HeadDatabase"],
   "format_1.20.5": ["/give — Minecraft 1.20.5+", "/give — Minecraft 1.20.5+"],
   "format_1.16": ["/give — Minecraft 1.16–1.20.4", "/give — Minecraft 1.16–1.20.4"],
   "format_1.13": ["/give — Minecraft 1.13–1.15", "/give — Minecraft 1.13–1.15"],
@@ -106,12 +127,14 @@ export const STRINGS = {
     (n) => `${n} символов — длиннее, чем принимает чат (256). Вставьте её в командный блок.`,
   ],
   hdbNote: [
-    "The id is from the current HeadDB catalogue (headsdb.com). It works with HeadDB 2 for Paper and Folia.",
-    "ID из текущего каталога HeadDB (headsdb.com). Подходит для HeadDB 2 на Paper и Folia.",
+    "The id is the same in HeadDB 2 (headsdb.com) and in HeadDatabase by Arcaniax (minecraft-heads.com). A head the server's database lacks is not given.",
+    "ID общий для HeadDB 2 (headsdb.com) и HeadDatabase от Arcaniax (minecraft-heads.com). Голову, которой нет в базе сервера, плагин не выдаст.",
   ],
   // Collections
   standards: ["Project standards", "Стандарты проекта"],
   standardsHint: ["Kept in the repository (heads/standards.json); read-only here.", "Хранятся в репозитории (heads/standards.json), здесь только для чтения."],
+  custom: ["Community", "Пользовательские"],
+  customHint: ["Collections by the project's players, often with their own heads", "Подборки игроков проекта, часто со своими головами"],
   city: ["City (BuildTheEarth)", "Город (BuildTheEarth)"],
   cityHint: [
     "Ready selections of street things from the catalogue. Save one to your collections to add or drop heads.",
@@ -215,6 +238,10 @@ export const STRINGS = {
   source: [
     (rev, date) => `Catalogue of headsdb.com, revision ${rev} of ${date}. Head pictures from textures.minecraft.net.`,
     (rev, date) => `Каталог headsdb.com, ревизия ${rev} от ${date}. Картинки голов с textures.minecraft.net.`,
+  ],
+  sourceExtra: [
+    (n, date) => `Plus ${n} new heads of minecraft-heads.com of ${date}.`,
+    (n, date) => `И ${n} новых голов с minecraft-heads.com от ${date}.`,
   ],
 };
 

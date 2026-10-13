@@ -20,7 +20,9 @@
     <section class="panel search">
       <input type="search" id="query" spellcheck="false" autocomplete="off" enterkeyhint="search">
       <p class="hint" data-i18n="searchHint"></p>
+      <p class="server-note"><span data-i18n="serverBefore"></span> <a href="https://minecraft-heads.com/" target="_blank" rel="noopener">minecraft-heads.com</a><span data-i18n="serverAfter"></span></p>
       <div class="options">
+        <label class="field" id="sourceField" data-i18n-title="sourceTip" hidden><span data-i18n="sourceLabel"></span> <select id="catalogueSource"></select></label>
         <label class="field"><span data-i18n="category"></span> <select id="category"></select></label>
         <label class="field"><span data-i18n="collection"></span> <select id="collection"></select></label>
         <label class="field"><span data-i18n="tagsFilter"></span> <input type="text" id="tagInput" class="small-input" list="tagList" spellcheck="false" autocomplete="off"></label>
@@ -113,6 +115,11 @@
           <h2 data-i18n="standards"></h2>
           <p class="hint" data-i18n="standardsHint"></p>
           <div class="list" id="standardsList"></div>
+        </div>
+        <div id="customBox" hidden>
+          <h2 data-i18n="custom"></h2>
+          <p class="hint" data-i18n="customHint"></p>
+          <div class="list" id="customList"></div>
         </div>
         <div id="cityBox" hidden>
           <h2 data-i18n="city"></h2>

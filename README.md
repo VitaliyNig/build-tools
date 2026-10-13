@@ -30,7 +30,8 @@ image2banners/ the Image2Banners tool
 bigsigns/      the Big Signs tool
 heads/         the Heads tool
 tools/         build-palettes.mjs, a Node script that rebuilds the bundled palettes;
-               build-head-colors.mjs, which rebuilds the colours of the heads
+               build-head-colors.mjs, which rebuilds the colours of the heads;
+               build-mh-catalog.mjs, which brings in the catalogue of minecraft-heads.com
 .nojekyll      turns GitHub's Jekyll processing off
 ```
 
@@ -347,6 +348,27 @@ search is English only and hard to browse.
   and downloads the skins of the rest (all of them, about 10 minutes, on the
   first run). Run it after the catalogue changes: heads it has not seen yet
   are left out of a colour search until then.
+- **Two catalogues.** The HeadDatabase plugin by Arcaniax gives heads from
+  the catalogue of minecraft-heads.com, numbered the same as headsdb.com (all
+  89,506 heads the two share by texture have the same id), so `/hdb give <id>`
+  suits both plugins. The «Catalogue» list picks minecraft-heads.com (94,000
+  heads, the default, as our server runs HeadDatabase), headsdb.com (116,000,
+  HeadDB 2) or all of them; the choice is remembered. About 26,700 heads of
+  headsdb.com are not in minecraft-heads.com's public catalogue: their cards
+  carry a ⚠ and their details advise `/give`. The 4,581 newer heads of
+  minecraft-heads.com that headsdb.com lacks are added to the catalogue, with
+  their tags matched to headsdb.com's by name; their details say HeadDB 2
+  does not give them. That site's API cannot be read from a browser, so a
+  script keeps a copy:
+
+  ```bash
+  node tools/build-mh-catalog.mjs
+  node tools/build-head-colors.mjs
+  ```
+
+  It writes `heads/mh-ids.bin` (the ids of minecraft-heads.com, a 16 KB bit
+  set) and `heads/mh-extra.json` (the heads headsdb.com lacks); a head that
+  headsdb.com gets later is taken from there. Then the colours of the new heads.
 - **City selections** for BuildTheEarth streets, in the Collections tab next
   to the project standards: mini blocks (344 heads, one for every full block
   of the game the catalogue has: the head of that name closest in colour to
@@ -407,8 +429,10 @@ search is English only and hard to browse.
   server's own heads) are counted, and their vanilla `/give` commands can
   be copied. Schematic files dropped on the page go the same way.
 - **Project standards**: the collections in `heads/standards.json` are shown
-  to everyone, read-only, and can be saved as one's own. To add one, export a
-  collection and move it into the file:
+  to everyone, read-only, and can be saved as one's own. A collection with
+  `"section": "custom"` is a player's (such as Егор_Swan's own heads) and is
+  listed apart, under «Community». To add one, export a collection and move
+  it into the file:
 
 ```json
 {
@@ -456,6 +480,8 @@ heads/
   textures.js             head textures in pasted text and structure files (NBT)
   colors.js               main colours of a skin, colors.bin, closeness to a colour
   colors.bin              main colours of every head (tools/build-head-colors.mjs)
+  mh-ids.bin              ids in the catalogue of minecraft-heads.com (tools/build-mh-catalog.mjs)
+  mh-extra.json           heads of minecraft-heads.com that headsdb.com lacks (same script)
   commands.js             /hdb give and /give for each game version
   render.js               a head as a cube, from its skin
   standards.json          the project's collections

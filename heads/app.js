@@ -10,7 +10,7 @@ import { findInFile, findInText } from "./textures.js";
 const COLLECTIONS_KEY = "heads.collections", TARGET_KEY = "heads.target", FORMAT_KEY = "heads.format";
 const OPEN_GROUPS_KEY = "heads.openGroups";
 const WORD_KEY = "heads.word", WORD_FONT_KEY = "heads.wordFont", PLAYER_KEY = "heads.player";
-const BLOCK_VERSION_KEY = "heads.blockVersion";
+const BLOCK_VERSION_KEY = "heads.blockVersion", SOURCE_KEY = "heads.source";
 // Cards shown at a time; "show more" adds as many again.
 const PAGE = 60;
 // Size of a head picture on a card, in CSS pixels.
@@ -143,6 +143,12 @@ function fillFilters() {
   fillSelect($("tagMatch"), [["all", t("tagMatchAll")], ["any", t("tagMatchAny")]], $("tagMatch").value);
   fillSelect($("colourMode"), [["has", t("colourHas")], ["mostly", t("colourMostly")]], $("colourMode").value);
   $("colourField").hidden = !meta?.coloured;
+  // The catalogue: minecraft-heads.com first, as the server's HeadDatabase uses it.
+  $("sourceField").hidden = !meta?.hdbKnown;
+  if (meta?.hdbKnown) {
+    fillSelect($("catalogueSource"), [["mh", t("source_mh", meta.hdbCount)], ["headsdb", t("source_headsdb", meta.headsdbCount)], ["all", t("source_all", meta.total)]],
+      $("catalogueSource").value || load(SOURCE_KEY) || "mh");
+  }
   renderFilters();
 }
 
@@ -426,6 +432,7 @@ function card(head, caption = "") {
   open.title = caption ? `${caption}\n${head.name}` : head.name;
   const name = Object.assign(document.createElement("span"), { className: "name", textContent: caption || head.name });
   const id = Object.assign(document.createElement("span"), { className: "id", textContent: head.custom ? t("customId") : `#${head.id}` });
+  if (head.inHdb === false) id.append(Object.assign(document.createElement("span"), { className: "warn", textContent: "⚠", title: t("notInHdb") }));
   open.append(headCanvas(head, THUMB), name, id);
   open.addEventListener("click", () => openDetails(head));
   const copyButton = Object.assign(document.createElement("button"), { type: "button", className: "copy", textContent: t("copy"), title: t("copyCommand") });
@@ -468,6 +475,7 @@ async function runSearch(append = false) {
     type: "search", query: $("query").value, category: $("category").value, collection: $("collection").value,
     tags: state.tags, match: $("tagMatch").value,
     colour: state.colour?.rgb || null, colourMode: $("colourMode").value, spread: Number($("colourSpread").value),
+    source: $("catalogueSource").value || "all",
     offset, limit: PAGE,
   });
   if (seq !== searchSeq) return;
@@ -514,7 +522,8 @@ function city() {
 function renderSource() {
   if (!state.meta) return;
   const date = new Date(state.meta.timestamp).toLocaleDateString(state.lang);
-  $("source").textContent = t("source", state.meta.revision, date);
+  const extra = state.meta.extra?.count ? ` ${t("sourceExtra", state.meta.extra.count, new Date(state.meta.extra.timestamp).toLocaleDateString(state.lang))}` : "";
+  $("source").textContent = t("source", state.meta.revision, date) + extra;
 }
 
 // ---------- details ----------
@@ -569,7 +578,9 @@ function renderDetails() {
     })));
   $("detailsCommands").replaceChildren(...FORMATS.filter((f) => f !== "hdb" || !head.custom).map((f) => {
     const text = command(head, f);
-    const note = f === "hdb" ? t("hdbNote") : text.length > CHAT_LIMIT ? t("tooLong", text.length) : "";
+    const note = f === "hdb"
+      ? [head.inHdb === false ? t("notInHdb") : "", head.inHeadsdb === false ? t("notInHeadsdb") : "", t("hdbNote")].filter(Boolean).join(" ")
+      : text.length > CHAT_LIMIT ? t("tooLong", text.length) : "";
     return commandRow(t(`format_${f}`), text, note);
   }));
   $("detailsTexture").replaceChildren(commandRow(t("textureHash"), head.texture), commandRow(t("textureValue"), textureValue(head.texture)));
@@ -673,8 +684,13 @@ function renderCollections() {
   }
   $("cityBox").hidden = !city().length;
   renderCityGroups();
-  $("standardsBox").hidden = !state.standards.length;
-  $("standardsList").replaceChildren(...state.standards.map((c, i) => listButton(c, "standard", i)));
+  // Project standards and players' collections both come from standards.json; each keeps its index there.
+  const standards = state.standards.map((c, i) => [c, i]);
+  const own = standards.filter(([c]) => c.section !== "custom"), custom = standards.filter(([c]) => c.section === "custom");
+  $("standardsBox").hidden = !own.length;
+  $("standardsList").replaceChildren(...own.map(([c, i]) => listButton(c, "standard", i)));
+  $("customBox").hidden = !custom.length;
+  $("customList").replaceChildren(...custom.map(([c, i]) => listButton(c, "standard", i)));
   $("foundBox").hidden = !state.found;
   $("foundList").replaceChildren(...(state.found ? [listButton(state.found, "found", 0)] : []));
   $("sharedBox").hidden = !state.shared;
@@ -941,6 +957,7 @@ async function collectionData(collection) {
   await headsOf(collection.heads);
   return {
     name: collection.name,
+    ...(collection.section ? { section: collection.section } : {}),
     ...(collection.description ? { description: collection.description } : {}),
     heads: collection.heads.map((id) => {
       const name = captionOf(collection, id) || state.heads.get(id)?.name;
@@ -999,6 +1016,8 @@ function parseCollections(data) {
     return {
       name: String(c.name || t("defaultName")),
       description: typeof c.description === "string" ? c.description : "",
+      // "custom": a collection by a player, listed apart from the project standards.
+      ...(c.section === "custom" ? { section: "custom" } : {}),
       heads: [...new Set(c.heads.map(keyOf).filter(valid))],
       captions: captions.size ? captions : null,
     };
@@ -1067,6 +1086,11 @@ $("query").addEventListener("keydown", (event) => {
 $("query").addEventListener("focus", () => showTab("catalog"));
 for (const id of ["category", "collection"]) $(id).addEventListener("change", () => { showTab("catalog"); runSearch(); });
 $("tagMatch").addEventListener("change", () => { showTab("catalog"); runSearch(); });
+$("catalogueSource").addEventListener("change", () => {
+  store(SOURCE_KEY, $("catalogueSource").value);
+  showTab("catalog");
+  runSearch();
+});
 $("colourButton").addEventListener("click", toggleColourPanel);
 $("colourInput").addEventListener("input", () => setColour(fromHex($("colourInput").value)));
 $("colourHex").addEventListener("change", () => {
