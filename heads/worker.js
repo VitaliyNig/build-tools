@@ -13,6 +13,9 @@ let catalog = null, index = null, dictionary = null;
 let byTexture = null;
 // Colours of each head, by head number: as stored ([{rgb, weight}]) and ready for matching; null where unknown.
 let colours = [], prepared = [];
+// Head ids in the catalogue of minecraft-heads.com, which the HeadDatabase plugin by Arcaniax gives: a bit set, or null.
+let hdbIds = null;
+const inHdb = (id) => (hdbIds ? id < hdbIds.bits && Boolean(hdbIds.bytes[id >> 3] & (1 << (id & 7))) : null);
 // The head numbers of the last search, so that "show more" does not search again.
 let last = { key: null, found: [] };
 
@@ -22,7 +25,21 @@ const answer = (id, data) => self.postMessage({ id, ...data });
 const view = (head, n) => ({
   id: head.id, name: head.name, texture: head.texture, category: head.category, tags: head.tags, collections: head.collections,
   colours: colours[n] || null,
+  inHdb: inHdb(head.id),
 });
+
+/** mh-ids.bin, made by tools/build-hdb-ids.mjs: without it no head is marked. */
+async function loadHdbIds() {
+  try {
+    const response = await fetch(new URL("./mh-ids.bin", import.meta.url));
+    if (!response.ok) return null;
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (String.fromCharCode(...bytes.subarray(0, 4)) !== "MHI1") return null;
+    return { bits: new DataView(bytes.buffer).getUint32(4, true), bytes: bytes.subarray(8) };
+  } catch {
+    return null;
+  }
+}
 
 /**
  * The colours of the heads from colors.bin, kept for heads whose texture is
@@ -39,7 +56,7 @@ async function loadColours() {
 }
 
 async function load(id) {
-  const colourFile = loadColours();
+  const colourFile = loadColours(), hdbFile = loadHdbIds();
   catalog = await loadCatalog((value) => answer(id, { progress: value }));
   const byId = new Map((await colourFile)?.records.map((record) => [record.id, record]) || []);
   colours = catalog.heads.map((head) => {
@@ -47,6 +64,7 @@ async function load(id) {
     return record && record.check === textureCheck(normalizeTexture(head.texture)) && record.colours.length ? record.colours : null;
   });
   prepared = colours.map(prepare);
+  hdbIds = await hdbFile;
   const labels = {};
   for (const group of [catalog.tags, catalog.collections, catalog.categories]) for (const item of group) labels[item.id] = item.name;
   // Russian names of categories and collections are searched too.
@@ -70,6 +88,7 @@ async function load(id) {
     timestamp: catalog.timestamp,
     total: catalog.heads.length,
     coloured: colours.filter(Boolean).length,
+    hdbKnown: Boolean(hdbIds),
     categories: catalog.categories,
     collections: catalog.collections.map((c) => ({ ...c, count: counts[c.id] || 0 })).filter((c) => c.count),
     // The city selections, as collections of head ids; letter fonts also caption each head with its character.
@@ -82,16 +101,17 @@ async function load(id) {
   });
 }
 
-function find({ query, category, collection, tags = [], match = "all", colour = null, colourMode = "has", spread = 25, offset, limit }) {
-  const key = JSON.stringify([query, category, collection, tags, match, colour, colourMode, spread]);
+function find({ query, category, collection, tags = [], match = "all", colour = null, colourMode = "has", spread = 25, hdbOnly = false, offset, limit }) {
+  const key = JSON.stringify([query, category, collection, tags, match, colour, colourMode, spread, hdbOnly]);
   if (last.key !== key) {
     // Tags: a head needs all of them, or any one with match "any".
     const tagged = match === "any" ? (head) => tags.some((tag) => head.tags.includes(tag)) : (head) => tags.every((tag) => head.tags.includes(tag));
-    const filter = category || collection || tags.length
+    const hdb = hdbOnly && hdbIds;
+    const filter = category || collection || tags.length || hdb
       ? (n) => {
         const head = catalog.heads[n];
         return (!category || head.category === category) && (!collection || head.collections.includes(collection))
-          && (!tags.length || tagged(head));
+          && (!tags.length || tagged(head)) && (!hdb || inHdb(head.id));
       }
       : null;
     let found = search(index, dictionary, query, filter);

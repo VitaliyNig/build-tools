@@ -30,7 +30,8 @@ image2banners/ the Image2Banners tool
 bigsigns/      the Big Signs tool
 heads/         the Heads tool
 tools/         build-palettes.mjs, a Node script that rebuilds the bundled palettes;
-               build-head-colors.mjs, which rebuilds the colours of the heads
+               build-head-colors.mjs, which rebuilds the colours of the heads;
+               build-hdb-ids.mjs, which rebuilds the list of minecraft-heads.com ids
 .nojekyll      turns GitHub's Jekyll processing off
 ```
 
@@ -347,6 +348,17 @@ search is English only and hard to browse.
   and downloads the skins of the rest (all of them, about 10 minutes, on the
   first run). Run it after the catalogue changes: heads it has not seen yet
   are left out of a colour search until then.
+- **HeadDatabase by Arcaniax.** That plugin gives heads from the catalogue of
+  minecraft-heads.com, numbered the same as headsdb.com (all 89,506 heads the
+  two share by texture have the same id), so `/hdb give <id>` suits it too.
+  About 26,700 heads of headsdb.com are not in minecraft-heads.com's public
+  catalogue: their cards carry a ⚠ and their details advise `/give`, and
+  «Only HeadDatabase heads» leaves them out. The ids are in
+  `heads/mh-ids.bin` (a 16 KB bit set) from the site's public API:
+
+  ```bash
+  node tools/build-hdb-ids.mjs
+  ```
 - **City selections** for BuildTheEarth streets, in the Collections tab next
   to the project standards: mini blocks (344 heads, one for every full block
   of the game the catalogue has: the head of that name closest in colour to
@@ -456,6 +468,7 @@ heads/
   textures.js             head textures in pasted text and structure files (NBT)
   colors.js               main colours of a skin, colors.bin, closeness to a colour
   colors.bin              main colours of every head (tools/build-head-colors.mjs)
+  mh-ids.bin              ids in the catalogue of minecraft-heads.com (tools/build-hdb-ids.mjs)
   commands.js             /hdb give and /give for each game version
   render.js               a head as a cube, from its skin
   standards.json          the project's collections
